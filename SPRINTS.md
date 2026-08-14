@@ -16,6 +16,12 @@
 - [x] Fehlende, beschädigte, unbekannte oder partielle Schlüssel-, Datenbank-,
   Companion-, Pointer-, Dokument- und Rootzustände ohne Neuerzeugung ablehnen.
 - [x] Build-/Payload-/Testbackup-Ausgaben auf No-Clobber begrenzen.
+- [x] Final-V4-Support-Reset als bestehende JKM-SR1-Auth-Recovery mit
+  existing-only DMK-Load, vollständigem Pre-Auth-Preflight und publiziertem,
+  erneut verifiziertem `.jkmebackup` vor dem atomaren Security-Commit anbinden.
+- [x] DMK, Database-/Document-Keys, Fach-DB, Managed-Document-Container und
+  Produktroot beim Reset byte-/identitätsgleich erhalten; fehlenden DMK,
+  Geräteverlust und portable Recovery weiterhin fail-closed lassen.
 - [ ] 0.4.0 / Build 400, finaler Pilotbuild, Codesign-/Keychain-Bundlegate,
   Developer ID, Notarisierung und Fresh-First-Run-Abnahme bleiben separat.
 

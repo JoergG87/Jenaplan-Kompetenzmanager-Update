@@ -1569,6 +1569,7 @@ def build_final_v4_encrypted_backup_service(
     sqlcipher_provider: SQLCipherConnectionProvider | None = None,
     product_paths: CipherProductPaths | None = None,
     product_root: Path | None = None,
+    loaded_keys: LoadedDatabaseKeyRuntime | None = None,
     fault_hook=None,
 ) -> FinalV4EncryptedBackupService:
     """Compose backup services from the gate or an injected product path port."""
@@ -1621,7 +1622,7 @@ def build_final_v4_encrypted_backup_service(
         expected_binding_version=SQLCIPHER_4_17_BINDING_VERSION,
         expected_engine_version=SQLCIPHER_4_17_ENGINE_VERSION,
     )
-    loaded = build_database_key_runtime(
+    loaded = loaded_keys or build_database_key_runtime(
         final_paths.key_runtime,
         account_loader=account_loader,
         key_store=key_store,
@@ -1630,6 +1631,22 @@ def build_final_v4_encrypted_backup_service(
     ).open_or_create()
     if loaded.first_run:
         raise FinalV4EncryptedBackupError("final_v4_backup_existing_keys_required")
+    if (
+        opened_runtime.final_v4.loaded_keys.database_context_id
+        != loaded.database_context_id
+        or opened_runtime.final_v4.loaded_keys.dmk_key_id != loaded.dmk_key_id
+        or opened_runtime.final_v4.loaded_keys.dmk_generation
+        != loaded.dmk_generation
+        or opened_runtime.final_v4.loaded_keys.database_key_id
+        != loaded.database_key_id
+        or opened_runtime.final_v4.loaded_keys.database_key_generation
+        != loaded.database_key_generation
+        or opened_runtime.final_v4.loaded_keys.dmk_fingerprint_sha256
+        != loaded.dmk_fingerprint_sha256
+        or opened_runtime.final_v4.loaded_keys.database_key_fingerprint_sha256
+        != loaded.database_key_fingerprint_sha256
+    ):
+        raise FinalV4EncryptedBackupError("final_v4_backup_key_binding_mismatch")
     return FinalV4EncryptedBackupService(
         opened_runtime=opened_runtime,
         paths=paths,

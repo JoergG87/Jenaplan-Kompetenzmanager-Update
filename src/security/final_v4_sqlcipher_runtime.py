@@ -404,7 +404,7 @@ class FinalV4SQLCipherRuntimeCoordinator:
 
     def open(self) -> OpenedFinalV4SQLCipherRuntime:
         try:
-            return self._open()
+            return self._open(support_recovery=False)
         except FinalV4SQLCipherRuntimeError:
             raise
         except (DatabaseEngineError, DatabaseKeyRuntimeError, FinalV4SchemaError) as error:
@@ -418,10 +418,39 @@ class FinalV4SQLCipherRuntimeCoordinator:
                 operation=self._operation,
             ) from None
 
-    def _open(self) -> OpenedFinalV4SQLCipherRuntime:
+    def open_existing_for_support_recovery(self) -> OpenedFinalV4SQLCipherRuntime:
+        """Open only an injected existing key identity for the support preflight."""
+
+        try:
+            return self._open(support_recovery=True)
+        except FinalV4SQLCipherRuntimeError:
+            raise
+        except (DatabaseEngineError, DatabaseKeyRuntimeError, FinalV4SchemaError) as error:
+            raise FinalV4SQLCipherRuntimeError(
+                str(getattr(error, "code", str(error))),
+                operation=self._operation,
+            ) from None
+        except Exception:
+            raise FinalV4SQLCipherRuntimeError(
+                "final_v4_sqlcipher_runtime_failed",
+                operation=self._operation,
+            ) from None
+
+    def _open(self, *, support_recovery: bool) -> OpenedFinalV4SQLCipherRuntime:
         expected_paths = self._scope.require_paths()
         _require_runtime_scope(self.paths, expected_paths=expected_paths)
-        if not self._authentication_confirmed:
+        if support_recovery:
+            if (
+                self._authentication_confirmed
+                or self._technical_first_run_confirmed
+                or self._loaded_keys is None
+                or self._loaded_keys.first_run
+            ):
+                raise FinalV4SQLCipherRuntimeError(
+                    "support_recovery_existing_runtime_required",
+                    operation=FinalV4SQLCipherRuntimeOperation.CLASSIFY,
+                )
+        elif not self._authentication_confirmed:
             raise FinalV4SQLCipherRuntimeError(
                 "authentication_confirmation_required",
                 operation=FinalV4SQLCipherRuntimeOperation.CLASSIFY,

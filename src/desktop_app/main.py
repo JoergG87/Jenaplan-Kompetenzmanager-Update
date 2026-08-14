@@ -522,7 +522,19 @@ def main() -> int:
             and root_protection.lifecycle is RuntimeRootLifecycle.ACTIVE
         ):
             security_runtime.repository.require_current_read_only()
-        support_reset_backup_factory = None
+            from src.security.final_v4_support_recovery import (
+                FinalV4PreAuthRecoveryFactory,
+            )
+
+            support_reset_backup_factory = FinalV4PreAuthRecoveryFactory(
+                paths=security_paths,
+                account_loader=security_runtime.repository.load_account,
+                security_store_validator=(
+                    security_runtime.repository.require_current_read_only
+                ),
+            )
+        else:
+            support_reset_backup_factory = None
         security_state = security_runtime.service.security_store_state()
         security_decision = SecurityStartupResolver().resolve(
             security_state,
@@ -656,6 +668,9 @@ def main() -> int:
         from src.security.final_v4_backup_runtime import (
             build_final_v4_encrypted_backup_service,
         )
+        from src.security.final_v4_support_recovery import (
+            FinalV4SupportResetBackupFactory,
+        )
 
         student_adapter = _build_cipher_product_student_adapter(product_runtime)
         if (
@@ -669,6 +684,10 @@ def main() -> int:
             account_loader=lambda: account,
             environ=os.environ,
             product_paths=security_paths,
+        )
+        support_reset_backup_factory = FinalV4SupportResetBackupFactory(
+            service=encrypted_backup_service,
+            backup_root=paths.backups,
         )
         encrypted_backup_application = FinalV4EncryptedBackupApplicationService(
             encrypted_backup_service

@@ -10,7 +10,7 @@
 | Final-V4-Fachdatenbank | `final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher` | Final-V4 SQLCipher Runtime | ausschließlich exakt SQLCipher 4.17 keyed |
 | Document-Companion | `final-v4-sqlcipher-runtime-v1/documents-v1.sqlcipher` | Final-V3 Document Runtime | derselbe Database-Key und Installation-/Database-Context wie Final-V4; eigenständiges historisches Companion-Schema v1 |
 | verschlüsselter Dokumentstorage | `final-v4-sqlcipher-runtime-v1/document-containers-v1/` | `ManagedDocumentStore` | registrierte `.jkmedoc`-Container für Anhänge, allgemeine Dokumente sowie finale Bericht-/LEG-PDFs |
-| Backupbereich | `backups/` | Desktop Runtime | produktive Final-V4-Backups und Pflichtbackups ausschließlich als `.jkmebackup`; keine DMK, kein ZIP-v1 |
+| Backupbereich | `backups/` | Desktop Runtime | produktive Final-V4-Backups, Restore- und Support-Reset-Pflichtbackups ausschließlich als `.jkmebackup`; keine DMK, Authgeheimnisse oder ZIP-v1 |
 | Restore-Staging | `encrypted-restore-staging/<restore-id>/` | Final-V4 Restore Runtime | privates vollständig verifiziertes Staging; erst `RESTORE_READY` ist handofffähig |
 | Restore-Sicherheitsbackup | `encrypted-restore-safety/` | Final-V4 Live Restore | retained `.jkmebackup` des aktuellen Livebestands vor jedem Worker-Handoff |
 
@@ -21,10 +21,11 @@ keine Datenquelle. Vorhandene Inhalte werden nicht geöffnet oder verändert.
 DMK-Material liegt ausschließlich im macOS-Keychain und erscheint in keiner
 `RuntimePaths`-Rolle.
 
-Die injizierten Final-V4-Pfad-, Worker- und Restart-Ports sind flüchtige
-Steuerverträge und keine neue Datenquelle oder Persistenz. Sie ändern weder
-die obigen Rollen noch Backupinventar, Restore-Staging, Journal oder
-Restart-Evidenz.
+Die injizierten Final-V4-Pfad-, Worker-, Restart- und Pre-Auth-Recovery-Ports
+sind flüchtige Steuerverträge und keine neue Datenquelle oder Persistenz. Sie
+ändern weder die obigen Rollen noch Backupinventar, Restore-Staging, Journal
+oder Restart-Evidenz. Der Pre-Auth-Port gibt keine fachlichen Inhalte oder
+Schlüssel aus.
 
 ## Final-V4-Produktdatenquellen
 
@@ -709,10 +710,13 @@ den Build erzeugt oder überschrieben.
 | `.jkmresettoken` | optionaler äußerer Tokenaustausch | externer Supportprozess / temporäre UI-Eingabe | nie AppPreferences, Security Store, Backup oder Log |
 | `DEFAULT_SUPPORT_KEY_REGISTRY` | ausschließlich freigegebene öffentliche Ed25519-Schlüssel | paketierter Produktcode | ab `0.2.2` genau `support-2026-b`; kein Test-/Privatschlüssel |
 
-Der Reset erzeugt ein bestehendes fachliches `.jkmbackup`; Format und Ausschlüsse
-bleiben unverändert. Anfrageexport und Token sind keine Cloud-, Telemetrie- oder
-fachlichen Datenquellen. Private Schlüssel und organisatorische Auditdaten wie
-Supportbearbeiter bleiben vollständig außerhalb der App.
+Der Final-V4-Reset erzeugt im bestehenden Backupbereich ein neues
+installationsgebundenes `.jkmebackup` nach unverändertem Format und Inventar.
+DMK, Passwort, Recovery-Codes, Gerätecredential-Secret, Support-Token und
+privater Supportschlüssel bleiben ausgeschlossen. Anfrageexport und Token sind
+keine Cloud-, Telemetrie- oder fachlichen Datenquellen. Private Schlüssel und
+organisatorische Auditdaten wie Supportbearbeiter bleiben vollständig außerhalb
+der App.
 
 ## Sprint 0.2B.4a - Gerätecredential-Datenquellen
 

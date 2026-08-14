@@ -36,7 +36,9 @@ Recovery. Reiner Bundle-Austausch ohne Datenmutation bleibt getrennt.
 - Crashzustände bleiben `initializing` beziehungsweise `pending` und blockieren
   statt als First Run oder Testroot fortzufahren.
 - Bestehendes `.jkmebackup`-Format und installationsgebundener Restorevertrag
-  bleiben unverändert; Support Reset bleibt im Final-V4-Pfad blockiert.
+  bleiben unverändert. Support Reset ist nur als Auth-Recovery eines intakten
+  aktiven Produktroots mit demselben vorhandenen DMK zulässig und verändert den
+  Rootmarker nicht.
 
 ## ADR-104 - Entwicklungsbuch-Katalog im Beobachtungsdialog ohne Stage-Filter
 
@@ -162,9 +164,9 @@ bleiben unverändert und werden mit strukturiertem Startupfehler abgewiesen.
 `.jkmebackup`, Restore-Staging und Live-Restore folgen ausschließlich den
 fortgeschriebenen V4-Verträgen aus ADR-100, ADR-102 und ADR-103. Die sichtbaren
 Datensicherungsaktionen und das Schuljahreswechsel-Pflichtbackup verwenden
-jetzt diesen Cipher-Vertrag; ZIP-v1 bleibt unerreichbar. Support-Reset bleibt
-blockiert, solange sein Pre-Auth-Pflichtbackup eine gesonderte
-Sicherheitsentscheidung benötigt. ADR-098 und ADR-099 bleiben als
+jetzt diesen Cipher-Vertrag; ZIP-v1 bleibt unerreichbar. Support-Reset verwendet
+die in ADR-069 fortgeschriebene existing-only Pre-Auth-Prüfung und das
+verifizierte `.jkmebackup`-Pflichtbackup. ADR-098 und ADR-099 bleiben als
 historische Foundation- und Gate-Entscheidungen gültig; ihre damalige
 Nichtaktivierung wird ausschließlich durch diese Produktkomposition abgelöst.
 
@@ -1701,9 +1703,19 @@ Testschlüssel als Ersatz.
 Der sichtbare Prozess trennt Tokenprüfung und irreversible Ausführung. Prüfung
 liefert nur eine datensparsame Vorschau und konsumiert weder Anfrage noch Token.
 Erst `Sicherheitsbackup erstellen und Passwort zurücksetzen` startet einen
-nicht abbrechbaren Worker. Dieser verwendet den bestehenden Backup-Service,
-publiziert und verifiziert ein normales fachliches `.jkmbackup` und übergibt den
-Proof an den bestehenden Support-Reset-Core. Erst danach setzt eine einzelne
+nicht abbrechbaren Worker. Im Final-V4-Produktpfad lädt dessen eng gebundene
+pre-auth Recovery-Komposition ausschließlich den vorhandenen
+installationsgebundenen DMK, öffnet bestehendes Keyset/Envelope, Hauptdatenbank,
+Companion und alle aktiven Managed-Document-Generationen read-only und prüft
+Engine, Schema, Integrität, Context, Generationen und Crossbindings. Sie darf
+nichts initialisieren, reparieren, rotieren oder als Fachdaten projizieren.
+
+Erst nach diesem Preflight erzeugt der vorhandene Final-V4-Backup-Service ein
+neues `.jkmebackup`, veröffentlicht es No-Clobber und verifiziert den
+publizierten Container samt keyed Reopen und vollständigem Inventar erneut. Der
+existierende Backup-Abschlussbeleg entspricht diesem erneut verifizierten
+publizierten Container; `RESTORE_READY` bleibt ausschließlich der nachgelagerten
+Restore-Staging-Grenze vorbehalten. Erst danach setzt eine einzelne
 Security-Transaktion Konto, Recovery, Epoch und Gerätecredentials zurück.
 
 Der Vor-Auth-Recoverypfad darf für genau dieses verpflichtende Sicherheitsbackup
@@ -1715,9 +1727,12 @@ bereinigt und die App beendet. Der nächste Start verwendet ausschließlich den
 bestehenden `password_reset_pending`-Abschluss mit neuem Passwort, neuem
 Recovery-Satz und Sicherungsbestätigung.
 
-Backup-/Restoreformat, fachliche IDs, Dokumentpfade, AppPreferences-Anzeigename
-und Onboardingstatus bleiben unverändert. Die offenen physischen Pilot-Mac-
-Prüfungen aus 0.2B.4/0.2B.4a bleiben offen.
+Backup-/Restoreformat, DMK-ID/-Generation/-Fingerprint, Database-Key-ID und
+-Generation, Database-Context, Document-Key- und aktive Dokumentgenerationen,
+fachliche IDs, Dokumentcontainer, AppPreferences-Anzeigename und
+Onboardingstatus bleiben unverändert. Fehlender oder unzugänglicher DMK,
+Geräteverlust und portable Wiederherstellung bleiben bewusst ungelöst. Die
+offenen physischen Pilot-Mac-Prüfungen aus 0.2B.4/0.2B.4a bleiben offen.
 
 ## ADR-068 - Gerätecredential statt gespeichertem Passwort und optionale lokale Authentifizierung
 

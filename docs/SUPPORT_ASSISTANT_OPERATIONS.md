@@ -3,15 +3,20 @@
 ## Produktstatus 0.4.0 / Build 400
 
 Der Support-Assistent beschreibt die getrennte signierte Reset-Code-
-Foundation. Im aktuellen Final-V4-Cipher-Produktpfad ist Support Reset jedoch
-kontrolliert blockiert: Die App stellt die vor Authentifizierung erforderliche
-sichere `.jkmebackup`-Pflichtbackup-Komposition nicht bereit. Der Assistent
-darf deshalb für den kommenden Pilot nicht als aktiver Recoveryweg angeboten
-werden. Es gibt keinen ZIP-v1- oder Klartextfallback.
+Foundation. Im aktuellen Final-V4-Cipher-Produktpfad kann ein gültiger
+Support-Reset ausschließlich auf der ursprünglichen intakten lokalen
+Installation ausgeführt werden: aktiver Produktroot, aktueller Security Store,
+vorhandener zugänglicher installationsgebundener DMK, vollständiges Final V4,
+Companion, Schlüsselmetadaten und Managed Documents. Die Produkt-App prüft
+diesen Bestand pre-auth read-only und erzeugt und verifiziert ein neues
+`.jkmebackup`, bevor sie Authentifizierungszustand mutiert. Es gibt keinen
+ZIP-v1- oder Klartextfallback.
 
 Recovery-Codes bleiben der erste vorgesehene Kontowiederherstellungsweg. Ein
 Reset-Code würde weder den geschützten DMK noch Datenbank- oder
-Dokumentschlüssel ersetzen.
+Dokumentschlüssel ersetzen. Fehlt der ursprüngliche DMK oder das ursprüngliche
+Gerät, ist dieser Recoveryweg blockiert; er ist keine portable
+Backup-Wiederherstellung.
 
 ## Zweck und Grenze
 
@@ -71,7 +76,7 @@ die Support-App, diese Anleitung, Versionsangaben und Prüfsummen. Es enthält
 keine Produkt-App, Datenbank, Dokumente, Backups, Runtime-Daten, Requests,
 Tokens, privaten Schlüssel oder Passphrase.
 
-Eine erneute Aktivierung benötigt eine eigene Security-, Backup-, Produkt- und
-Releaseentscheidung samt vollständiger Abnahme. Erst dann wären Paket,
-Prüfsummen, synthetische Anfrage, Developer-ID-Signierung und Notarisierung
-erneut zu prüfen.
+Der Final-V4-Produktpfad ändert weder Assistent, JKM-SR1 noch Requestdatei,
+Registry oder Support-Audit. Vor Pilotübergabe bleiben Paket, Prüfsummen,
+synthetische Anfrage, reale Keychain-/Code-Signing-Grenze,
+Developer-ID-Signierung und Notarisierung separat zu prüfen.

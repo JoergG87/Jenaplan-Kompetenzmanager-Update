@@ -27,6 +27,7 @@ from .domain import (
     SECURITY_FORMAT_VERSION,
     SECURITY_SCHEMA_VERSION,
     SecurityBackupProof,
+    FinalV4PreAuthRecoveryValidationError,
     SecurityStateError,
     SecurityStoreError,
     SupportPublicKeyStatus,
@@ -318,32 +319,77 @@ class SupportResetService:
     def execute(
         self, token: str, *, backup: SupportSecurityBackupPort
     ) -> SupportResetResult:
-        self._verify_token(token)
-
         try:
-            proof = backup.create_and_verify()
-        except Exception as error:
-            raise SupportResetRejected(SupportResetFailureCode.BACKUP_FAILED) from error
-        _validate_backup_proof(proof)
+            self._verify_token(token)
+            try:
+                proof = backup.create_and_verify()
+            except FinalV4PreAuthRecoveryValidationError as error:
+                raise SupportResetRejected(
+                    SupportResetFailureCode.PRODUCT_VALIDATION_FAILED
+                ) from error
+            except Exception as error:
+                raise SupportResetRejected(SupportResetFailureCode.BACKUP_FAILED) from error
+            _validate_backup_proof(proof)
 
-        # Backup may take time. Revalidate all bindings and time limits directly
-        # before entering the atomic store transaction.
-        verified = self._verify_token(token)
-        payload = verified.payload
-        token_digest = verified.token_digest
-        now = self._now()
+            # Backup may take time. Revalidate all bindings and time limits directly
+            # before entering the atomic store transaction.
+            verified = self._verify_token(token)
+            payload = verified.payload
+            token_digest = verified.token_digest
+            now = self._now()
 
+            try:
+                epoch = self._repository.consume_support_reset(
+                    payload=payload,
+                    token_digest=token_digest,
+                    now=now,
+                )
+            except Exception as error:
+                epoch = self._committed_epoch(payload, token_digest)
+                if epoch is None:
+                    raise SupportResetRejected(
+                        SupportResetFailureCode.RUNTIME_RECOVERY_REQUIRED
+                    ) from error
+            if epoch is None:
+                raise SupportResetRejected(SupportResetFailureCode.CONCURRENT_USE)
+        except Exception:
+            try:
+                backup.finish(reset_committed=False)
+            except Exception as finish_error:
+                raise SupportResetRejected(
+                    SupportResetFailureCode.RUNTIME_RECOVERY_REQUIRED
+                ) from finish_error
+            raise
         try:
-            epoch = self._repository.consume_support_reset(
-                payload=payload,
-                token_digest=token_digest,
-                now=now,
-            )
-        except SecurityStoreError as error:
-            raise SupportResetRejected(SupportResetFailureCode.STORE_UNAVAILABLE) from error
-        if epoch is None:
-            raise SupportResetRejected(SupportResetFailureCode.CONCURRENT_USE)
+            backup.finish(reset_committed=True)
+        except Exception:
+            # The Security commit is authoritative. Returning success ensures
+            # the Desktop terminates instead of exposing the invalid old session.
+            pass
         return SupportResetResult(payload.reset_request_id, epoch, proof)
+
+    def _committed_epoch(
+        self, payload: SupportResetPayload, token_digest: bytes
+    ) -> int | None:
+        """Resolve an exception after COMMIT without reporting a false rollback."""
+
+        try:
+            account = self._repository.load_account()
+            request = self._repository.load_support_reset_request(
+                payload.reset_request_id
+            )
+            if (
+                account.status is not AccountStatus.PASSWORD_RESET_PENDING
+                or account.installation_id != payload.installation_id
+                or account.user_id != payload.user_id
+                or request is None
+                or request.status != "consumed"
+                or not self._repository.support_token_digest_used(token_digest)
+            ):
+                return None
+            return self._repository.security_epoch()
+        except Exception:
+            return None
 
     def verify_token(self, token: str) -> SupportResetVerificationResult:
         """Validate a token without backup, consumption, or security mutation."""

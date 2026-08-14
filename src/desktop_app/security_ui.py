@@ -692,7 +692,20 @@ class AuthenticationDialog(MotionDialog):
             parent=self,
         )
         dialog.reset_completed.connect(self._support_reset_completed)
+        dialog.reset_shutdown_required.connect(
+            self._support_reset_shutdown_required
+        )
         dialog.exec()
+
+    @Slot(object)
+    def _support_reset_shutdown_required(self, _error: object) -> None:
+        self.password.clear()
+        self.password_confirmation.clear()
+        self.recovery_code.clear()
+        app = QApplication.instance()
+        if app is not None:
+            app.quit()
+        super().reject()
 
     @Slot(object)
     def _support_reset_completed(self, _result: object) -> None:

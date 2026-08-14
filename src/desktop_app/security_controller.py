@@ -256,6 +256,7 @@ class SecurityUiCoordinator(QObject):
         self.support_reset = support_reset
         self.support_reset_backup_factory = support_reset_backup_factory
         self._support_reset_committed = False
+        self._support_reset_exit_required = False
         self.session_controller = SecuritySessionController(
             session,
             inactivity_minutes=inactivity_minutes,
@@ -299,7 +300,7 @@ class SecurityUiCoordinator(QObject):
 
     @Slot()
     def _poll(self) -> None:
-        if self._support_reset_committed:
+        if self._support_reset_committed or self._support_reset_exit_required:
             return
         session = self.session_controller.session
         if session is not None:
@@ -323,7 +324,11 @@ class SecurityUiCoordinator(QObject):
             self.lock(reason)
 
     def lock(self, reason: SessionLockReason) -> None:
-        if self._lock_dialog is not None or self._support_reset_committed:
+        if (
+            self._lock_dialog is not None
+            or self._support_reset_committed
+            or self._support_reset_exit_required
+        ):
             return
         self.session_controller.lock(reason)
         event_code = {
@@ -525,7 +530,21 @@ class SecurityUiCoordinator(QObject):
             parent=self.shell,
         )
         dialog.reset_completed.connect(self._support_reset_completed)
+        dialog.reset_shutdown_required.connect(
+            self._support_reset_shutdown_required
+        )
         dialog.exec()
+
+    @Slot(object)
+    def _support_reset_shutdown_required(self, _error: object) -> None:
+        """End an unsafe runtime; the next startup resolves Security state."""
+
+        self._support_reset_exit_required = True
+        self.poll_timer.stop()
+        self.wake_monitor.timer.stop()
+        for widget in self.app.topLevelWidgets():
+            widget.hide()
+        self.app.quit()
 
     @Slot(object)
     def _support_reset_completed(self, _result: object) -> None:

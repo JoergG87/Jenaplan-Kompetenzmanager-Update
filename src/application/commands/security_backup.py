@@ -28,3 +28,8 @@ class VerifiedSecurityBackupAdapter:
             path=str(verified.path),
             sha256=verified.archive_sha256,
         )
+
+    def finish(self, *, reset_committed: bool) -> None:
+        """Legacy adapter retains no maintenance lease."""
+
+        del reset_committed

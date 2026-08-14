@@ -113,6 +113,7 @@ class SupportPublicKeyRegistry(Protocol):
 
 class SupportSecurityBackupPort(Protocol):
     def create_and_verify(self) -> SecurityBackupProof: ...
+    def finish(self, *, reset_committed: bool) -> None: ...
 
 
 class DeviceCredentialRepository(Protocol):

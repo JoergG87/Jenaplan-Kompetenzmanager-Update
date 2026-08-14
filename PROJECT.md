@@ -57,8 +57,12 @@ Lesepfad auf, und QtPdf zeigt die verifizierten Bytes nur im Speicher. Es gibt
 keine Klartextdatei, OS-Öffnung, Download, Export, Drucken oder Teilen. Die
 Source-Prüfung und ein Cocoa-Smoke sind erfolgt; reale PO-Abnahme im kommenden
 Qt-/HTML-Vergleichsbuild sowie Bundle-/Packaging-Nachweis bleiben offen. Das
-begründet kein Pilot- oder Release-GO. Support Reset bleibt im Cipher-
-Produktpfad kontrolliert blockiert.
+begründet kein Pilot- oder Release-GO. Support Reset ist im Cipher-
+Produktpfad als reine Auth-Recovery aktiviert, jedoch nur mit intaktem
+ursprünglichem Produktroot und vorhandenem installationsgebundenem DMK. Er
+prüft Final V4 pre-auth vollständig, verlangt vor dem Auth-Commit ein
+publiziertes und vollständig verifiziertes `.jkmebackup` und rotiert keine
+Datenkeys. Geräteverlust und fehlender DMK bleiben nicht recoverbar.
 
 0.4.0 / Build 400 bezeichnet einen geplanten beziehungsweise vorbereiteten
 Stand. Ein Clean-Build, manuelle macOS-/Keychain-/Restore-/UX-Abnahme,
@@ -125,10 +129,11 @@ Haupt-/Companion-Datenbank werden beim Restart fail-closed abgewiesen. Die
 vorhandene Datensicherungsoberfläche verwendet im Cipher-Produktmodus jetzt
 ausschließlich `.jkmebackup`, vollständiges Restore-Staging,
 `RESTORE_READY`, verschlüsseltes Sicherheitsbackup und den bestehenden
-Cipher-Live-Worker. ZIP-v1 und V3 bleiben gesperrt; Support-Reset bleibt ohne
-neue Pre-Auth-Sicherheitsentscheidung kontrolliert blockiert. Build,
-Packaging, Release und die manuelle macOS-/UI-Abnahme sind nicht Bestandteil
-dieses Pakets.
+Cipher-Live-Worker. ZIP-v1 und V3 bleiben gesperrt. Support-Reset verwendet die
+existing-only Pre-Auth-Komposition mit demselben vorhandenen DMK, vollständiger
+read-only Produktprüfung und verifiziertem `.jkmebackup` vor dem bestehenden
+atomaren Auth-Commit. Build, Packaging, Release und die manuelle
+macOS-/UI-Abnahme sind nicht Bestandteil dieses Pakets.
 
 ## Final-V4-Fachrelevanz für den kommenden Pilot
 

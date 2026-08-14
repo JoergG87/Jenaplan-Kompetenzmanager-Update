@@ -41,6 +41,12 @@
 | `CipherBackupRestoreUnavailableError` | blockiert sämtliche ZIP-v1-Backup-/Restore-Einstiege im Cipher-Produktmodus | Desktop Backup/Restore Adapter |
 | `FinalV4EncryptedBackupApplicationService` | übersetzt die vorhandene Desktop-Backupaktion ohne Fallback in genau ein `.jkmebackup` | Backup/Restore Application Layer |
 | `FinalV4EncryptedRestoreApplicationService` | bindet Vollverifikation, `RESTORE_READY`, Preview, Cipher-Handoff und vorhandenen Live-Worker | Backup/Restore Application Layer |
+| `FinalV4PreAuthRecoveryVerifier` | eng token-gesteuert verwendeter, existing-only Final-V4-Preflight mit vorhandenem DMK, read-only Produktprüfung und verifiziertem `.jkmebackup`; keine allgemeine Pre-Auth-DMK-API | Security Application Composition |
+| `FinalV4PreAuthRecoveryFactory` | flüchtige Composition-Grenze, die kanonische Produktpfade und Security-Store-Prüfung injiziert, ohne bei Erstellung Produktdaten zu öffnen | Desktop Runtime Composition |
+| `FinalV4SupportResetBackupFactory` | bindet den bereits geöffneten Final-V4-Backup-Service der Settings-Runtime an den Support-Reset | Desktop Runtime Composition |
+| `FinalV4SupportResetBackupPort` | hält den vorhandenen Maintenance-Gate-Freeze vom vollständig verifizierten Safety-Backup bis zum Security-Commit und gibt ihn danach frei | Security Application Composition |
+| `_load_existing_support_recovery_keys` | private use-case-spezifische DMK-/Database-Key-Lesegrenze ohne Lifecycle-Recovery, Provisionierung, Rotation oder Keyset-Mutation | Final-V4 Support Recovery |
+| `FinalV4SQLCipherRuntimeCoordinator.open_existing_for_support_recovery` | öffnet nur eine bereits injizierte aktive Schlüsselidentität mit `authentication_confirmed=False`; First Run und allgemeiner Produkt-Open bleiben ausgeschlossen | Final-V4 SQLCipher Runtime |
 | `RestoreProcessPort` | kleinste Qt-freie Prozessoberfläche für Poll, Wait, Terminate und Kill während Worker-/Restart-Überwachung | Security Ports |
 | `FinalV4RestoreWorkerHandle` | strukturierter bestätigter Workerhandle mit Prozessport und bis zum Haupt-App-Ende gehaltenem Parent-Lifetime-Descriptor | Security Ports |
 | `FinalV4RestoreWorkerLauncher` | injizierter Qt-freier Vertrag für Start und bestätigte Übernahme des Final-V4-Restore-Workers | Security Ports |
@@ -852,7 +858,8 @@ Datenquellen oder Runtime-Verträge.
 | `SupportResetVerificationResult` | Datensparsame erfolgreiche Tokenprüfung ohne Konsum oder Reset | Security Domain |
 | `SupportResetService.verify_token` | Vollständige bindende Tokenprüfung ohne Backup/Mutation | Security Application |
 | `SupportResetDialog` | Modaler mehrstufiger Auth-/Settings-Ablauf ohne Signatur- oder SQLite-Logik | Desktop UI |
-| `SupportResetBackupFactory` | Erzeugt den bestehenden verifizierten Backup-Port aus RuntimePaths | Desktop Adapter |
+| `FinalV4PreAuthRecoveryFactory` | erzeugt im Auth-Gate den existing-only Final-V4-Preflight-/Backup-Port aus injizierten RuntimePaths | Desktop Runtime Composition |
+| `FinalV4SupportResetBackupFactory` | verwendet in Settings die bereits geöffnete Final-V4-Runtime und hält ihren Maintenance-Freeze bis zum Security-Commit | Desktop Runtime Composition |
 | `SupportResetOperationWorker` | Nicht abbrechbarer Qt-Worker für Prüfung beziehungsweise Backup+Reset | Desktop Controller |
 | `.jkmresetrequest` | Versionierter kanonischer technischer Anfrageexport | Support-Betrieb |
 | `.jkmresettoken` | Optionaler lokaler Token-Dateiaustausch; niemals persistenter App-State | Support-Betrieb |
@@ -861,6 +868,8 @@ Datenquellen oder Runtime-Verträge.
 | `support_reset_token_accepted` | Datenschutzneutrales Security-Ereignis | Security Logging |
 | `support_reset_backup_started` | Datenschutzneutrales Security-Ereignis | Security Logging |
 | `support_reset_backup_failed` | Datenschutzneutrales Security-Ereignis | Security Logging |
+| `support_reset_product_validation_failed` | Datenschutzneutrales Ereignis eines blockierten Final-V4-Preflights ohne technische Detailprojektion | Security Logging |
+| `support_reset_runtime_recovery_required` | Datenschutzneutrales Ereignis eines nicht eindeutig beweisbaren Security-Commitzustands oder einer fehlgeschlagenen Maintenance-Lease-Freigabe mit kontrolliertem App-Ende | Security Logging |
 | `support_reset_completed` | Datenschutzneutrales Security-Ereignis | Security Logging |
 
 `DEFAULT_SUPPORT_KEY_REGISTRY` enthält ab `0.2.2` ausschließlich den vom

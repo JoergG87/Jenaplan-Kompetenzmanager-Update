@@ -138,11 +138,16 @@ nach der Bestätigung des bisherigen Passworts ein neues lokales Passwort.
 
 ### Support-Reset
 
-Support-Reset ist im verschlüsselten Produktpfad kontrolliert blockiert. Der
-dazu vor der Anmeldung notwendige sichere Backup-Ablauf ist noch nicht
-freigegeben. Ein Reset-Code, Passwort oder Recovery-Code ersetzt den
-geschützten Installationsschlüssel nicht und darf keinen Zugriff auf den
-verschlüsselten Fachbestand vortäuschen.
+Support-Reset ist ausschließlich auf der ursprünglichen, technisch intakten
+Installation möglich. Vor dem Zurücksetzen prüft die App den vorhandenen
+geschützten Datenbestand vollständig und erzeugt und verifiziert ein neues
+verschlüsseltes Safety-Backup. Erst danach werden Passwort, Recovery-Codes und
+gespeicherte Anmeldungen zurückgesetzt; beim nächsten Start müssen ein neues
+Passwort und neue Recovery-Codes eingerichtet werden. Der Support erhält dabei
+keinen Zugriff auf Fachdaten. Ein Reset-Code ersetzt den geschützten
+Installationsschlüssel nicht: Fehlt dieser oder ist der lokale Bestand nicht
+vollständig prüfbar, findet kein Reset statt. Gerätewechsel werden dadurch
+nicht ermöglicht.
 
 <!-- pagebreak -->
 

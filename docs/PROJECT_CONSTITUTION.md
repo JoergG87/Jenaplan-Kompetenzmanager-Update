@@ -58,9 +58,15 @@ vorhandenen verschlüsselten Final-V4-Vertrag mit `.jkmebackup`, vollständiger
 keyed Verifikation, `RESTORE_READY`, Sicherheitsbackup, Worker-Handoff,
 Rollback und normalem Restart. ZIP-v1, V3, Migration, Gerätewechsel und ein
 Fallback bleiben technisch gesperrt. Die zugrunde liegenden Gate-Off-
-Foundation-Verträge bleiben historisch und testseitig gültig. Support-Reset
-bleibt im Cipher-Modus kontrolliert blockiert, solange seine vor Authentifizierung
-benötigte Backup-Komposition keine gesonderte Sicherheitsentscheidung besitzt.
+Foundation-Verträge bleiben historisch und testseitig gültig. Support-Reset ist
+im Cipher-Modus ausschließlich für einen intakten aktiven Produktroot mit
+vorhandenem installationsgebundenem DMK zulässig. Nach vollständiger
+JKM-SR1-Prüfung muss der bestehende Final-V4-Bestand pre-auth read-only geöffnet
+und vollständig geprüft sowie ein neues `.jkmebackup` erzeugt, veröffentlicht
+und erneut vollständig verifiziert werden. Erst danach darf die bestehende
+atomare Auth-/Recovery-Mutation beginnen. DMK, Database-Key, Document-Keys,
+fachliche Daten und Rootmarker bleiben unverändert; fehlender DMK und
+Geräteverlust bleiben nicht recoverbar.
 
 Die Qt-freie Security-/Final-V4-Runtime kennt dabei weder `src.desktop_app`
 noch Desktop-, Bundle-, PyInstaller- oder Prozessstartdetails. Die Desktop-
@@ -886,8 +892,10 @@ Release-Prüfungen und dürfen nicht als automatisiert bestanden gelten.
   ausschließlich Authentifizierungszustände verändern.
 - Anfrage und Token enthalten nur technische Bindungsdaten. Support erhält
   keine Schüler-, Dokument-, Backup- oder sonstigen Fachinhalte.
-- Ohne aktive Anfrage, gültigen kurzlebigen einmaligen Ed25519-Token und
-  erfolgreich erzeugtes sowie verifiziertes `.jkmbackup` findet kein Reset statt.
+- Ohne aktive Anfrage, gültigen kurzlebigen einmaligen Ed25519-Token und im
+  Final-V4-Produktpfad erfolgreich erzeugtes sowie verifiziertes `.jkmebackup`
+  findet kein Reset statt. Der historische Foundation-Vertrag bleibt
+  ausschließlich für seine alten Gate-Off-Tests dokumentiert.
 - Der atomare Abschluss invalidiert Passwort, Recovery-Codes,
   Gerätecredentials und Sitzung, erhöht die Security-Epoch, setzt
   `password_reset_pending` und beendet die App.

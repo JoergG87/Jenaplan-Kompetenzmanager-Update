@@ -458,6 +458,21 @@ nicht zu dieser Installation.` Eine leere Registry verwendet den verbindlichen
 Nichtfreigabe-Hinweis. Layout, Fokus, Tastatur und opake Sperrung bleiben bei
 1180 x 760 und 1400 x 900 vollständig nutzbar.
 
+Der Einstieg erklärt knapp, dass die geschützte lokale Dateninstallation
+vollständig verfügbar sein muss. Ein blockierter Final-V4-Preflight lautet
+neutral: `Die geschützten lokalen Daten konnten nicht vollständig geprüft
+werden. Das Passwort wurde nicht zurückgesetzt.` Ein Backupfehler benennt klar,
+dass das Sicherheitsbackup nicht erstellt und geprüft werden konnte und deshalb
+nichts zurückgesetzt wurde. DMK-, Key-ID-, Pfad-, Hash- und Stacktracedetails
+bleiben unsichtbar.
+
+Kann die laufende Runtime nach einem Fehler nicht sicher fortgesetzt oder der
+atomare Security-Commit nicht eindeutig als vorher beziehungsweise nachher
+bewiesen werden, lautet der Abschluss neutral: `Der Sicherheitszustand konnte
+nicht eindeutig bestätigt werden. Die App wird beendet und prüft ihn beim
+nächsten Start.` Danach gibt es keine Rückkehr in die laufende Fachoberfläche;
+der nächste Startup löst ausschließlich den autoritativen Security Store auf.
+
 ## Geräteanmeldung und Touch ID - Sprint 0.2B.4a
 
 Der bestehende Passwortbereich bleibt die dominante, immer verfügbare

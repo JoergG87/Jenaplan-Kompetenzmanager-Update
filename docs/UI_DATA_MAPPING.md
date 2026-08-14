@@ -543,8 +543,10 @@ erfolgreiches Reset-Ergebnis projiziert werden.
 | Reset-Code prüfen | `SupportResetService.verify_token` | Nein | vollständige Prüfung; generische Fehlermeldung; kein Konsum |
 | Support-Reset-Freigabe | `DEFAULT_SUPPORT_KEY_REGISTRY` mit aktivem `support-2026-b` | Nein | ab `0.2.2` produktiv prüfbar; kein Testkey-Fallback und keine Schlüsseldetails in der normalen UI |
 | Reset-Vorschau | `SupportResetVerificationResult` plus statische Folgen | Nein | keine Signaturdetails oder Fachdaten |
-| Sicherheitsbackup erstellen und Passwort zurücksetzen | `VerifiedSecurityBackupAdapter` -> `SupportResetService.execute` | normales `.jkmbackup` plus atomarer Security-Commit | zweite bewusste Bestätigung, keine Mehrfachauslösung |
-| Fortschritt/Fehler | Workerphase und datensparsame Ergebnisprojektion | Nein | kein Prozentwert, kein Exception-/Token-/Pfadtext |
+| Sicherheitsbackup erstellen und Passwort zurücksetzen | `FinalV4PreAuthRecoveryFactory` beziehungsweise `FinalV4SupportResetBackupFactory` -> `SupportResetService.execute` | vollständig verifiziertes `.jkmebackup` plus atomarer Security-Commit | zweite bewusste Bestätigung, keine Mehrfachauslösung; DMK und Fachdaten-Schlüssel unverändert |
+| blockierter Final-V4-Preflight | strukturierter Fehlercode `PRODUCT_VALIDATION_FAILED` | Nein | `Die geschützten lokalen Daten konnten nicht vollständig geprüft werden. Das Passwort wurde nicht zurückgesetzt.`; keine IDs, Pfade, Hashes oder Kryptodetails |
+| Fortschritt/Backupfehler | Workerphase und datensparsame Ergebnisprojektion | Nein | kein Prozentwert, kein Exception-/Token-/Pfadtext; ausdrücklich kein Reset bei fehlendem verifiziertem Backup |
+| unsicherer Runtime-Abschluss | `RUNTIME_RECOVERY_REQUIRED` bei nicht eindeutig beweisbarem Security-Commit oder fehlgeschlagener Maintenance-Lease-Freigabe | Nein | behauptet weder Reset noch Rollback, beendet die App kontrolliert und überlässt die autoritative Zustandsauflösung dem nächsten Startup; keine Rückkehr in die laufende Fachruntime |
 
 Nach Erfolg beendet der Desktop die Sitzung und App. Der nächste Start projiziert
 den bestehenden `password_reset_pending`-Flow; `display_name` und Onboardingstatus

@@ -33,7 +33,10 @@ Beobachtungen, Testdaten oder Backups automatisch an.
 > - Die Fachdaten und verwalteten Dokumente werden lokal verschlüsselt
 >   gespeichert. Ein geschütztes macOS-Benutzerkonto und FileVault bleiben
 >   erforderlich.
-> - Support-Reset ist im verschlüsselten Produktpfad kontrolliert blockiert.
+> - Support-Reset ist nur auf der ursprünglichen, technisch vollständig
+>   verfügbaren Installation möglich. Vor dem Authentifizierungsreset werden
+>   der lokale Final-V4-Bestand und ein neues verschlüsseltes Safety-Backup
+>   vollständig geprüft.
 > - `.jkmebackup` ist an die vorhandene Installation gebunden. Ein Gerätewechsel
 >   oder der Verlust des Installationsschlüssels ist damit nicht gelöst.
 > - Für 0.4.0 / Build 400 sind Developer-ID-Signierung, Notarisierung,

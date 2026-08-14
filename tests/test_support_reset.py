@@ -98,6 +98,7 @@ class BackupPort:
     def __init__(self, error: Exception | None = None) -> None:
         self.error = error
         self.calls = 0
+        self.finish_calls: list[bool] = []
         self._lock = threading.Lock()
 
     def create_and_verify(self) -> SecurityBackupProof:
@@ -106,6 +107,9 @@ class BackupPort:
         if self.error is not None:
             raise self.error
         return SecurityBackupProof("/tmp/verified-security-backup.jkmbackup", "a" * 64)
+
+    def finish(self, *, reset_committed: bool) -> None:
+        self.finish_calls.append(reset_committed)
 
 
 def make_environment(
@@ -323,9 +327,11 @@ def test_full_request_binding_is_enforced(tmp_path: Path, change: dict, code) ->
     _security, reset, _repository, _clock, private = make_environment(tmp_path / code.value)
     request = reset.create_request()
     token = signed_token(request, private, **change)
+    backup = BackupPort()
     with pytest.raises(SupportResetRejected) as caught:
-        reset.execute(token, backup=BackupPort())
+        reset.execute(token, backup=backup)
     assert caught.value.code == code
+    assert backup.calls == 0
 
 
 @pytest.mark.parametrize(
@@ -350,15 +356,19 @@ def test_unknown_wrong_expired_and_rotating_keys(tmp_path: Path) -> None:
     _security, reset, repository, clock, private = make_environment(root)
     request = reset.create_request()
     unknown = signed_token(request, private, key_id="unknown-key")
+    backup = BackupPort()
     with pytest.raises(SupportResetRejected) as caught:
-        reset.execute(unknown, backup=BackupPort())
+        reset.execute(unknown, backup=backup)
     assert caught.value.code == SupportResetFailureCode.KEY_UNKNOWN
+    assert backup.calls == 0
 
     other = Ed25519PrivateKey.generate()
     wrong = signed_token(request, other)
+    backup = BackupPort()
     with pytest.raises(SupportResetRejected) as caught:
-        reset.execute(wrong, backup=BackupPort())
+        reset.execute(wrong, backup=backup)
     assert caught.value.code == SupportResetFailureCode.SIGNATURE_INVALID
+    assert backup.calls == 0
 
     raw = private.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
     retiring = SupportResetService(
@@ -555,6 +565,7 @@ def test_successful_reset_requires_backup_and_changes_only_security_state(tmp_pa
     backup = BackupPort()
     result = reset.execute(token, backup=backup)
     assert backup.calls == 1
+    assert backup.finish_calls == [True]
     assert result.security_epoch == 2
     assert repository.security_epoch() == 2
     assert security.security_store_state().state == SecurityStoreState.PASSWORD_RESET_PENDING
@@ -629,9 +640,11 @@ def test_every_backup_failure_leaves_store_unchanged(tmp_path: Path, error: Exce
     )
     request = reset.create_request()
     before = security_snapshot(repository.database_path)
+    backup = BackupPort(error)
     with pytest.raises(SupportResetRejected) as caught:
-        reset.execute(signed_token(request, private), backup=BackupPort(error))
+        reset.execute(signed_token(request, private), backup=backup)
     assert caught.value.code == SupportResetFailureCode.BACKUP_FAILED
+    assert backup.finish_calls == [False]
     assert security_snapshot(repository.database_path) == before
     assert repository.security_epoch() == 1
 
@@ -657,22 +670,125 @@ def test_token_is_revalidated_after_a_slow_backup(tmp_path: Path) -> None:
     assert security_snapshot(repository.database_path) == before
 
 
+def test_finish_failure_before_commit_requires_runtime_shutdown(tmp_path: Path) -> None:
+    clock = MutableClock()
+    _security, reset, repository, _clock, private = make_environment(
+        tmp_path / "finish-before-commit", clock=clock
+    )
+    request = reset.create_request()
+    before = security_snapshot(repository.database_path)
+
+    class FailingFinishBackup(BackupPort):
+        def create_and_verify(self):
+            proof = super().create_and_verify()
+            clock.now += timedelta(hours=1)
+            return proof
+
+        def finish(self, *, reset_committed: bool) -> None:
+            assert reset_committed is False
+            raise RuntimeError("injected finish failure")
+
+    with pytest.raises(SupportResetRejected) as caught:
+        reset.execute(
+            signed_token(request, private),
+            backup=FailingFinishBackup(),
+        )
+
+    assert caught.value.code is SupportResetFailureCode.RUNTIME_RECOVERY_REQUIRED
+    assert security_snapshot(repository.database_path) == before
+    assert repository.security_epoch() == 1
+
+
+def test_finish_failure_after_commit_still_returns_success(tmp_path: Path) -> None:
+    security, reset, repository, _clock, private = make_environment(
+        tmp_path / "finish-after-commit"
+    )
+    request = reset.create_request()
+
+    class FailingFinishBackup(BackupPort):
+        def finish(self, *, reset_committed: bool) -> None:
+            assert reset_committed is True
+            raise RuntimeError("injected finish failure")
+
+    result = reset.execute(
+        signed_token(request, private),
+        backup=FailingFinishBackup(),
+    )
+
+    assert result.reset_request_id == request.reset_request_id
+    assert repository.security_epoch() == 2
+    assert security.security_store_state().state is SecurityStoreState.PASSWORD_RESET_PENDING
+
+
 @pytest.mark.parametrize(
-    ("point", "committed"),
-    [("before_write_commit", False), ("after_write_commit", True)],
+    ("point", "committed", "returns_success"),
+    [
+        ("before_write_commit", False, False),
+        ("after_write_commit", True, True),
+    ],
 )
-def test_reset_transaction_crash_boundaries(tmp_path: Path, point: str, committed: bool) -> None:
+def test_reset_transaction_crash_boundaries(
+    tmp_path: Path, point: str, committed: bool, returns_success: bool
+) -> None:
     failure = ToggleFailure()
     security, reset, repository, _clock, private = make_environment(
         tmp_path / point, failure=failure
     )
     request = reset.create_request()
     failure.point = point
-    with pytest.raises(RuntimeError, match="injected"):
-        reset.execute(signed_token(request, private), backup=BackupPort())
+    backup = BackupPort()
+    if returns_success:
+        result = reset.execute(signed_token(request, private), backup=backup)
+        assert result.reset_request_id == request.reset_request_id
+        assert backup.finish_calls == [True]
+    else:
+        with pytest.raises(SupportResetRejected) as caught:
+            reset.execute(signed_token(request, private), backup=backup)
+        assert caught.value.code is SupportResetFailureCode.RUNTIME_RECOVERY_REQUIRED
+        assert backup.finish_calls == [False]
     failure.point = None
     assert (security.security_store_state().state == SecurityStoreState.PASSWORD_RESET_PENDING) is committed
     assert repository.security_epoch() == (2 if committed else 1)
+
+
+def test_unprovable_commit_state_requires_runtime_shutdown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    failure = ToggleFailure()
+    security, reset, repository, _clock, private = make_environment(
+        tmp_path / "unprovable-commit", failure=failure
+    )
+    request = reset.create_request()
+    original_consume = repository.consume_support_reset
+    original_load_account = repository.load_account
+    reconciliation_blocked = False
+
+    def consume_support_reset(**kwargs):
+        nonlocal reconciliation_blocked
+        try:
+            return original_consume(**kwargs)
+        finally:
+            reconciliation_blocked = True
+
+    def load_account():
+        if reconciliation_blocked:
+            raise SecurityStoreError("injected_reconciliation_read_failure")
+        return original_load_account()
+
+    monkeypatch.setattr(repository, "consume_support_reset", consume_support_reset)
+    monkeypatch.setattr(repository, "load_account", load_account)
+    failure.point = "after_write_commit"
+    backup = BackupPort()
+
+    with pytest.raises(SupportResetRejected) as caught:
+        reset.execute(signed_token(request, private), backup=backup)
+
+    assert caught.value.code is SupportResetFailureCode.RUNTIME_RECOVERY_REQUIRED
+    assert backup.finish_calls == [False]
+    reconciliation_blocked = False
+    failure.point = None
+    assert security.security_store_state().state is SecurityStoreState.PASSWORD_RESET_PENDING
+    assert repository.security_epoch() == 2
 
 
 def test_concurrent_token_use_has_exactly_one_winner(tmp_path: Path) -> None:

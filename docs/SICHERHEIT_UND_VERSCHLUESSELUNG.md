@@ -40,22 +40,29 @@ Im normalen Produktpfad sind folgende Schutzfunktionen aktiv:
 > - immer verfügbarer Passwort-Fallback;
 > - automatische App-Sperre nach Inaktivität oder Ruhezustand sowie
 >   Jetzt sperren;
-> - Support-Reset im Cipher-Modus kontrolliert blockiert;
+> - Support-Reset im Cipher-Modus nur auf der ursprünglichen intakten
+>   Installation, nach vollständiger lokaler Prüfung und verifiziertem
+>   Safety-`.jkmebackup`;
 > - exakt SQLCipher 4.17/CommonCrypto für die frische Final-V4-Datenbank und
 >   den Dokument-Companion;
 > - verschlüsselte Managed-Document-Container für Anhänge, allgemeine
 >   Schülerdokumente sowie finale Bericht-/LEG-PDFs;
 > - getrennte lokale Runtime-Bereiche, restriktive Dateirechte und kein
->   Zugriff auf den fachlichen Bestand vor erfolgreicher Anmeldung.
+>   fachlicher Nutzer- oder Supportzugriff vor erfolgreicher Anmeldung; die
+>   einzige Ausnahme ist der inhaltsfreie technische Support-Reset-Preflight
+>   mit zwingendem Safety-Backup.
 
 Die App-Sperre schützt zusätzlich die Oberfläche vor unbefugter Nutzung im
 laufenden Alltag. Sie ersetzt nicht die separate Datenverschlüsselung. Backup
 und Restore verwenden im Cipher-Produktmodus ausschließlich `.jkmebackup` und
 bleiben auf dieselbe Installation gebunden.
 
-Der blockierte Support-Reset fällt weder auf ZIP-v1 noch auf eine
-Klartext-Sicherung zurück. Recovery-Codes bleiben der vorgesehene erste
-Wiederherstellungsweg für das lokale Konto.
+Der Support-Reset fällt weder auf ZIP-v1 noch auf eine Klartext-Sicherung
+zurück. Er ersetzt ausschließlich Authentifizierungs- und Recovery-Zustände;
+DMK und Fachdaten-Schlüssel bleiben bestehen. Recovery-Codes bleiben der
+vorgesehene erste Wiederherstellungsweg für das lokale Konto. Fehlt der
+installationsgebundene DMK oder ist der lokale Final-V4-Bestand nicht
+vollständig prüfbar, wird kein Reset durchgeführt.
 
 ### Signierung und Updates
 

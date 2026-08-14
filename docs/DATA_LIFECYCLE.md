@@ -60,7 +60,9 @@ diesem Lifecycle:
 ZIP-v1, V3, Klartextmigration, V2-Import und Alt-Testdatenübernahme bleiben in
 diesem Lifecycle unerreichbar. Schuljahreswechsel verwenden für ihr
 Pflichtbackup denselben Cipher-Service innerhalb der bereits aktiven
-Maintenance-Sperre. Support-Reset bleibt ohne Cipher-Pflichtbackup blockiert.
+Maintenance-Sperre. Support-Reset verwendet denselben Cipher-Service erst nach
+vollständiger existing-only Pre-Auth-Prüfung und darf ohne vollständig
+verifiziertes publiziertes `.jkmebackup` keine Authentifizierung mutieren.
 
 ## Final-V4-Datenbankinitialisierung
 
@@ -2127,8 +2129,15 @@ SupportResetService.execute
 -> Installation, Nutzer, Anfrage, Nonce und Aktion binden
 -> Tokenzeit mit zwei Minuten Toleranz und maximal zwei Stunden pruefen
 -> Token-Digest und aktive einmalige Anfrage read-only vorpruefen
--> vorhandenen Backup-Service aufrufen
--> neues fachliches `.jkmbackup` vollstaendig erzeugen und verifizieren
+-> im aktiven Produktroot vorhandenen DMK existing-only aus dem Keychain laden
+-> Keyset/Envelope, SQLCipher 4.17, SQLite 3.53.3, Final V4 `user_version=4`,
+   Context, Cipher-/SQLite-/FK-Integritaet und Companion read-only pruefen
+-> alle registrierten aktiven Managed-Document-Generationen samt Container,
+   Envelope, Manifest, Final-Tag, EOF, Groesse, Hash und Pointerbindung pruefen
+-> vorhandenen Final-V4-Backup-Service aufrufen
+-> neues `.jkmebackup` No-Clobber erzeugen, publizieren und den publizierten
+   Container samt keyed Reopen und vollständigem Inventar erneut verifizieren
+-> alle Tokenbindungen unmittelbar vor dem Security-Commit erneut pruefen
 -> erst danach eine `BEGIN IMMEDIATE`-Security-Transaktion starten
 -> Anfrage und Token-Digest verbrauchen
 -> alten Passworthash in einen nicht verifizierbaren Reset-Marker ersetzen
@@ -2140,9 +2149,38 @@ SupportResetService.execute
 
 Jeder Erstellungs-, Verifikations-, Port- oder Backupfehler bricht vor der
 Security-Transaktion ab. Konkurrenz kann nur eine Anfrage/Token-Kombination
-verbrauchen. Das Sicherheitsbackup verwendet unveraendert `.jkmbackup`; der
-Security Store bleibt ausgeschlossen. Fachliche Datenbank, Dokumente, Backups,
-IDs und Restore-Vertraege werden nicht migriert oder veraendert.
+verbrauchen. Ein rein technischer Preflight-/Backupfehler verbraucht Anfrage und
+Token nicht. Das Sicherheitsbackup verwendet im Final-V4-Produktpfad
+unveraendert `.jkmebackup`; der Security Store bleibt ausgeschlossen. Der
+erneut verifizierte publizierte Container ist der bestehende Backup-
+Abschlussbeleg; `RESTORE_READY` wird weiterhin ausschließlich für vollständig
+materialisiertes Restore-Staging geschrieben. Fachliche Datenbank, Dokumente,
+Backups, IDs und Restore-Vertraege werden nicht migriert oder veraendert.
+
+Nur der bestehende atomare Security-Commit ersetzt den Passworthash, widerruft
+Recovery-Codes und Gerätecredentials, erhöht die Security-Epoch, konsumiert
+Anfrage/Token und setzt `password_reset_pending`. Bei einem Fehler vor diesem
+Commit bleiben alter Authzustand, Recovery-Codes, Epoch und Gerätecredentials
+gültig. Ein nach dem Commit gemeldeter I/O-Fehler wird durch read-only
+Commit-Evidenz aufgelöst, damit der Desktop den erfolgreichen Reset nicht als
+Rollback meldet. Der nächste Prozess startet ausschließlich im bestehenden
+`password_reset_pending`-Flow und öffnet nach neuem Passwort und Recovery-Satz
+denselben Produktroot.
+
+Kann ein im Settings-Pfad gehaltener Maintenance-Lease nicht sicher freigegeben
+werden oder lässt sich eine Exception am Security-Commit nicht eindeutig als
+Zustand davor beziehungsweise danach beweisen, gilt die laufende Runtime nicht
+als fortsetzbar. `RUNTIME_RECOVERY_REQUIRED` beendet die App deshalb
+kontrolliert und behauptet weder Reset noch Rollback. Erst der nächste Startup
+löst den atomaren Security Store autoritativ als normalen Loginzustand oder
+`password_reset_pending` auf. Nach bereits bewiesenem Commit bleibt dagegen der
+Erfolg autoritativ und der bestehende Reset-Exit läuft weiter.
+
+DMK-ID, DMK-Generation und -Fingerprint, Database-Key-ID und -Generation,
+Database-Context, Document-Key-Generationen, aktive Dokumentgenerationen,
+fachliche DB und `.jkmedoc`-Container bleiben unverändert. Support Reset ersetzt
+oder erzeugt keine fehlenden Secrets. Fehlender/unzugänglicher DMK, verlorenes
+Gerät und portable Backup-Recovery bleiben nicht recoverbar.
 
 Anfrage und Token sind nicht vor `created_at` und nicht nach `expires_at`
 gueltig. Zwei Minuten Toleranz dienen ausschliesslich begrenztem Clock Skew;

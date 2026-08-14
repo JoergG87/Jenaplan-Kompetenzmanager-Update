@@ -77,7 +77,9 @@ Buildcommit, DMG, Prüfsummen und manuelle Pilotabnahme bleiben getrennte Gates.
   In-App-Viewer lesen; Export, Drucken und Teilen sind nicht verfügbar.
   Source-Prüfung und Cocoa-Smoke sind erfolgt. Reale PO-Abnahme im kommenden
   Qt-/HTML-Vergleichsbuild sowie Bundle-/Packaging-Nachweis bleiben offen.
-- Support Reset bleibt im Final-V4-Cipher-Produktpfad kontrolliert blockiert.
+- Support Reset ist als reine Authentifizierungs-Recovery für eine weiterhin
+  intakte ursprüngliche Final-V4-Installation angebunden; vollständiger
+  Pre-Auth-Verify und verifiziertes Safety-`.jkmebackup` sind Pflicht.
 - Keine automatische Migration älterer Datenbestände.
 - Keine Geräteübertragbarkeit und kein DMK-Recoverypfad für `.jkmebackup`.
 - Kein Developer-ID-/Notarisierungsnachweis, kein Stable Release, kein Windows

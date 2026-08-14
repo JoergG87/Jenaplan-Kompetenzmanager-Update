@@ -520,9 +520,14 @@ geprüfter Token verworfen. Die View liest weder SQLite noch Key Registry,
 verifiziert keine Signatur und erstellt kein Backup selbst.
 
 `SupportResetService` besitzt Anfrage, Bindungsprüfung und atomaren Reset.
-`SupportResetBackupFactory` baut aus RuntimePaths ausschließlich den vorhandenen
-`VerifiedSecurityBackupAdapter`. Der Desktop-Controller besitzt Worker,
-Dateidialoge, Zwischenablageaktion, Sperr-/Sitzungshandoff und App-Ende.
+`FinalV4PreAuthRecoveryVerifier` besitzt ausschließlich die existing-only
+DMK-/Key-/Final-V4-/Companion-/Managed-Document-Prüfung und den Aufruf des
+vorhandenen verifizierten `.jkmebackup`-Service. Er liefert keine Fachprojektion
+an die View. `FinalV4PreAuthRecoveryFactory` injiziert im Auth-Gate nur
+RuntimePaths und Security-Store-Port; `FinalV4SupportResetBackupFactory`
+verwendet in Settings die bereits geöffnete Runtime. Der Desktop-Controller
+besitzt Worker, Dateidialoge, Zwischenablageaktion, Sperr-/Sitzungshandoff und
+App-Ende.
 
 Im Auth-Gate bleibt die Fach-UI nicht konstruiert. Im Settings-Einstieg ist der
 Dialog modal; laufende fachliche Backup-/Restore-Operationen verhindern einen

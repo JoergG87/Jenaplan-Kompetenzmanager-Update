@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
 import logging
 import os
 from pathlib import Path
@@ -24,8 +23,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from src.application.commands.backup import BackupApplicationService, CreateBackupCommand
-from src.application.commands.security_backup import VerifiedSecurityBackupAdapter
 from src.security.domain import (
     SUPPORT_RESET_MAX_TOKEN_BYTES,
     SupportResetFailureCode,
@@ -44,35 +41,6 @@ SUPPORT_RESET_NOT_RELEASED = (
     "Der Support-Reset ist in dieser App-Version noch nicht für den produktiven "
     "Betrieb freigeschaltet."
 )
-
-
-@dataclass(frozen=True)
-class SupportResetBackupFactory:
-    """Build the mandatory verified backup adapter from injected runtime paths."""
-
-    paths: object
-    app_version: str
-    build_commit: str
-    source_tree_state: str | None = None
-
-    def create(self) -> VerifiedSecurityBackupAdapter:
-        target = Path(self.paths.backups)
-        if target.is_symlink():
-            raise RuntimeError("support_reset_backup_target_symlink")
-        target.mkdir(parents=True, exist_ok=True, mode=0o700)
-        if os.name == "posix":
-            os.chmod(target, 0o700)
-        return VerifiedSecurityBackupAdapter(
-            BackupApplicationService(),
-            CreateBackupCommand(
-                database_path=Path(self.paths.database),
-                runtime_paths=self.paths,
-                target_path=target,
-                app_version=self.app_version,
-                build_commit=self.build_commit,
-                source_tree_state=self.source_tree_state,
-            ),
-        )
 
 
 class SupportResetOperationWorker(QObject):
@@ -101,6 +69,7 @@ class SupportResetDialog(MotionDialog):
     """Guided request, validation preview, and confirmed reset UI."""
 
     reset_completed = Signal(object)
+    reset_shutdown_required = Signal(object)
 
     def __init__(self, *, service, backup_factory, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -134,7 +103,8 @@ class SupportResetDialog(MotionDialog):
         outer.addWidget(title)
         intro = QLabel(
             "Wenn Passwort und Recovery-Codes nicht mehr verfügbar sind, kann der "
-            "Support einen offline signierten Reset-Code für diese Installation erstellen."
+            "Support einen offline signierten Reset-Code für diese Installation erstellen. "
+            "Die geschützte lokale Dateninstallation muss vollständig verfügbar sein."
         )
         intro.setWordWrap(True)
         outer.addWidget(intro)
@@ -161,8 +131,8 @@ class SupportResetDialog(MotionDialog):
         set_label_style(heading, "section_title")
         layout.addWidget(heading)
         note = QLabel(
-            "Support kann nur das lokale Passwort zurücksetzen. Fachliche Daten werden "
-            "nicht gelöscht; Datenbank und Backups werden dadurch nicht verschlüsselt. "
+            "Support kann nur die lokale Authentifizierung zurücksetzen. Fachliche Daten "
+            "und ihre vorhandenen Schlüssel bleiben unverändert geschützt. "
             "Die Anfrage enthält nur technische Kennungen, Gültigkeitszeiten und eine "
             "zufällige Einmalbindung."
         )
@@ -537,9 +507,31 @@ class SupportResetDialog(MotionDialog):
 
     def _reset_failed(self, error: object) -> None:
         self._clear_token()
+        if (
+            isinstance(error, SupportResetRejected)
+            and error.code is SupportResetFailureCode.RUNTIME_RECOVERY_REQUIRED
+        ):
+            _SECURITY_LOG.error("support_reset_runtime_recovery_required")
+            self.progress_message.set_message(
+                "Der Sicherheitszustand konnte nicht eindeutig bestätigt werden. "
+                "Die App wird beendet und prüft ihn beim nächsten Start.",
+                tone="error",
+            )
+            self.reset_shutdown_required.emit(error)
+            self.accept()
+            return
         if isinstance(error, SupportResetRejected) and error.code is SupportResetFailureCode.BACKUP_FAILED:
             _SECURITY_LOG.info("support_reset_backup_failed")
             text = "Das Sicherheitsbackup konnte nicht erstellt und geprüft werden. Es wurde nichts zurückgesetzt."
+        elif (
+            isinstance(error, SupportResetRejected)
+            and error.code is SupportResetFailureCode.PRODUCT_VALIDATION_FAILED
+        ):
+            _SECURITY_LOG.info("support_reset_product_validation_failed")
+            text = (
+                "Die geschützten lokalen Daten konnten nicht vollständig geprüft werden. "
+                "Das Passwort wurde nicht zurückgesetzt."
+            )
         else:
             _SECURITY_LOG.info("support_reset_token_rejected")
             text = "Der Reset konnte nicht sicher bestätigt werden. Es wurde nichts zurückgesetzt."

@@ -90,7 +90,9 @@ class SupportResetFailureCode(str, Enum):
     REQUEST_NOT_ACTIVE = "request_not_active"
     REQUEST_EXPIRED = "request_expired"
     STORE_UNAVAILABLE = "store_unavailable"
+    PRODUCT_VALIDATION_FAILED = "product_validation_failed"
     BACKUP_FAILED = "backup_failed"
+    RUNTIME_RECOVERY_REQUIRED = "runtime_recovery_required"
     CONCURRENT_USE = "concurrent_use"
 
 
@@ -100,6 +102,10 @@ class SupportResetRejected(SecurityError):
     def __init__(self, code: SupportResetFailureCode):
         self.code = code
         super().__init__("support_reset_rejected")
+
+
+class FinalV4PreAuthRecoveryValidationError(SecurityError):
+    """Existing encrypted product state failed validation before backup."""
 
 
 class SupportPublicKeyStatus(str, Enum):

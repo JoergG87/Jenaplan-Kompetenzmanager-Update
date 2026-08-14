@@ -76,8 +76,10 @@ Installationsschlüssel gebunden. Zusätzliches externes, schulisch geregeltes
 Backup bleibt sinnvoll; ein Gerätewechsel oder Schlüsselverlust ist damit
 nicht gelöst.
 
-Support-Reset bleibt im verschlüsselten Produktpfad kontrolliert blockiert,
-solange der dafür notwendige sichere Backup-Ablauf nicht freigegeben ist.
+Support-Reset ist ausschließlich auf der ursprünglichen intakten Installation
+mit zugreifbarem Installationsschlüssel möglich. Die App prüft den vorhandenen
+Final-V4-Bestand vollständig und erzeugt und verifiziert ein verschlüsseltes
+Safety-Backup, bevor sie nur den Authentifizierungszustand zurücksetzt.
 
 ## 6. Bekannte Grenzen
 
@@ -87,7 +89,9 @@ solange der dafür notwendige sichere Backup-Ablauf nicht freigegeben ist.
 > - keine Cloud-Synchronisation oder KI-Funktion;
 > - keine automatische Migration bestehender alter lokaler Datenbestände;
 >   für den kommenden Pilot werden keine produktiven Altdaten vorausgesetzt;
-> - Support-Reset ist im verschlüsselten Produktpfad kontrolliert blockiert;
+> - Support-Reset hilft nur bei verlorenen Anmeldedaten auf der weiterhin
+>   intakten ursprünglichen Installation; verlorene Installationsschlüssel und
+>   Gerätewechsel bleiben nicht wiederherstellbar;
 > - finale Bericht- und LEG-PDFs können im gemeinsamen sicheren In-App-Viewer
 >   gelesen werden; Export, Drucken und Teilen sind nicht verfügbar;
 > - keine automatische Update-, Download- oder Installationsaktion.

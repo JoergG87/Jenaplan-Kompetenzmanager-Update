@@ -744,7 +744,8 @@ def test_product_main_activates_only_encrypted_backup_restore_services() -> None
     assert "configure_school_year_transition_activation" in product_composition
     assert "BackupApplicationService()" not in product_composition
     assert "RestoreApplicationService()" not in product_composition
-    assert "support_reset_backup_factory = None" in source
+    assert "FinalV4PreAuthRecoveryFactory" in source
+    assert "FinalV4SupportResetBackupFactory" in product_composition
 
 
 def test_importing_product_shell_does_not_create_a_database(tmp_path: Path) -> None:

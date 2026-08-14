@@ -20,7 +20,9 @@ from src.security.domain import (
     SUPPORT_RESET_ACTION,
     SUPPORT_RESET_MAX_TOKEN_BYTES,
     SecurityBackupProof,
+    SupportResetFailureCode,
     SupportResetRequest,
+    SupportResetRejected,
     SupportResetResult,
     SupportResetVerificationResult,
 )
@@ -48,6 +50,9 @@ def _wait_until(predicate, timeout: float = 2.0) -> None:
 class _Backup:
     def create_and_verify(self):
         return SecurityBackupProof("/tmp/support-reset-backup.jkmbackup", "a" * 64)
+
+    def finish(self, *, reset_committed: bool) -> None:
+        del reset_committed
 
 
 class _BackupFactory:
@@ -176,6 +181,46 @@ def test_confirmed_reset_emits_handoff_only_after_worker_success() -> None:
     assert service.execute_calls == 1
     assert dialog._committed is True
     assert dialog._verified_token == ""
+
+
+def test_final_v4_preflight_and_backup_failures_are_sanitized() -> None:
+    _app()
+    dialog = SupportResetDialog(
+        service=_Service(enabled=True), backup_factory=_BackupFactory()
+    )
+
+    dialog._reset_failed(
+        SupportResetRejected(SupportResetFailureCode.PRODUCT_VALIDATION_FAILED)
+    )
+    assert dialog.progress_message.label.text() == (
+        "Die geschützten lokalen Daten konnten nicht vollständig geprüft werden. "
+        "Das Passwort wurde nicht zurückgesetzt."
+    )
+
+    dialog._reset_failed(SupportResetRejected(SupportResetFailureCode.BACKUP_FAILED))
+    assert dialog.progress_message.label.text() == (
+        "Das Sicherheitsbackup konnte nicht erstellt und geprüft werden. "
+        "Es wurde nichts zurückgesetzt."
+    )
+    dialog.reject()
+
+
+def test_runtime_cleanup_failure_requests_controlled_shutdown() -> None:
+    _app()
+    dialog = SupportResetDialog(
+        service=_Service(enabled=True), backup_factory=_BackupFactory()
+    )
+    shutdown = QSignalSpy(dialog.reset_shutdown_required)
+
+    dialog._reset_failed(
+        SupportResetRejected(SupportResetFailureCode.RUNTIME_RECOVERY_REQUIRED)
+    )
+
+    assert shutdown.count() == 1
+    assert dialog.progress_message.label.text() == (
+        "Der Sicherheitszustand konnte nicht eindeutig bestätigt werden. "
+        "Die App wird beendet und prüft ihn beim nächsten Start."
+    )
 
 
 def test_settings_exposes_recovery_action_without_support_reset_navigation_area() -> None:

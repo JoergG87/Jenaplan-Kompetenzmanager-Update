@@ -89,10 +89,12 @@ im Cipher-Produktmodus gesperrt.
 
 ## Support Reset und optionale Oberflächen
 
-Support Reset bleibt im Final-V4-Cipher-Produktpfad kontrolliert blockiert,
-solange für seine Pre-Auth-Grenze keine gesondert freigegebene sichere
-Pflichtbackup-Komposition existiert. Ein alter ZIP-v1- oder Klartextpfad ist
-keine aktive Ausweichlösung.
+Support Reset verwendet im Final-V4-Cipher-Produktpfad dieselbe vorhandene
+Verschlüsselungsidentität. Er ist nur auf der ursprünglichen intakten
+Installation möglich und setzt einen vollständig geprüften lokalen Bestand
+sowie ein erzeugtes und vollständig verifiziertes `.jkmebackup` voraus. Ein
+alter ZIP-v1- oder Klartextpfad ist keine aktive Ausweichlösung; Gerätewechsel
+und ein verlorener Installationsschlüssel bleiben nicht wiederherstellbar.
 
 Bericht und LEG verwenden standardmäßig die Qt-Oberfläche. Die Variablen
 `JKM_REPORT_UI=qt|html` und `JKM_LEG_UI=qt|html` schalten ausschließlich

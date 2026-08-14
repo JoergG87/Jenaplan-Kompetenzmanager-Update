@@ -13,6 +13,14 @@
   und Dokumentzustand. Restart prüft Securityschema und Katalog read-only;
   fehlende, beschädigte, unbekannte oder partielle Bestände führen weder zu
   Migration, Keyrotation, Katalog-Upsert noch stiller DB-Neuerzeugung.
+- Der bestehende JKM-SR1-Support-Reset ist im Final-V4-Produktpfad wieder als
+  installationsgebundene Auth-Recovery verfügbar. Nach vollständiger
+  Tokenprüfung lädt er ausschließlich den vorhandenen DMK, prüft Final V4,
+  Companion, Envelope/Keyset und alle aktiven Managed Documents read-only und
+  erzeugt und verifiziert zwingend ein neues `.jkmebackup`, bevor der atomare
+  Auth-/Recovery-Reset committed. DMK, Database-/Document-Keys, Fachdaten,
+  Dokumentcontainer und Produktroot bleiben unverändert; ohne ursprünglichen
+  DMK oder bei Backupfehler erfolgt kein Reset.
 
 - Fachkontexte verwenden jetzt eine einzige read-only Qt-Farbmatrix im
   Design-System: Deutsch Rot, Mathematik Blau, Englisch Schwarz, Musik Gelb,
