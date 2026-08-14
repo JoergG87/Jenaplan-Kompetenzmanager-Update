@@ -792,16 +792,36 @@ class ReleasePilot:
 
     @staticmethod
     def _sparkle_version(sparkle_root: Path) -> str:
-        candidates = tuple(sparkle_root.glob("Sparkle-*/Sparkle.framework/Versions/*/Resources/Info.plist"))
-        if len(candidates) != 1:
-            raise ReleaseError("Sparkle-Version im Buildroot ist nicht eindeutig.")
-        with candidates[0].open("rb") as source:
-            info = plistlib.load(source)
-        return str(
-            info.get("CFBundleShortVersionString")
-            or info.get("CFBundleVersion")
-            or ""
+        candidates = tuple(
+            sparkle_root.glob("**/Sparkle.framework/**/Resources/Info.plist")
         )
+
+        versions = set()
+
+        for candidate in candidates:
+            try:
+                with candidate.open("rb") as source:
+                    info = plistlib.load(source)
+            except Exception:
+                continue
+
+            version = (
+                info.get("CFBundleShortVersionString")
+                or info.get("CFBundleVersion")
+            )
+
+            if version:
+                versions.add(str(version))
+
+        if not versions:
+            raise ReleaseError("Keine Sparkle-Version im Buildroot gefunden.")
+
+        if len(versions) > 1:
+            raise ReleaseError(
+                f"Mehrere unterschiedliche Sparkle-Versionen gefunden: {sorted(versions)}"
+            )
+
+        return next(iter(versions))
 
     def _asset_path(self, manifest: Manifest, name: str) -> Path:
         matches = [
