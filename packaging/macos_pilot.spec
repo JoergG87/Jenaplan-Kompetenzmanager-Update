@@ -96,6 +96,12 @@ initial_data = PAYLOAD_ROOT / "pilot_initial"
 if initial_data.is_dir():
     datas.append((str(initial_data), "pilot_initial"))
 
+
+datas = [
+    item for item in datas
+    if not str(item[0]).endswith(".cyclonedx.json")
+]
+
 a = Analysis(
     [str(PROJECT_ROOT / "src" / "desktop_app" / "main.py")],
     pathex=[str(PROJECT_ROOT)],
