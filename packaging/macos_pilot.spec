@@ -97,11 +97,6 @@ if initial_data.is_dir():
     datas.append((str(initial_data), "pilot_initial"))
 
 
-datas = [
-    item for item in datas
-    if not str(item[0]).endswith(".cyclonedx.json")
-]
-
 a = Analysis(
     [str(PROJECT_ROOT / "src" / "desktop_app" / "main.py")],
     pathex=[str(PROJECT_ROOT)],
@@ -184,6 +179,16 @@ a = Analysis(
     noarchive=False,
     optimize=1,
 )
+
+# PyInstaller hooks can add dependency metadata during Analysis.
+# CycloneDX SBOMs may contain absolute build paths and are not shipped.
+a.datas = [
+    item
+    for item in a.datas
+    if not str(item[0]).endswith(".cyclonedx.json")
+]
+
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
