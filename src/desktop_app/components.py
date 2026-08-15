@@ -841,11 +841,26 @@ class Toast(QFrame):
         return QSize(width, self.heightForWidth(width))
 
     def _is_parent_overlay(self) -> bool:
+        """Return whether the toast is not managed by the parent's layout tree."""
         parent = self.parentWidget()
         if parent is None:
             return False
+
         parent_layout = parent.layout()
-        return parent_layout is None or parent_layout.indexOf(self) < 0
+        if parent_layout is None:
+            return True
+
+        def contains_widget(layout: object) -> bool:
+            for index in range(layout.count()):
+                item = layout.itemAt(index)
+                if item.widget() is self:
+                    return True
+                child_layout = item.layout()
+                if child_layout is not None and contains_widget(child_layout):
+                    return True
+            return False
+
+        return not contains_widget(parent_layout)
 
     def _sync_managed_height(self) -> None:
         """Reserve wrapped height where QBoxLayout ignores height-for-width."""
