@@ -1,10 +1,28 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Release-Baseline und aktueller Quellstand
+
+Der veröffentlichte macOS-Pilotstand ist Version `0.4.0` / Build `400` aus
+Commit `e96a77e328da98bfb3622201110e6e08c8b3e312`. Der annotierte Tag
+`v0.4.0-build400` zeigt auf genau diesen Commit. Dieser veröffentlichte Stand
+ist eine unveränderliche Referenz: Er wird weder neu gebaut noch unter
+derselben Buildnummer aus einem anderen Quellstand erneut paketiert oder
+veröffentlicht.
+
+Der aktuelle Repository-HEAD `926582f7db3a44642b05301fbbb676a91a1f500c`
+liegt genau einen Commit nach der veröffentlichten Referenz. Er korrigiert die
+individuelle schuljahresbezogene Fachrelevanz der Dashboard-Heatmap und von
+`Passende Kinder für diese Stunde`. Diese Korrektur ist umgesetzt, aber nicht
+als neuer Build veröffentlicht. `src/version.py` weist am aktuellen HEAD noch
+`0.4.0` / Build `400` aus; deshalb ist aus diesem Quellstand keine Paketierung
+zulässig. Vor einem neuen Artefakt ist mindestens die monotone Buildnummer
+`401` erforderlich. Ob die sichtbare Version dabei `0.4.0` oder `0.4.1`
+lautet, bleibt einer gesonderten Product-Owner-Entscheidung vorbehalten.
+
 ## Pilot-Produktionsschutz im Feature Freeze
 
-Die aktuellen Pilot-/Lehrkraftquellen und der integrierte Fünf-Schritt-
-Onboardingflow beschreiben denselben Final-V4-Produktvertrag. Sie verwenden
-die zentrale Versionsprojektion 0.4.0 / Build 400. Historische Build-302- und
+Der integrierte Fünf-Schritt-Onboardingflow und der veröffentlichte Build 400
+verwenden denselben Final-V4-Produktvertrag. Historische Build-302- und
 Build-303-PDFs bleiben getrennte Belege und keine aktuelle Pilotunterlage.
 
 Der reale Pilotroot ist ab dem ersten technischen Initialisierungsschritt über
@@ -24,7 +42,7 @@ spätere Datenmigration bleibt ein erfolgreich erzeugtes und verifiziertes
 verschlüsseltes `.jkmebackup` vor der ersten Datenmutation verpflichtend; ein
 solcher allgemeiner Produktmigrationspfad wird hier nicht neu eingeführt.
 
-## Aktueller vorbereiteter Pilotstand 0.4.0 / Build 400
+## Veröffentlichter Pilotstand 0.4.0 / Build 400
 
 **Status:** Final V4 ist der aktuelle Pilot-/Produktschemavertrag. Der normale
 frische Produktstart verwendet keyed SQLCipher 4.17, den getrennt über DMK im
@@ -32,7 +50,8 @@ macOS-Keychain-Kontext und Database-Key-Envelope komponierten Datenbankzugriff,
 den keyed Dokument-Companion und den zentralen `ManagedDocumentStore`. Es gibt
 keinen produktiven Standard-SQLite-, Klartextdokument- oder ZIP-v1-Fallback.
 Vorhandene Klartext-, V3- und alte Testbestände werden nicht automatisch
-migriert; für den kommenden Pilot existieren keine produktiven Altdaten.
+migriert; für den veröffentlichten Pilotstand existierten keine produktiven
+Altdaten.
 
 Beobachtungsanhänge, allgemeine Schülerdokumente sowie finale Bericht- und
 LEG-Artefakte werden verschlüsselt verwaltet. Fachliche Dokument-ID und
@@ -60,19 +79,22 @@ Artefakte öffnen über denselben sicheren In-App-Viewer: UI und HTML übergeben
 nur die Artifact-ID, Python löst sie über den bestehenden Managed-Document-
 Lesepfad auf, und QtPdf zeigt die verifizierten Bytes nur im Speicher. Es gibt
 keine Klartextdatei, OS-Öffnung, Download, Export, Drucken oder Teilen. Die
-Source-Prüfung und ein Cocoa-Smoke sind erfolgt; reale PO-Abnahme im kommenden
-Qt-/HTML-Vergleichsbuild sowie Bundle-/Packaging-Nachweis bleiben offen. Das
-begründet kein Pilot- oder Release-GO. Support Reset ist im Cipher-
+Source-Prüfung und ein Cocoa-Smoke sind erfolgt. Die Veröffentlichung des
+Pilotstands ersetzt keine noch getrennt zu dokumentierende reale PO-Abnahme im
+Qt-/HTML-Vergleich und begründet weder Stable-GO noch Developer-ID- oder
+Notarisierungsnachweis. Support Reset ist im Cipher-
 Produktpfad als reine Auth-Recovery aktiviert, jedoch nur mit intaktem
 ursprünglichem Produktroot und vorhandenem installationsgebundenem DMK. Er
 prüft Final V4 pre-auth vollständig, verlangt vor dem Auth-Commit ein
 publiziertes und vollständig verifiziertes `.jkmebackup` und rotiert keine
 Datenkeys. Geräteverlust und fehlender DMK bleiben nicht recoverbar.
 
-0.4.0 / Build 400 bezeichnet einen geplanten beziehungsweise vorbereiteten
-Stand. Ein Clean-Build, manuelle macOS-/Keychain-/Restore-/UX-Abnahme,
-Developer ID, Notarisierung, Pilot-GO, Verteilung und Release sind nicht durch
-diese Dokumentation freigegeben.
+0.4.0 / Build 400 bezeichnet den veröffentlichten, unveränderlichen
+Pilotstand aus `e96a77e`. Seine Veröffentlichung ist getrennt von realer
+macOS-/Keychain-/Restore-/UX-Abnahme, Developer ID, Notarisierung,
+Stable-Freigabe, Appcast-Entscheidung und schulischer Betriebsfreigabe zu
+bewerten. Keine dieser getrennten Entscheidungen wird durch diese
+Dokumentation nachträglich erteilt.
 
 ## Qt-Bericht-Grundworkflow für den Pilot
 
@@ -140,7 +162,7 @@ read-only Produktprüfung und verifiziertem `.jkmebackup` vor dem bestehenden
 atomaren Auth-Commit. Build, Packaging, Release und die manuelle
 macOS-/UI-Abnahme sind nicht Bestandteil dieses Pakets.
 
-## Final-V4-Fachrelevanz für den kommenden Pilot
+## Final-V4-Fachrelevanz: veröffentlichte Basis und unveröffentlichte Dashboard-Korrektur
 
 Final V4 ist der neue und einzige fachliche Pilot-Schemavertrag. Frische
 Hauptdatenbanken werden direkt mit `PRAGMA user_version = 4` und dem exakten
@@ -171,11 +193,19 @@ UI- und Projektionsintegration ist im Schülerprofil für Kompetenz-Cockpit,
 Dokumentationsstatus, Profilring und neutrale Hinweise auf noch nicht
 dokumentierte Bereiche umgesetzt. Laura kann für das aktuelle Schuljahr
 bewusst zwischen `inherit` und einer exakten individuellen Auswahl wechseln;
-historische Belege bleiben lesbar. Der Beobachtungsdialog priorisiert diese
-Fachmenge ohne harten Zugriffsfilter, das Dashboard verwendet sie für Heatmap
-und fachbezogene Kindervorschläge und die Berichtsvorbereitung priorisiert sie
-ohne Draftfilter. LEG bleibt davon getrennt und folgt seinem eigenen
-evidenzbezogenen Vertrag.
+historische Belege bleiben lesbar. Diese Final-V4-, Resolver- und
+Schülerprofilbasis ist Bestandteil des veröffentlichten Build 400 aus
+`e96a77e`. In diesem veröffentlichten Stand verwendeten Dashboard-Heatmap und
+`Passende Kinder für diese Stunde` die individuelle Fachrelevanz jedoch noch
+nicht korrekt für jedes Kind.
+
+Erst der unveröffentlichte Nachfolger `926582f` korrigiert diese beiden
+Dashboard-Projektionen und wertet dafür die effektive individuelle Fachmenge
+je Kind aus. Diese Korrektur ist nicht Bestandteil von Build 400. Eine spätere
+Veröffentlichung benötigt eine neue monotone Buildnummer von mindestens 401;
+ob die sichtbare Produktversion dabei 0.4.0 oder 0.4.1 lautet, bleibt einer
+gesonderten Product-Owner-Entscheidung vorbehalten. Beobachtungsdialog,
+Berichtsvorbereitung und LEG folgen weiterhin ihren getrennten Verträgen.
 
 ## Historische V3-only Grundlage und Architecture Cleanup
 
@@ -348,13 +378,23 @@ verhindert Doppelstarts und sperrt Dialog sowie App-Schließen während des
 kritischen Laufs. Erfolg bestätigt Backup und Transition, zeigt
 Ergebniszahlen und lädt die App-Daten neu; Fehler bleiben neutral.
 
-Weiterhin nicht umgesetzt oder freigegeben sind Planpersistenz,
-Touch-ID-Freigabe, unterjährige Mehrkindwechsel, Build, Packaging und Release.
-Die manuelle Prüfung der Runtime sowie der neuen Schüler-,
-Wechsel-, Austritts-, Kursstufen- und Schuljahreswechseloberflächen auf macOS
-ist noch offen. Es wurden keine Migration und keine echten Daten verwendet.
+Nicht Bestandteil des Schuljahreswechsels sind Planpersistenz,
+Touch-ID-Freigabe und unterjährige Mehrkindwechsel. Build 400 wurde später aus
+`e96a77e` veröffentlicht; aus dem aktuellen abweichenden HEAD besteht keine
+neue Packaging- oder Releasefreigabe. Die reale Pilotprüfung der Runtime sowie
+der Schüler-, Wechsel-, Austritts-, Kursstufen- und
+Schuljahreswechseloberflächen bleibt ein eigener Abnahmestatus. Die
+Implementierung selbst verwendete keine Migration und keine echten Daten.
 
 ## Schuljahresmodell und echte Wechsel
+
+Der vollständige Schuljahreswechsel ist Bestandteil des veröffentlichten
+Build 400 aus `e96a77e`. Er umfasst Vorschau, individuelle und gebündelte
+Auflösung des flüchtigen Plans, Passwort-Step-up, verpflichtendes verifiziertes
+Sicherheitsbackup, Maintenance-Gate, atomare Aktivierung, Rollback,
+Integritätsprüfung und Übergangshistorie. Er ist keine Zukunftsfunktion und
+kein vom Schülerlisten-Import abhängiger Planungskandidat. Reale Pilot- und
+Betriebsabnahmen bleiben davon als eigener Status getrennt.
 
 Die Domainmodelle `SchoolYear` und
 `StudentMembershipAssignment`, ihre Datums- und Intervallinvarianten sowie
@@ -366,11 +406,11 @@ atomaren Wechseltransaktion neu und als current angelegt. Sein
 Ausgangs- und Zielschuljahr; eine Bootstrap-Transition mit leerer Ausgangs-ID
 ist ausgeschlossen.
 
-Vorschau, Passwort-Step-up, explizite UI-Bestätigung, Maintenance-Gate, verifiziertes Sicherheitsbackup,
-erneute Quellenprüfung, atomare Transaktion, Rollback, Idempotenz,
-Historie und unveränderliche finale Bericht-/LEG-Artefakte bleiben für diesen
-Produktprozess erforderlich und bis zur UI-Ausführung lokal verdrahtet. Die
-manuelle macOS-Abnahme bleibt offen.
+Vorschau, Passwort-Step-up, explizite UI-Bestätigung, Maintenance-Gate,
+verifiziertes Sicherheitsbackup, erneute Quellenprüfung, atomare Transaktion,
+Rollback, Idempotenz, Historie und unveränderliche finale Bericht-/LEG-
+Artefakte bleiben für diesen Produktprozess erforderlich und sind bis zur
+UI-Ausführung verdrahtet. Die reale Pilot-/Betriebsabnahme bleibt offen.
 
 ## Berichte-Übersicht - implementierte Phase 2
 
@@ -438,8 +478,9 @@ LEG-Revisionen, absolute Fachkarten und die horizontale
 Dokumentations-Timeline. Sie ergänzt keine Tabelle, Migration, Schreiblogik
 oder Persistenz. Automatisierte Offscreen-Tests prüfen die 2/4/5-Viewport-
 Kapazitäten, Scrollsteuerung, Tastatur, Ankererhalt und ID-Navigation. Reale
-macOS-Trackpad- und VoiceOver-Abnahme bleibt offen. Build, Packaging, Push,
-Tag und Release wurden nicht ausgeführt.
+macOS-Trackpad- und VoiceOver-Abnahme bleibt offen. Im damaligen
+Phase-2-Implementierungspaket wurden Build, Packaging, Push, Tag und Release
+nicht ausgeführt; die Funktion wurde später Bestandteil von Build 400.
 
 ## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1
 
@@ -471,11 +512,14 @@ Flächen sind neutrale, klar bezeichnete Leerzustände.
 ## Pilot-Releaseautomation
 
 Der mit Build 303 nachgewiesene lokale Pilot-Releaseprozess ist als
-terminale, wiederaufnehmbare Automation umgesetzt. Build 303 ist seit
-27. Juli 2026 die unveränderliche veröffentlichte Referenz: GitHub-Pre-Release
+terminale, wiederaufnehmbare Automation umgesetzt. Build 303 bleibt seit
+27. Juli 2026 die konfigurierte historische Appcast-Regressionsreferenz:
+GitHub-Pre-Release
 `v0.3.0-build303`, Quellcommit
 `07c20a3764405bc1f535eb33efe809519dd8316b` und aktiver Pilot-Appcast. Stable
-bleibt deaktiviert.
+bleibt deaktiviert. Der spätere veröffentlichte Build 400 ist davon getrennt
+die aktuelle unveränderliche Pilot-Quellreferenz; sein Appcast-Status wird
+nicht aus der Build-303-Konfiguration abgeleitet.
 
 `scripts/release_pilot.py` trennt Inspect, Prepare, detached Clean-Build,
 Paketprüfung, GitHub-Draft/Assetverifikation, Appcast-Publikation und
@@ -1140,21 +1184,23 @@ nicht.
 
 Excel/VBA ist eine historische Vorstufe. Die damalige Workbook-Linie wird unter `legacy/excel/` als Referenz erhalten, ist aber weder Zielplattform noch aktiver Produktpfad. Historische Workbook-Versionen wie `v0.4` und fruehere Ausgabedateien sind keine aktuellen Hauptartefakte.
 
-## Historische Planung nach Version 0.3.0
+## Planung nach der veröffentlichten Build-400-Basis
 
-Die unmittelbar nächste Phase ist der beaufsichtigte Pilottest des
-Release-Kandidaten 0.3.0 und die Behebung ausschließlich tatsächlich beobachteter
-pilotkritischer Fehler. Pilottestpunkte sind Validierungen und noch keine
-automatisch beschlossenen Funktionsänderungen.
+Die unmittelbar nächste Phase ist die reale fachliche, ergonomische und
+betriebliche Prüfung des veröffentlichten Pilotstands sowie die Behebung
+ausschließlich tatsächlich beobachteter pilotkritischer Fehler. Pilottestpunkte
+sind Validierungen und noch keine automatisch beschlossenen
+Funktionsänderungen.
 
-Für den ersten alltagsrelevanten Funktionsschnitt nach dem Pilottest sind
-Schülerlisten-Import, Schuljahreswechsel, Mehrkind-Schnellbeobachtung und
-Klassen-/Kursmatrix Kandidaten. Keiner dieser Kandidaten ist derzeit als
-Implementierungssprint freigegeben. Vor einer Freigabe folgen Product Discovery,
-Produktentscheidung, Datenmodell-, Architektur-, Datenschutz- und UX-Review.
-Der kleinste empfohlene nächste fachliche Planungsschritt ist ein
-Discovery-/Architecture-Gate für den Schülerlisten-Import; ein
-Implementierungssprint folgt daraus nicht automatisch.
+Der Schuljahreswechsel ist in Build 400 vollständig umgesetzt und gehört nicht
+mehr zur Zukunftsplanung. Der kleinste empfohlene nächste fachliche
+Planungsschritt ist ein Discovery-/Architecture-Gate für den
+Schülerlisten-Import; ein Implementierungssprint folgt daraus nicht
+automatisch. Mehrkind-Schnellbeobachtung beziehungsweise Gruppenbeobachtung und
+Klassen-/Kursmatrix bleiben von realen Pilotbefunden abhängig. Keiner dieser
+Kandidaten ist derzeit als Implementierungssprint freigegeben. Vor einer
+Freigabe folgen Product Discovery, Produktentscheidung, Datenmodell-,
+Architektur-, Datenschutz- und UX-Review.
 
 ## Projektziel
 
@@ -1173,6 +1219,21 @@ Das Produkt soll den Dokumentationsaufwand reduzieren, ohne paedagogische Entsch
 - Status, Dokumentationsabdeckung und Entwicklung duerfen nicht allein durch Farbe vermittelt werden.
 
 ## Abgeschlossene Kernfunktionen
+
+### Ergänzungen der veröffentlichten Build-400-Basis
+
+- vollständiger Schuljahreswechsel mit Vorschau, Planauflösung,
+  Passwort-Step-up, Pflichtbackup, Maintenance, atomarer Aktivierung,
+  Rollback und Historie
+- gemeinsamer sicherer read-only In-App-PDF-Viewer für finale verschlüsselte
+  RPA-/LCA-Artefakte
+- direkte Schülerprofilnavigation aus `Passende Kinder für diese Stunde` mit
+  davon getrennter Aktion `Beobachten`
+- Beobachtungskontext `Partnerarbeit`
+- sichtbare Stammgruppe in kombinierten Kurs-, Kursverbund- und
+  Gesamtschülerlisten
+- Fachillustrationen beziehungsweise Fachvignetten als dekorative,
+  ID-gebundene Orientierung ohne neue Fachlogik
 
 ### Stammdaten und Unterrichtskontext
 
@@ -1249,13 +1310,14 @@ spaeter separat geprueftes App-Bundle
 -> verschluesselte Managed Documents und .jkmebackup ausserhalb der App
 ```
 
-Ein späterer Apple-Silicon-Build wird reproduzierbar mit PyInstaller erzeugt
-und setzt macOS 13 voraus. Die Übergabevariante enthält keine Schülerdaten.
-Version 0.4.0 / Build 400 ist der geplante Dokumentationsstand; der finale
-Clean-Build vor einer kontrollierten Pilotprüfung steht noch aus. Developer
-ID, Notarisierung, Pilot-GO, Verteilung und Release werden damit nicht
-behauptet. Stable bleibt deaktiviert; eine Update-/Appcast-Aktivierung ist kein
-Bestandteil dieses Stands.
+Der veröffentlichte Apple-Silicon-Pilotbuild 0.4.0 / Build 400 wurde
+reproduzierbar mit PyInstaller aus `e96a77e` erzeugt und setzt macOS 13 voraus.
+Die Übergabevariante enthält keine Schülerdaten. Der abweichende aktuelle
+Quellstand `926582f` darf nicht erneut als Build 400 paketiert werden; ein
+Folgebuild benötigt mindestens Build 401 und eine noch offene PO-Entscheidung
+zur sichtbaren Version. Developer ID, Notarisierung, Stable-Freigabe,
+Appcast-Aktivierung und schulische Betriebsfreigabe bleiben getrennte Gates
+und werden durch die Pilotveröffentlichung nicht behauptet.
 
 ### Architekturprinzipien
 
@@ -1381,10 +1443,12 @@ Jede Implementierung folgt dieser Reihenfolge:
 
 ## Aktueller Entwicklungsstatus
 
-Der Funktionsaufbau bis Sprint 10B sowie die anschliessenden
-Schuelerprofil-UX-Korrekturen sind umgesetzt. Die aktive Phase ist der
-beaufsichtigte Pilottest von Version 0.2 mit anschliessender, befundbasierter
-Fehlerbehebung.
+Die veröffentlichte Produktbasis ist 0.4.0 / Build 400 aus `e96a77e`. Der
+aktuelle HEAD `926582f` enthält ausschließlich danach die unveröffentlichte
+Korrektur der individuellen Dashboard-Fachrelevanz. Die aktive Phase ist die
+beaufsichtigte Pilotvalidierung der Build-400-Basis mit anschließender,
+befundbasierter Fehlerbehebung; aus `926582f` darf vor einer monotonen
+Buildanhebung kein Artefakt entstehen.
 
 Aktuelle Arbeitsschwerpunkte sind:
 
@@ -1395,7 +1459,22 @@ Aktuelle Arbeitsschwerpunkte sind:
 - Vorbereitung der noch nicht freigegebenen Planungskandidaten aus `BACKLOG.md`
 - Betriebs- und Datenschutzentscheidungen ohne Vorwegnahme einer Auslieferung
 
-Weiterhin offen bleiben insbesondere Product-Owner- beziehungsweise Betriebsentscheidungen zu Rollen und Berechtigungen, Aufbewahrung und Zugriffsschutz, Archivierung und Verschluesselung, Renderer-Versionierung, mehreren Artefakten pro Revision sowie einem moeglichen gemeinsamen, klar getrennten Bericht-/LEG-Ausgabepaket.
+Weiterhin offen und durch diesen Dokumentationsabgleich nicht freigegeben sind
+insbesondere:
+
+- globales `⌘N` für `Neue Beobachtung`, `Weitere Beobachtung` nach dem
+  Speichern und ein verbindlicher Initialfokus im Beobachtungsdialog;
+- einklappbare Fachbereiche in der Berichtsvorschau;
+- Backup-Erinnerung und `Zuletzt bearbeitet` auf `Heute`;
+- bewusster Klartextexport finaler verschlüsselter RPA-/LCA-Artefakte;
+- Schülerlisten-Import;
+- Mehrkind-Schnellbeobachtung beziehungsweise Gruppenbeobachtung;
+- Klassen-/Kursmatrix.
+
+Darüber hinaus bleiben Product-Owner- beziehungsweise Betriebsentscheidungen
+zu Rollen und Berechtigungen, Aufbewahrung und Zugriffsschutz, weitergehender
+Archivierung, Renderer-Versionierung, mehreren Artefakten pro Revision sowie
+einem möglichen gemeinsamen, klar getrennten Bericht-/LEG-Ausgabepaket offen.
 
 ## Definition of Done
 

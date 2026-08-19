@@ -1,5 +1,29 @@
 # Sprintplanung
 
+## Release- und Quellbaseline 0.4.0 / Build 400
+
+Der veröffentlichte macOS-Pilotstand 0.4.0 / Build 400 ist unveränderlich an
+Commit `e96a77e328da98bfb3622201110e6e08c8b3e312` und den annotierten Tag
+`v0.4.0-build400` gebunden. Zu seinem Produktbestand gehören der vollständige
+Schuljahreswechsel, der gemeinsame sichere read-only In-App-PDF-Viewer, die
+Profilnavigation aus `Passende Kinder` mit getrennter Aktion `Beobachten`, der
+Kontext `Partnerarbeit`, die sichtbare Stammgruppe in kombinierten
+Schülerlisten und die Fachillustrationen/Fachvignetten.
+
+Der aktuelle HEAD `926582f7db3a44642b05301fbbb676a91a1f500c` liegt genau
+einen Commit danach. Die dort umgesetzte Korrektur der individuellen
+Fachrelevanz von Dashboard-Heatmap und `Passende Kinder` ist unveröffentlicht.
+Da `src/version.py` weiterhin 0.4.0 / Build 400 ausweist, ist aus diesem
+Quellstand keine Paketierung erlaubt. Ein Folgebuild benötigt mindestens die
+Buildnummer 401; über die sichtbare Version 0.4.0 oder 0.4.1 entscheidet der
+Product Owner gesondert.
+
+Weiterhin offen und nicht als Implementierungssprint freigegeben sind globales
+`⌘N`, `Weitere Beobachtung`, verbindlicher Initialfokus,
+einklappbare Fachbereiche der Berichtsvorschau, Backup-Erinnerung, `Zuletzt
+bearbeitet` auf `Heute`, bewusster Klartextexport finaler RPA-/LCA-Artefakte,
+Schülerlisten-Import, Mehrkind-/Gruppenbeobachtung und Klassen-/Kursmatrix.
+
 ## Pilot-Produktionsschutz im Feature Freeze
 
 - [x] Integrierte `Erste Schritte` auf einen exakt fünfstufigen, nicht
@@ -35,8 +59,10 @@
 - [x] DMK, Database-/Document-Keys, Fach-DB, Managed-Document-Container und
   Produktroot beim Reset byte-/identitätsgleich erhalten; fehlenden DMK,
   Geräteverlust und portable Recovery weiterhin fail-closed lassen.
-- [ ] 0.4.0 / Build 400, finaler Pilotbuild, Codesign-/Keychain-Bundlegate,
-  Developer ID, Notarisierung und Fresh-First-Run-Abnahme bleiben separat.
+- [x] 0.4.0 / Build 400 unveränderlich aus `e96a77e` als Pilotstand
+  veröffentlicht.
+- [ ] Reale Codesign-/Keychain-/Fresh-First-Run-Abnahme, Developer ID,
+  Notarisierung, Stable und schulische Betriebsfreigabe bleiben separat.
 
 ## Bericht-Grundworkflow – Pilot-Minimalschnitt
 
@@ -64,9 +90,9 @@ Backup/Restore, Build oder Release.
 
 **Status:** Datenmodell, Resolver, frischer V4-First-Run sowie V4-exklusive
 Backup-, Restore-Staging-, Worker-, Recovery-, Rollback- und Live-Restore-
-Kompatibilität technisch implementiert. Die erste Schülerprofil- und
-Projektionsintegration ist umgesetzt; weitere Produktflächen bleiben
-Folgepakete.
+Kompatibilität technisch implementiert. Die Build-400-Integration ist
+umgesetzt. Die nach Build 400 korrigierte gebündelte Dashboard-Fachrelevanz in
+`926582f` bleibt bis zu einer monotonen Buildanhebung unveröffentlicht.
 
 - [x] Final V4 mit `user_version = 4` und exaktem Fingerprint registrieren.
 - [x] V3 ohne Mutation fail-closed ablehnen; keine Migration oder
@@ -89,8 +115,9 @@ Folgepakete.
   `inherit`-/`custom`-Speicherung und unmittelbaren Profilrefresh ergänzen.
 - [x] Beobachtungsdialog mit priorisierten effektiven Unterrichtsfächern und
   weiterhin erreichbaren weiteren aktiven Fächern anbinden.
-- [x] Dashboard-Heatmap und `Passende Kinder` mit gebündelten individuellen
-  Konfigurationen an die effektive Fachmenge anbinden.
+- [x] Dashboard-Heatmap und `Passende Kinder` in `926582f` mit gebündelten
+  individuellen Konfigurationen an die effektive Fachmenge anbinden; noch
+  unveröffentlicht.
 - [x] Berichtsvorbereitung mit priorisiertem Fachprofil ohne harten
   Draftfilter anbinden.
 - [x] LEG bewusst unabhängig von der Dokumentationsfachauswahl in seinem
@@ -98,9 +125,9 @@ Folgepakete.
 
 ## Cipher-Produktkomposition - frische Final-V4-Installation
 
-**Status:** Normaler Produktstart lokal aktiviert; fokussiertes technisches
-Gate grün. Manuelle macOS-/UI-Abnahme, Build, Packaging und Release bleiben
-offen.
+**Status:** Normaler Produktstart aktiviert und Bestandteil des
+veröffentlichten Build 400. Reale macOS-/UI-/Betriebsabnahme und die Gates
+eines möglichen Folgebuilds bleiben getrennt.
 
 - [x] Erfolgreiche Authentifizierung vor jeder Cipher-Produktkomposition
   verlangen.
@@ -115,14 +142,15 @@ offen.
 - [x] ZIP-v1-Backup und -Restore im Cipher-Produktmodus technisch sperren.
 - [x] Beobachtungen sowie bestehende verschlüsselte Dokument- und finale
   PDF-Wege über dieselbe produktive Runtime verifizieren.
-- [ ] Manuelles UI-Gate auf macOS durch Product Owner.
-- [ ] Cipher-Backup/-Restore-Produktaktivierung im Folgepaket.
+- [ ] Reales UI-/Betriebsgate auf macOS durch Product Owner.
+- [x] Cipher-Backup/-Restore-Produktaktivierung in Build 400.
 
 ## Verschlüsseltes Backup - Final-V4-Cipher-Pilot
 
-**Status:** Technischer Cipher-Produktpfad für `.jkmebackup`, verifiziertes
-Restore-Staging und same-installation Live-Restore über den vorhandenen Worker
-implementiert. Die sichtbare Produktaktivierung bleibt gesperrt.
+**Status:** Cipher-Produktpfad für `.jkmebackup`, verifiziertes Restore-Staging
+und same-installation Live-Restore über den vorhandenen Worker implementiert
+und in Build 400 produktseitig aktiviert. Reale Pilot-/Betriebsabnahme bleibt
+separat.
 
 - [x] Haupt- und Companion-SQLCipher-Datenbank unter Writer-Lock keyed
   snapshotieren und gemeinsam binden.
@@ -147,19 +175,22 @@ implementiert. Die sichtbare Produktaktivierung bleibt gesperrt.
   ohne zweite Fachdatenbankkomposition.
 - [x] Security Store, AppPreferences und vorhandenen Keychain-DMK aus Backup,
   Swap und Sitzungsübernahme ausschließen.
-- [x] ZIP-v1 im Cipher-Modus unerreichbar und bestehende Restore-UI gesperrt
-  lassen.
-- [ ] Gerätewechsel-/DMK-Recovery, sichtbare Produktaktivierung, Build und
-  Release bleiben Folgepakete.
+- [x] ZIP-v1 im Cipher-Modus unerreichbar lassen und die bestehende Restore-UI
+  ausschließlich an den `.jkmebackup`-Vertrag binden.
+- [ ] Gerätewechsel-/DMK-Recovery bleibt ein getrenntes Folgevorhaben.
+- [x] Build-400-Pilotveröffentlichung später aus `e96a77e` abgeschlossen;
+  daraus folgt keine Freigabe für einen neuen Build aus dem aktuellen HEAD.
 
-## SJ-3A - rein lesende Schuljahreswechsel-Vorschau
+## Schuljahreswechsel - in Build 400 vollständig umgesetzt
 
-**Status:** Domain-/Application-Projektion, isolierte SJ-3B.1-Qt-Vorschau,
-displayfähige Namen, flüchtiges SJ-3B.2a-Planmodell und individuelle
+**Status:** Der über SJ-3A bis SJ-3C.6 aufgebaute Produktprozess ist
+vollständig implementiert und Bestandteil von `e96a77e`.
+Domain-/Application-Projektion, SJ-3B.1-Qt-Vorschau, displayfähige Namen,
+flüchtiges SJ-3B.2a-Planmodell und individuelle
 SJ-3B.2b-Qt-Bearbeitung, flüchtige SJ-3B.3-Sammelbearbeitung sowie der
-minimale Preview-only-Einstieg unter `Einstellungen → Schuljahre` sind lokal
-implementiert. Die isolierte atomare SJ-3C.2-Ausführungslogik ist ausschließlich
-für temporäre synthetische Final-V3-Datenbanken implementiert. SJ-3C.3 schützt
+Einstieg unter `Einstellungen → Schuljahre` sind implementiert. Die atomare
+SJ-3C.2-Ausführungslogik wurde zunächst an temporären synthetischen
+Final-V3-Datenbanken abgesichert. SJ-3C.3 schützt
 alle produktiven Writer; SJ-3C.4 bindet die isolierte Ausführung an ein
 verifiziertes Backup und kontrollierte Maintenance-Freigabe. SJ-3C.5 setzt die
 verpflichtende Passwort-Step-up-Grenze davor. SJ-3C.6 verdrahtet die finale
@@ -213,12 +244,15 @@ UI-Bestätigung und Aktivierung. Unterjährige Mehrkindwechsel bleiben gesperrt.
   Sicherheitslogik zu ändern.
 - [x] SJ-3C.6 auf realem macOS mit Tastatur und VoiceOver manuell abnehmen.
 
-## V3-only Architecture Cleanup
+## Historischer V3-only Architecture Cleanup
 
-**Status:** Governance, technischer Cleanup, zentrale Assignment-API,
+**Historischer Zwischenstand, durch die spätere SJ-3C-/Build-400-Umsetzung
+fortgeschrieben:** Governance, technischer Cleanup, zentrale Assignment-API,
 SJ-2E-Leserumstellung, SJ-2F-Writerumstellung und Final-V3-Runtime-
-Aktivierung lokal implementiert. Schuljahreswechsel, Mehrkindwechsel, Build,
-Packaging und Release bleiben gesperrt; die manuelle macOS-Abnahme ist offen.
+Aktivierung waren lokal implementiert. Der damals noch gesperrte
+Schuljahreswechsel wurde anschließend vollständig umgesetzt und in Build 400
+veröffentlicht. Unterjährige Mehrkindwechsel bleiben getrennt; die reale
+Pilotabnahme ist ein eigener Status.
 
 - [x] PO-Entscheidung festhalten: Es existieren keine produktiven V2-Daten.
 - [x] ADR-096 als Teil-Supersession der V2-Cutover-Annahmen aus ADR-095
@@ -257,10 +291,11 @@ Packaging und Release bleiben gesperrt; die manuelle macOS-Abnahme ist offen.
   48 Subtests sowie die vollständige Gesamtsuite mit 1811 Tests und
   71 Subtests ausführen; ein umgebungsgebundener Test blieb übersprungen.
 - [ ] Final-V3-Runtime und fachliche Sperrzustände manuell auf macOS prüfen.
-- [ ] Echten Schuljahreswechsel und unterjährige Sammelwechsel gesondert
-  implementieren und real abnehmen.
+- [x] Echten Schuljahreswechsel später über SJ-3A bis SJ-3C.6 implementieren
+  und in Build 400 veröffentlichen.
+- [ ] Unterjährige Sammelwechsel gesondert entscheiden und real abnehmen.
 
-## SJ-2F - Final-V3-Writer und synthetische Entwicklungsdaten
+## Historischer SJ-2F - Final-V3-Writer und synthetische Entwicklungsdaten
 
 **Status:** Lokal implementiert und automatisiert vollständig geprüft. Die
 nachfolgende Runtime-Aktivierung lässt Final-V3 inzwischen technisch starten;
@@ -286,8 +321,10 @@ die manuelle macOS-UI-Prüfung steht weiterhin aus.
 - [x] Keine Migration, keine echten Daten und keine automatische Änderung
   eines vorhandenen lokalen Datenbestands ausführen.
 - [x] Runtime-Sperre bis zum getrennten späteren Aktivierungsauftrag erhalten.
-- [ ] Schuljahreswechsel-Assistent separat implementieren.
-- [ ] Mehrkind-/Sammelwechsel separat implementieren.
+- [x] Schuljahreswechsel-Assistent später über SJ-3A bis SJ-3C.6 vollständig
+  implementieren und in Build 400 veröffentlichen.
+- [ ] Unterjährigen Mehrkind-/Sammelwechsel als ungefreigabten
+  Planungskandidaten getrennt halten; keine Implementierung ohne PO-Entscheid.
 - [ ] Neue Dialoge und Stammdatenoberflächen manuell auf macOS prüfen.
 - [x] Gesamtsuite mit 1808 Tests und 71 Subtests, Compileall,
   Importisolation, Abschluss-Suchgate und Diff-Check ausführen; ein
@@ -314,10 +351,9 @@ die manuelle macOS-UI-Prüfung steht weiterhin aus.
 
 ## Phase 2 Berichte-Übersicht - lokal implementiert
 
-**Status:** Pakete 2A.1, 2A.2, 2B und 2C lokal implementiert und fokussiert
-geprüft. Keine Datenmodell- oder Migrationsänderung. Reale macOS-Trackpad- und
-VoiceOver-Abnahme sowie Build, Packaging, Push, Tag und Release bleiben offen
-beziehungsweise nicht freigegeben.
+**Status:** Pakete 2A.1, 2A.2, 2B und 2C implementiert, fokussiert geprüft und
+später Bestandteil von Build 400. Keine Datenmodell- oder Migrationsänderung.
+Reale macOS-Trackpad- und VoiceOver-Abnahme bleibt davon getrennt.
 
 - [x] Ereignisorientierte, nicht pädagogisch priorisierte Timeline festlegen.
 - [x] Ausschließlich den inklusiven Zeitraum des eindeutig gewählten RPD
@@ -359,8 +395,9 @@ beziehungsweise nicht freigegeben.
 - [x] Gesamtsuite im finalen technischen Quality Gate nach einem gezielten
   Fixzyklus ausführen: 1718 Tests und 71 Subtests bestanden, 1 Test
   übersprungen.
-- [ ] Build, Packaging und reale macOS-/VoiceOver-UX-Abnahme in später ausdrücklich
-  freigegebenem Umfang durchführen.
+- [x] Spätere Build-400-Pilotveröffentlichung aus `e96a77e` abgeschlossen.
+- [ ] Reale macOS-/VoiceOver-UX-Abnahme im ausdrücklich freigegebenen Umfang
+  durchführen.
 
 ## Berichte-Übersicht 0.3.1 / Build-304-Scope - Paket 1.1
 
@@ -405,8 +442,10 @@ Versionserhöhung und keine Build-/Releaseaktion.
 ## Pilot-Releaseautomation
 
 **Status:** Lokal implementiert und fokussiert getestet. Build 303 ist die
-read-only veröffentlichte Referenz; es wurde durch diesen Sprint weder neu
-gebaut noch verändert oder erneut veröffentlicht. Stable bleibt deaktiviert.
+konfigurierte historische read-only Appcast-Regressionsreferenz. Der spätere
+veröffentlichte Pilotstand 0.4.0 / Build 400 ist unveränderlich an `e96a77e`
+gebunden. Beide Referenzen werden weder neu gebaut noch verändert oder unter
+derselben Buildnummer erneut veröffentlicht. Stable bleibt deaktiviert.
 
 - [x] Kanonische nicht geheime Releasekonfiguration ergänzen.
 - [x] Monotones lokales und sanitisiertes Manifest mit Wiederaufnahme
@@ -421,9 +460,9 @@ gebaut noch verändert oder erneut veröffentlicht. Stable bleibt deaktiviert.
 - [x] Build-303-Metadaten read-only als Regressionsreferenz prüfen.
 - [x] Dry-run ohne Build, Tag, Release, Appcast oder Sparkle-Privatmaterial
   bereitstellen.
-- [ ] Ersten zukünftigen Build erst nach separater Versions-/Buildentscheidung,
-  Gesamtsuite und expliziten Veröffentlichungsgates mit der Automation
-  durchführen.
+- [ ] Einen Folgebuild nach Build 400 erst nach PO-Entscheidung zur sichtbaren
+  Version, monotoner Buildanhebung auf mindestens 401, Gesamtsuite und
+  expliziten Veröffentlichungsgates mit der Automation durchführen.
 
 ## Historische Releasevorbereitung 0.3.0 / Build 303
 
@@ -740,10 +779,13 @@ Nachfolger nicht bewiesen.
 Ohne vollständige Gates bleibt der Updater deaktiviert und der manuelle
 App-Austausch verbindlich.
 
-## Nächster technischer Sprintkandidat 0.2U.2 - deaktivierte Updatebasis
+## Historischer Sprintkandidat 0.2U.2 - später umgesetzte Updatebasis
 
-**Freigabegrenze:** Darf als isolierter Implementierungssprint beginnen, aber
-kein produktives Release und keine Feedpublikation erzeugen.
+**Status:** Die damals geplante Sparkle-Bridge, der Application-Port, die
+Settings-Projektion und der beaufsichtigte Pilotkanal wurden später umgesetzt.
+Dieser historische Abschnitt ist keine aktuelle Implementierungsfreigabe und
+erteilt insbesondere keine neue Feed-, Appcast-, Stable- oder
+Folgereleasefreigabe.
 
 Umfang: gepinnte Sparkle-Distribution; kleine Infrastructure-Bridge;
 Application-Port und Zustandsmodell; `Einstellungen -> Updates`; getrennte
@@ -777,14 +819,15 @@ SPRINTS.md dient ausschließlich der operativen Projektplanung. `ROADMAP.md`
 ordnet die Produktphasen; ein Planungskandidat in diesem Dokument ist noch
 keine Freigabe zur Implementierung.
 
-## Nächster Sprintkandidat - Pilottest 0.2 und befundbasierte Stabilisierung
+## Aktueller Sprintkandidat - Build-400-Pilottest und befundbasierte Stabilisierung
 
-Status: als nächster Planungsschritt vorbereitet; keine Freigabe einer neuen
-Produktfunktion.
+Status: als nächster Planungsschritt auf Basis des veröffentlichten Build 400
+vorbereitet; keine Freigabe einer neuen Produktfunktion.
 
-**Ziel:** Den Release-Kandidaten 0.2 mit künstlichen Testdaten unter realen
+**Ziel:** Den veröffentlichten Pilotstand 0.4.0 / Build 400 unter realen
 Arbeitsbedingungen prüfen und ausschließlich belegte pilotkritische Fehler
-beheben.
+beheben. Der unveröffentlichte Fix aus `926582f` ist davon als eigener
+Quellstand getrennt.
 
 **P0-Grenze:** Datenverlust, fehlerhafte Speicherung, Sicherheitsfehler,
 blockierte Hauptabläufe sowie starke Überlagerungen oder abgeschnittene
@@ -814,11 +857,16 @@ Migration-Review.
 
 ## Weitere Planungskandidaten (nicht freigegeben)
 
-- Schuljahreswechsel erst nach Importentscheidung und eigenem Lifecycle-Review
 - Gruppenbeobachtung beziehungsweise Mehrkind-Schnellbeobachtung erst nach
   Entscheidung über Beobachtungsaggregat, Einzelbewertungen und Transaktion
 - Klassen-/Kursmatrix erst nach Pilottest des vorhandenen
   Dokumentationsstatus und der Dashboard-Heatmap
+- globales `⌘N`, `Weitere Beobachtung` und verbindlicher Initialfokus erst nach
+  Pilotbefund und eigener UX-/Accessibility-Entscheidung
+- einklappbare Fachbereiche der Berichtsvorschau und `Zuletzt bearbeitet` auf
+  `Heute` erst nach eigener Produkt-/UX-Entscheidung
+- Backup-Erinnerung und bewusster Klartextexport finaler RPA-/LCA-Artefakte
+  erst nach eigener Betriebs- und Securityentscheidung
 - Professioneller Betrieb erst nach Entscheidungen zu Signierung,
   Notarisierung, produktivem Supportprozess, Updates und Diagnose
 

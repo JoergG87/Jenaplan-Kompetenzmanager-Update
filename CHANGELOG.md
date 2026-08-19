@@ -11,6 +11,33 @@
   überfachliche Entwicklungsbereiche, historische Evidenz, Beobachtung,
   Bericht und LEG bleiben unverändert.
 
+- Kanonische Projekt-, Roadmap-, Backlog- und Sprintdokumentation auf die
+  unveränderliche veröffentlichte Basis 0.4.0 / Build 400 aus `e96a77e` und den
+  davon getrennten unveröffentlichten HEAD `926582f` ausgerichtet. Bereits
+  ausgelieferte Funktionen, insbesondere der Schuljahreswechsel, werden nicht
+  mehr als Zukunftskandidaten geführt. Vor einer Paketierung des abweichenden
+  Quellstands ist mindestens Build 401 erforderlich; die sichtbare Version
+  bleibt PO-offen. Keine Produktfunktion, Version, Buildquelle,
+  Releasekonfiguration oder Veröffentlichung wurde geändert.
+
+## 0.4.0 / Build 400 - veröffentlichte Final-V4-Pilotbasis
+
+Referenzcommit: `e96a77e328da98bfb3622201110e6e08c8b3e312`
+
+Dieser Pilotstand ist unveränderlich. Er umfasst insbesondere den vollständigen
+Schuljahreswechsel, den gemeinsamen sicheren read-only In-App-PDF-Viewer für
+finale RPA-/LCA-Artefakte, die Profilnavigation aus `Passende Kinder` mit
+getrennter Aktion `Beobachten`, den Beobachtungskontext `Partnerarbeit`, die
+sichtbare Stammgruppe in kombinierten Schülerlisten und die
+Fachillustrationen/Fachvignetten. Seine Veröffentlichung ist getrennt von
+Appcast, Stable, PO-Abnahme, Developer ID, Notarisierung und schulischer
+Betriebsfreigabe zu bewerten.
+
+Die folgenden Einträge dokumentieren die in Build 400 zusammengeführte
+Änderungschronik. Aussagen über damals noch offene Zwischenstufen sind
+historische Fortschrittsstände; maßgeblich für den veröffentlichten Endstand
+ist die vorstehende Baseline.
+
 - Der Qt-Beobachtungsdialog reserviert genug Breite, um die kanonischen
   Fachbezeichnungen einschließlich `Selbst- und Sozialkompetenz` und
   `Arbeits-/Lernkompetenz` vollständig neben dem Fachmarker anzuzeigen.
@@ -288,14 +315,16 @@
   Pflanzen-/Schulbesuchsjahr-Farbsemantik.
 
 - Pilot-Dokumentation 0.4: Benutzerhandbuch, Lehrkraft-Schnellstart,
-  Installations-, Backup-, Sicherheits-, Support-, Projekt- und Releaseunterlagen
-  beschreiben den vorbereiteten Stand 0.4.0 / Build 400 mit Final V4,
+  Installations-, Backup-, Sicherheits-, Support-, Projekt- und
+  Releaseunterlagen wurden im Verlauf auf 0.4.0 / Build 400 mit Final V4,
   SQLCipher 4.17, verschlüsselten Managed Documents,
   installationsgebundenem `.jkmebackup`, Schuljahr 2026/27, individuellen
-  Dokumentationsfachprofilen und entwurfsunabhängiger Entwicklungsübersicht.
-  Qt bleibt Default für Bericht und LEG; HTML-Hosts bleiben interne
-  Erprobungspfade. Support Reset, sicherer finaler PDF-Viewer, Gerätewechsel,
-  Notarisierung, Pilot-GO und Release bleiben ausdrücklich offen.
+  Dokumentationsfachprofilen und entwurfsunabhängiger Entwicklungsübersicht
+  ausgerichtet. Qt bleibt Default für Bericht und LEG; HTML-Hosts bleiben
+  interne Erprobungspfade. Support Reset und sicherer finaler PDF-Viewer wurden
+  vor `e96a77e` Bestandteil von Build 400. Gerätewechsel, DMK-Recovery,
+  Developer ID, Notarisierung, Stable und schulische Betriebsfreigabe bleiben
+  getrennt offen.
 
 - Toast- und Cursorfeedback im Qt-Pilot verwenden stabile native Renderpfade:
   Erfolgstoasts bleiben ohne GraphicsEffect eindeutig kontrastiert, und der
@@ -1783,7 +1812,9 @@
 - Pilottest und befundbasierte P0-Stabilisierung als nächste Phase vorgeschlagen;
   Schülerlisten-Import, Schuljahreswechsel, Mehrkind-Schnellbeobachtung und
   Klassen-/Kursmatrix bleiben bis zur Product-Owner-Entscheidung ausdrücklich
-  nicht freigegebene Planungskandidaten.
+  nicht freigegebene Planungskandidaten. Dies war der damalige Stand nach
+  Version 0.2; der Schuljahreswechsel wurde später vollständig umgesetzt und
+  ist Bestandteil von 0.4.0 / Build 400.
 
 ### Not changed
 
@@ -4956,23 +4987,3 @@
 - Keine Fachlogik, Datenmodelle, SQLite-, Repository-, Service-, Adapter-,
   ViewModel-, Navigations-, Workflow-, Kursfarben-, Bewertungs-,
   Dokumentations- oder Statuslogik geaendert.
-
-
-## 0.4.0 / Build 400 - Final V4 Pilotbasis
-
-### Security / Datenbasis
-- Final V4 als verschlüsselter Pilotpfad vorbereitet.
-- Fresh First Run ohne Beispielkinder, Testdaten oder Testbestände.
-- Produktdaten und Managed Documents verwenden den geschützten Final-V4-Datenpfad.
-- SQLCipher-basierte Speicherung und lokale Schlüsselverwaltung sind Bestandteil des Pilotpfads.
-
-### Produkt / Workflow
-- Berichtswerkstatt und LEG-Arbeitsbereich als Qt-Pilotfunktionen integriert.
-- Schülerprofil, Kompetenz-Cockpit und Beobachtungsworkflow bilden den aktuellen Lehrkraft-Arbeitsstand.
-- Entwicklungsbuch-Katalog mit 331 Kompetenzen als fachliche Grundlage.
-
-### Bewusste Grenzen
-- Kein automatischer Datenimport oder Migrationspfad für den Pilotstart.
-- Keine automatische Bewertung oder Berichtsgenerierung.
-- Kein allgemeiner Export-, Druck- oder Teilen-Workflow für finale Dokumente.
-- Build 400 ist Pilotbasis und kein bestätigtes Stable-Release.
