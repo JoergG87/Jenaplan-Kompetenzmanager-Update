@@ -87,8 +87,14 @@ Folgepakete.
 - [x] Schülerprofil, Kompetenz-Cockpit, Dokumentationsstatus, Profilring und
   `Noch nicht dokumentiert` an den Resolver anbinden; bewusste
   `inherit`-/`custom`-Speicherung und unmittelbaren Profilrefresh ergänzen.
-- [ ] Beobachtung, Dashboard, Berichte und LEG in getrennten Folgepaketen an
-  den Resolver integrieren.
+- [x] Beobachtungsdialog mit priorisierten effektiven Unterrichtsfächern und
+  weiterhin erreichbaren weiteren aktiven Fächern anbinden.
+- [x] Dashboard-Heatmap und `Passende Kinder` mit gebündelten individuellen
+  Konfigurationen an die effektive Fachmenge anbinden.
+- [x] Berichtsvorbereitung mit priorisiertem Fachprofil ohne harten
+  Draftfilter anbinden.
+- [x] LEG bewusst unabhängig von der Dokumentationsfachauswahl in seinem
+  eigenen evidenzbezogenen Vertrag belassen.
 
 ## Cipher-Produktkomposition - frische Final-V4-Installation
 

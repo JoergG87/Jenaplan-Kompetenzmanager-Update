@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Dashboard-Heatmap und `Passende Kinder für diese Stunde` verwenden jetzt
+  pro Schüler die effektive schuljahresbezogene Dokumentationsfachmenge. Der
+  bestehende Projection-Batch lädt `inherit`, exakte `custom`-Auswahlen und
+  bewusst leere `custom`-Profile mit einem konstanten gebündelten Read im
+  selben SQLite-Snapshot. Nicht relevante Unterrichtsfächer erzeugen dadurch
+  weder falsche Heatmap-Nenner noch fachlich unpassende Vorschläge;
+  überfachliche Entwicklungsbereiche, historische Evidenz, Beobachtung,
+  Bericht und LEG bleiben unverändert.
+
 - Der Qt-Beobachtungsdialog reserviert genug Breite, um die kanonischen
   Fachbezeichnungen einschließlich `Selbst- und Sozialkompetenz` und
   `Arbeits-/Lernkompetenz` vollständig neben dem Fachmarker anzuzeigen.
@@ -4967,4 +4976,3 @@
 - Keine automatische Bewertung oder Berichtsgenerierung.
 - Kein allgemeiner Export-, Druck- oder Teilen-Workflow für finale Dokumente.
 - Build 400 ist Pilotbasis und kein bestätigtes Stable-Release.
-

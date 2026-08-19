@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from collections.abc import Callable
 from contextlib import closing
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from datetime import date, datetime
 from pathlib import Path
 
@@ -17,6 +17,7 @@ from src.core.persistence_events import (
     PersistenceOrderingState,
 )
 from src.core.records import seed_reference_data
+from src.core.student_documentation_subjects import DocumentationSubjectMode
 from src.core.sqlite_store import (
     MasterDataCourseGroupRecord,
     MasterDataCourseRecord,
@@ -694,6 +695,24 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
                 ((f"OBS-BUDGET-{index:04d}",) for index in range(280)),
             )
 
+    school_year_id = seed_reference_data().school_years[-1].school_year_id
+    group_id = seed_reference_data().groups[0].group_id
+    course_id = seed_reference_data().courses[0].course_id
+    for index in range(12):
+        result = adapter.save_new_student(
+            first_name=f"Budget {index:02d}",
+            last_name="Kind",
+            group_id=group_id,
+            course_id=course_id,
+        )
+        assert result.success
+        adapter.save_student_documentation_subjects(
+            result.value.student_id,
+            school_year_id,
+            "custom",
+            ("deutsch",) if index % 2 == 0 else (),
+        )
+
     loaded_student_budget = _count_statements(provider, adapter.list_students)
     loaded_heatmap_budget = _count_statements(
         provider,
@@ -704,13 +723,13 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
     assert loaded_student_budget[:2] == student_budget[:2]
     assert loaded_heatmap_budget[:2] == heatmap_budget[:2]
     assert student_budget[0] <= 17
-    assert student_budget[1] <= 14
+    assert student_budget[1] <= 15
     assert dashboard_refresh_budget[0] <= 18
-    assert dashboard_refresh_budget[1] <= 15
+    assert dashboard_refresh_budget[1] <= 16
     assert no_course_group_budget[:2] == one_course_group_budget[:2]
     assert no_course_group_budget[:2] == many_course_groups_budget[:2]
-    assert no_course_group_budget[0] <= 20
-    assert no_course_group_budget[1] <= 16
+    assert no_course_group_budget[0] <= 21
+    assert no_course_group_budget[1] <= 17
     for statements in (
         student_budget[2],
         heatmap_budget[2],
@@ -724,8 +743,182 @@ def test_student_list_and_heatmap_have_constant_query_budget(tmp_path: Path) -> 
         assert not any(
             token in statement.upper()
             for statement in statements
-            for token in ("CREATE TABLE", "ALTER TABLE", "DROP TABLE")
+            for token in (
+                "CREATE TABLE",
+                "ALTER TABLE",
+                "DROP TABLE",
+                "INSERT INTO",
+                "UPDATE ",
+                "DELETE FROM",
+                "REPLACE INTO",
+            )
         )
+
+
+def test_dashboard_batch_and_projections_keep_student_subject_profiles_separate(
+    tmp_path: Path,
+) -> None:
+    reference = seed_reference_data()
+    current_school_year_id = reference.school_years[-1].school_year_id
+    current_assignments = tuple(
+        assignment
+        for _, assignment in reference.assignments
+        if assignment.school_year_id == current_school_year_id
+    )
+    course_id = current_assignments[0].course_id
+    selected_assignments = tuple(
+        assignment
+        for assignment in current_assignments
+        if assignment.course_id == course_id
+    )[:3]
+    selected_student_ids = tuple(
+        assignment.student_id for assignment in selected_assignments
+    )
+    selected_student_id_set = frozenset(selected_student_ids)
+    filtered_reference = replace(
+        reference,
+        students=tuple(
+            student
+            for student in reference.students
+            if student.student_id in selected_student_id_set
+        ),
+        assignments=tuple(
+            item
+            for item in reference.assignments
+            if item[1].student_id in selected_student_id_set
+        ),
+    )
+    provider = CountingConnectionProvider()
+    database = SQLiteDatabase(
+        tmp_path / "individual-dashboard-subjects.sqlite",
+        connection_provider=provider,
+    )
+    database.initialize_schema()
+    database.replace_seed_data(filtered_reference)
+    SQLiteCompetencyRepository(database).ensure_catalog_defaults(
+        CurriculumDesktopAdapter().list_entries()
+    )
+    adapter = StudentDesktopAdapter(database=database)
+    custom_math_student_id, custom_empty_student_id, inherit_student_id = (
+        selected_student_ids
+    )
+    adapter.save_student_documentation_subjects(
+        custom_math_student_id,
+        current_school_year_id,
+        "custom",
+        ("mathematik",),
+    )
+    adapter.save_student_documentation_subjects(
+        custom_empty_student_id,
+        current_school_year_id,
+        "custom",
+        (),
+    )
+
+    provider.reset()
+    batch = SQLiteStudentDocumentationProjectionRepository(
+        database
+    ).read_batch(as_of=AS_OF)
+    normalized_statements = tuple(
+        " ".join(statement.split()) for statement in provider.statements
+    )
+    configuration_reads = tuple(
+        statement
+        for statement in normalized_statements
+        if "FROM student_documentation_subject_profiles AS profile" in statement
+    )
+
+    assert len(configuration_reads) == 1
+    assert set(batch.student_documentation_subject_configurations) == set(
+        selected_student_ids
+    )
+    custom_math = batch.student_documentation_subject_configurations[
+        custom_math_student_id
+    ]
+    custom_empty = batch.student_documentation_subject_configurations[
+        custom_empty_student_id
+    ]
+    inherited = batch.student_documentation_subject_configurations[
+        inherit_student_id
+    ]
+    assert custom_math.mode is DocumentationSubjectMode.CUSTOM
+    assert custom_math.selected_subject_ids == ("mathematik",)
+    assert custom_math.profile is not None
+    assert custom_empty.mode is DocumentationSubjectMode.CUSTOM
+    assert custom_empty.selected_subject_ids == ()
+    assert custom_empty.profile is not None
+    assert inherited.mode is DocumentationSubjectMode.INHERIT
+    assert inherited.selected_subject_ids == ()
+    assert inherited.profile is None
+    assert not any(
+        token in statement.upper()
+        for statement in normalized_statements
+        for token in (
+            "CREATE TABLE",
+            "ALTER TABLE",
+            "DROP TABLE",
+            "INSERT INTO",
+            "UPDATE ",
+            "DELETE FROM",
+            "REPLACE INTO",
+        )
+    )
+
+    group_id = selected_assignments[0].group_id
+    _upsert_course_group(
+        database,
+        course_group_id="course-group-individual-subjects",
+        group_ids=(group_id,),
+        course_ids=(course_id,),
+    )
+    heatmap, group_math_suggestions = adapter.dashboard_documentation_refresh(
+        target_type="group",
+        target_id=group_id,
+        subject_id="mathematik",
+        subject_label="Mathematik",
+        at=datetime(2026, 8, 13, 8, 15),
+        limit=10,
+    )
+    group = next(item for item in heatmap.groups if item.group_id == group_id)
+    cells = {cell.subject_id: cell for cell in group.cells}
+
+    assert cells["mathematik"].total_count == 2
+    assert cells["deutsch"].total_count == 1
+    assert cells["selbst_sozialkompetenz"].total_count == 3
+    assert cells["arbeits_lernkompetenz"].total_count == 3
+    assert {item.student_id for item in group_math_suggestions} == {
+        custom_math_student_id,
+        inherit_student_id,
+    }
+
+    for target_type, target_id in (
+        ("course", course_id),
+        ("course_group", "course-group-individual-subjects"),
+    ):
+        suggestions = adapter.list_dashboard_suggested_students(
+            target_type=target_type,
+            target_id=target_id,
+            subject_id="mathematik",
+            subject_label="Mathematik",
+            at=datetime(2026, 8, 13, 8, 15),
+            limit=10,
+        )
+        assert {item.student_id for item in suggestions} == {
+            custom_math_student_id,
+            inherit_student_id,
+        }
+
+    german_suggestions = adapter.list_dashboard_suggested_students(
+        target_type="group",
+        target_id=group_id,
+        subject_id="deutsch",
+        subject_label="Deutsch",
+        at=datetime(2026, 8, 13, 8, 15),
+        limit=10,
+    )
+    assert tuple(item.student_id for item in german_suggestions) == (
+        inherit_student_id,
+    )
 
 
 def test_course_group_snapshot_preserves_existing_filter_semantics(

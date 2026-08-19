@@ -684,10 +684,15 @@ class StudentDesktopAdapter:
     ) -> tuple[DashboardSuggestedStudentViewModel, ...]:
         courses = {course.course_id: course for course in batch.courses}
         target_student_id_set = frozenset(target_student_ids)
+        effective_subject_ids_by_student = (
+            self._effective_documentation_subject_ids_by_student(batch)
+        )
         students = tuple(
             student
             for student in batch.students
             if student.student_id in target_student_id_set
+            and subject_id
+            in effective_subject_ids_by_student.get(student.student_id, set())
         )
         suggestions = tuple(
             self._dashboard_suggestion_for_student(
@@ -3790,15 +3795,13 @@ class StudentDesktopAdapter:
         self,
         batch: StudentDocumentationProjectionBatch,
     ) -> dict[str, tuple[StudentDocumentationSubjectStatus, ...]]:
-        documentation_subject_ids = set(
-            batch.active_documentation_subject_ids
-        )
-        documentation_competencies = tuple(
+        active_current_competencies = tuple(
             competency
             for competency in batch.competencies
-            if competency.active
-            and competency.catalog_status == "current"
-            and competency.subject_id in documentation_subject_ids
+            if competency.active and competency.catalog_status == "current"
+        )
+        effective_subject_ids_by_student = (
+            self._effective_documentation_subject_ids_by_student(batch)
         )
         statuses_by_student: dict[
             str,
@@ -3819,6 +3822,15 @@ class StudentDesktopAdapter:
                     (),
                 )
             }
+            documentation_subject_ids = effective_subject_ids_by_student.get(
+                student.student_id,
+                set(),
+            )
+            documentation_competencies = tuple(
+                competency
+                for competency in active_current_competencies
+                if competency.subject_id in documentation_subject_ids
+            )
             statuses_by_student[student.student_id] = (
                 self._documentation_statuses(
                     documentation_competencies,
@@ -3826,6 +3838,38 @@ class StudentDesktopAdapter:
                 )
             )
         return statuses_by_student
+
+    @staticmethod
+    def _effective_documentation_subject_ids_by_student(
+        batch: StudentDocumentationProjectionBatch,
+    ) -> dict[str, set[str]]:
+        known_subject_ids = {
+            competency.subject_id for competency in batch.competencies
+        }
+        global_subject_ids = batch.active_documentation_subject_ids
+        cross_curricular_subject_ids = set(
+            COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS
+        )
+        effective_by_student: dict[str, set[str]] = {}
+        for student in batch.students:
+            configuration = (
+                batch.student_documentation_subject_configurations.get(
+                    student.student_id
+                )
+            )
+            effective_subject_ids = (
+                global_subject_ids
+                if configuration is None
+                else effective_documentation_subjects(
+                    configuration,
+                    global_subject_ids,
+                    known_subject_ids=known_subject_ids,
+                )
+            )
+            effective_by_student[student.student_id] = (
+                set(effective_subject_ids) | cross_curricular_subject_ids
+            )
+        return effective_by_student
 
     def _documentation_summary_for_student(
         self,

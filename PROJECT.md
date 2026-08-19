@@ -171,8 +171,11 @@ UI- und Projektionsintegration ist im Schülerprofil für Kompetenz-Cockpit,
 Dokumentationsstatus, Profilring und neutrale Hinweise auf noch nicht
 dokumentierte Bereiche umgesetzt. Laura kann für das aktuelle Schuljahr
 bewusst zwischen `inherit` und einer exakten individuellen Auswahl wechseln;
-historische Belege bleiben lesbar. Beobachtungsdialog, Dashboard, Berichte und
-LEG folgen weiterhin getrennt.
+historische Belege bleiben lesbar. Der Beobachtungsdialog priorisiert diese
+Fachmenge ohne harten Zugriffsfilter, das Dashboard verwendet sie für Heatmap
+und fachbezogene Kindervorschläge und die Berichtsvorbereitung priorisiert sie
+ohne Draftfilter. LEG bleibt davon getrennt und folgt seinem eigenen
+evidenzbezogenen Vertrag.
 
 ## Historische V3-only Grundlage und Architecture Cleanup
 

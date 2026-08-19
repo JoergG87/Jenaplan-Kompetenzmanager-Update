@@ -735,17 +735,25 @@ Logs, Argumentlisten oder Releaseausgabe übernommen.
 Schuelerliste und Dashboard-Heatmap oeffnen fuer ihre gemeinsame fachliche
 Basis genau einen kurzlebigen SQLite-Read-Snapshot. Darin werden aktive
 Schueler im angeforderten Scope, aktive Gruppen und Kurse, der
-Kompetenzkatalog, die Dokumentationsfachauswahl, aktive Beobachtungen,
-Kompetenz-Snapshots, Bestaetigungen und Persistenzereignisse gebuendelt
-gelesen. Erst nach Abschluss des Snapshots gruppiert der Desktop-Adapter die
-Daten je Schueler und verwendet unveraendert die kanonische
-Dokumentationsregel: Eine konkrete Kompetenz ist durch mindestens eine aktive
-Beobachtung oder eine Bestaetigung dokumentiert; der Frischezustand
-einschliesslich `confirmation_unknown` aendert diese Abdeckung nicht.
+Kompetenzkatalog, die globale Dokumentationsfachauswahl und mit genau einem
+zusätzlichen konstanten `LEFT JOIN` die individuellen schuljahresbezogenen
+Profile samt Auswahl, aktive Beobachtungen, Kompetenz-Snapshots,
+Bestaetigungen und Persistenzereignisse gebuendelt gelesen. Der gebündelte
+Profilread unterscheidet fehlendes Profil beziehungsweise `inherit`, exaktes
+`custom` und vorhandenes `custom` ohne Auswahlzeile. Erst nach Abschluss des
+Snapshots gruppiert der Desktop-Adapter die Daten je Schueler, löst deren
+effektive Unterrichtsfachmenge mit `effective_documentation_subjects` auf und
+ergänzt die davon unabhängigen überfachlichen Bereiche. Eine konkrete
+Kompetenz ist unveraendert durch mindestens eine aktive Beobachtung oder eine
+Bestaetigung dokumentiert; der Frischezustand einschliesslich
+`confirmation_unknown` aendert diese Abdeckung nicht.
 
 Der Batch wird nach dem Refresh verworfen. Er schreibt nichts, initialisiert
 kein Schema, legt keinen globalen Cache an und veraendert weder Gate-Off-
 Semantik noch Transaktions-, Backup-, Restore-, Bericht- oder LEG-Prozesse.
+Heatmap-Nenner enthalten ein Unterrichtsfach nur für Kinder, deren effektive
+Fachmenge es enthält. Fachbezogene Dashboard-Vorschläge wenden denselben
+Filter vor der unveränderten Datums- und Namenssortierung an.
 
 Beim Öffnen oder Wechseln eines Schülerprofils verwendet der Desktop-Adapter
 denselben kurzlebigen Snapshot zusätzlich für genau dieses Kind. Profilkopf,

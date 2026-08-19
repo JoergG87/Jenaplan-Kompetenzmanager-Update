@@ -122,6 +122,89 @@ class SQLiteStudentDocumentationSubjectRepository:
             profile=profile,
         )
 
+    def configurations_for_students(
+        self,
+        student_ids: Iterable[str],
+        school_year_id: str,
+    ) -> dict[str, StudentDocumentationSubjectConfiguration]:
+        """Read one school year's student configurations with one statement."""
+        requested_student_ids = tuple(dict.fromkeys(student_ids))
+        if not requested_student_ids:
+            return {}
+        requested_student_id_set = frozenset(requested_student_ids)
+        rows = self.connection.execute(
+            """
+            SELECT
+                profile.student_id,
+                profile.school_year_id,
+                profile.mode,
+                profile.created_at,
+                profile.updated_at,
+                selection.subject_id
+            FROM student_documentation_subject_profiles AS profile
+            LEFT JOIN student_documentation_subject_selections AS selection
+              ON selection.student_id = profile.student_id
+             AND selection.school_year_id = profile.school_year_id
+            LEFT JOIN (
+                SELECT subject_id, MIN(sort_order) AS subject_sort_order
+                FROM competencies
+                GROUP BY subject_id
+            ) AS subject
+              ON subject.subject_id = selection.subject_id
+            WHERE profile.school_year_id = ?
+            ORDER BY
+                profile.student_id,
+                subject.subject_sort_order IS NULL,
+                subject.subject_sort_order,
+                selection.subject_id
+            """,
+            (school_year_id,),
+        ).fetchall()
+        profiles: dict[str, StudentDocumentationSubjectProfile] = {}
+        selections: dict[str, list[str]] = {}
+        for row in rows:
+            student_id = str(row["student_id"])
+            if student_id not in requested_student_id_set:
+                continue
+            profiles.setdefault(
+                student_id,
+                StudentDocumentationSubjectProfile(
+                    student_id=student_id,
+                    school_year_id=str(row["school_year_id"]),
+                    mode=DocumentationSubjectMode(str(row["mode"])),
+                    created_at=datetime.fromisoformat(str(row["created_at"])),
+                    updated_at=datetime.fromisoformat(str(row["updated_at"])),
+                ),
+            )
+            if row["subject_id"] is not None:
+                selections.setdefault(student_id, []).append(
+                    str(row["subject_id"])
+                )
+
+        configurations: dict[
+            str,
+            StudentDocumentationSubjectConfiguration,
+        ] = {}
+        for student_id in requested_student_ids:
+            profile = profiles.get(student_id)
+            mode = (
+                profile.mode
+                if profile is not None
+                else DocumentationSubjectMode.INHERIT
+            )
+            configurations[student_id] = StudentDocumentationSubjectConfiguration(
+                student_id=student_id,
+                school_year_id=school_year_id,
+                mode=mode,
+                selected_subject_ids=(
+                    tuple(selections.get(student_id, ()))
+                    if mode is DocumentationSubjectMode.CUSTOM
+                    else ()
+                ),
+                profile=profile,
+            )
+        return configurations
+
     def global_documentation_subject_ids(self) -> tuple[str, ...]:
         rows = self.connection.execute(
             """

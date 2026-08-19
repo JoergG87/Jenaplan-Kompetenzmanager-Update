@@ -588,9 +588,12 @@ Profilpersistenz.
 
 Die Dokumentations-Heatmap und die Schuelerliste beziehen ihre bestehende
 Dokumentationsstatusprojektion für die Mitglieder eines refresh-lokalen
-`CurrentMembershipReadSnapshot`. Assignment- und Dokumentationsreads werden
-durch den aufrufenden Adapter auf derselben Connection und im selben
-transaktionskonsistenten Read-Snapshot komponiert; weder
+`CurrentMembershipReadSnapshot`. Globale Defaults sowie individuelle
+schuljahresbezogene Profile und Auswahlen werden gebündelt im selben Batch
+gelesen; der Adapter löst daraus je Kind die kanonische effektive Fachmenge
+auf. Assignment- und Dokumentationsreads werden durch den aufrufenden Adapter
+auf derselben Connection und im selben transaktionskonsistenten Read-Snapshot
+komponiert; weder
 `SQLiteStudentDocumentationProjectionRepository` noch
 `SchoolYearAssignmentReadSession` besitzt die Transaktionssteuerung.
 `StudentDesktopAdapter` bleibt Owner der Gruppierung, kanonischen
@@ -784,7 +787,7 @@ Liest:
 - `course_groups`
 - `course_group_student_groups`
 - `course_group_courses`
-- `competencies`, `observations`, `observation_competency_ratings` und `student_competency_confirmations` ausschliesslich ueber die kanonische Dokumentationsstatusprojektion
+- `competencies`, `documentation_subject_settings`, `student_documentation_subject_profiles`, `student_documentation_subject_selections`, `observations`, `observation_competency_ratings` und `student_competency_confirmations` ausschliesslich ueber die kanonische Dokumentationsstatusprojektion
 
 Schreibt:
 
@@ -801,7 +804,7 @@ UI-Projektionen:
 
 Regel:
 
-`Heute` ist eine reine Lese- und Navigationsoberflaeche. Der technische Screen und Schluessel `dashboard` bleiben erhalten. Die Ansicht zeigt den aktuellen Stammdaten-Scope der PySide-App, verwaltet weder Stammdaten noch Stundenplan und schreibt nicht direkt in SQLite. Aktuell, naechste und heutige Stunde stammen ausschliesslich aus `TimetableDesktopAdapter.read_projection(at)`. Derselbe einmalig injizierte Zeitpunkt liefert den `as_of`-Tag für die aktuelle Mitgliedschaft. Zeitstatus wird beim Oeffnen beziehungsweise Aktivieren und hoechstens minuetlich neu gelesen. Assignment-, Dokumentations- und Beobachtungsprojektionen eines Refreshs werden über genau eine `SchoolYearAssignmentReadSession` auf derselben aufrufereigenen Connection und im selben Read-Snapshot komponiert. Die Heatmap zaehlt je Stammgruppe und Fach nur aktuelle `ENROLLED`-Kinder, deren bestehende kanonische Fachprojektion mindestens eine dokumentierte Kompetenz ausweist; ihre Nenner stammen aus den zentral berechneten Counts des `CurrentMembershipReadSnapshot`. Sie zeigt keine Ratings, Scores oder automatischen Entwicklungsurteile. Ihre neutralen Blau-Grau-Abstufungen codieren ausschliesslich Dokumentationsabdeckung und keine Ampelbewertung. Fehlendes current-Schuljahr oder mehrdeutige aktuelle Assignments blockieren die fachliche Projektion und werden nicht als leere Liste oder Nullzählung angezeigt.
+`Heute` ist eine reine Lese- und Navigationsoberflaeche. Der technische Screen und Schluessel `dashboard` bleiben erhalten. Die Ansicht zeigt den aktuellen Stammdaten-Scope der PySide-App, verwaltet weder Stammdaten noch Stundenplan und schreibt nicht direkt in SQLite. Aktuell, naechste und heutige Stunde stammen ausschliesslich aus `TimetableDesktopAdapter.read_projection(at)`. Derselbe einmalig injizierte Zeitpunkt liefert den `as_of`-Tag für die aktuelle Mitgliedschaft. Zeitstatus wird beim Oeffnen beziehungsweise Aktivieren und hoechstens minuetlich neu gelesen. Assignment-, Dokumentations- und Beobachtungsprojektionen eines Refreshs werden über genau eine `SchoolYearAssignmentReadSession` auf derselben aufrufereigenen Connection und im selben Read-Snapshot komponiert. Der Batch liest individuelle Fachprofile und deren optionale Auswahl mit genau einem konstanten Read; fehlendes Profil bleibt `inherit`, vorhandenes `custom` ohne Auswahl bleibt bewusst leer. Die Heatmap zaehlt je Stammgruppe und Fach nur aktuelle `ENROLLED`-Kinder, deren kanonisch effektive Fachmenge das Fach enthält; überfachliche Bereiche bleiben unabhängig von der Unterrichtsfachauswahl enthalten. Sie zeigt keine Ratings, Scores oder automatischen Entwicklungsurteile. Ihre neutralen Blau-Grau-Abstufungen codieren ausschliesslich Dokumentationsabdeckung und keine Ampelbewertung. Fehlendes current-Schuljahr oder mehrdeutige aktuelle Assignments blockieren die fachliche Projektion und werden nicht als leere Liste oder Nullzählung angezeigt.
 
 Die direkte Kursansicht im Schueler-Arbeitsraum filtert den
 `CurrentMembershipReadSnapshot` nach der ausgewaehlten `course_id`. Die
@@ -815,8 +818,11 @@ UX-Regel UI Sprint 1: `Heute` und `Schüler` sind die beiden globalen Arbeitszie
 Regel Sprint 8B.3: `Passende Kinder für diese Stunde` liest ausschließlich
 aktuelle `ENROLLED`-Kinder aus dem `CurrentMembershipReadSnapshot` für die zur
 Stunde gehörende Stammgruppe, den Kurs oder den Kursverbund sowie deren aktive
-Beobachtungen aus demselben Read-Snapshot. Es werden hoechstens fuenf Kinder
-als transparente Dokumentationshilfe projiziert. Reihenfolge und Hinweis
+Beobachtungen und gebündelte individuelle Fachkonfigurationen aus demselben
+Read-Snapshot. Vor der bestehenden Sortierung bleiben nur Kinder übrig, für
+die das Stundenplan-Unterrichtsfach effektiv relevant ist. Es werden
+hoechstens fuenf Kinder als transparente Dokumentationshilfe projiziert.
+Reihenfolge und Hinweis
 beruhen ausschliesslich auf dem Vorhandensein und Datum einer aktiven
 Beobachtung mit eindeutigem Fachbezug; Ratings, Kompetenzstatus,
 Leistungswerte und paedagogische Urteile werden nicht gelesen oder berechnet.

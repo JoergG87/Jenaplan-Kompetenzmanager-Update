@@ -123,6 +123,7 @@ lokal implementiert.
 | `DocumentationSubjectMode` | ausschließlich `inherit` oder `custom` | Core Student Subject Domain |
 | `StudentDocumentationSubjectConfiguration` | Qt-freie gespeicherte Konfiguration; fehlendes Profil projiziert `inherit` | Core Student Subject Domain |
 | `SQLiteStudentDocumentationSubjectRepository` | connection-gebundene Profile-, Auswahl-, Katalog- und Defaultpersistenz ohne Transaktionsbesitz | Core SQLite Persistence |
+| `SQLiteStudentDocumentationSubjectRepository.configurations_for_students` | gebündelter schuljahresbezogener Read von `inherit`, exakter `custom`-Auswahl und bewusst leerem `custom` für eine vorhandene Schüler-ID-Menge mit genau einem konstanten SQL-Statement | Core SQLite Persistence |
 | `StudentDocumentationSubjectService` | Qt-freie Read-/Write-Transaktionsgrenze für Modus, vollständigen Replace und Resolver | Application Student Subjects |
 | `effective_documentation_subjects` | deterministische effektive Fachmenge aus globalem Default oder exakter Custom-Auswahl | Application Student Subjects |
 | `DocumentationSubjectWriteStatus` | ausschließlich `changed` oder mutationsfreies `no_change` | Core Student Subject Domain |
@@ -291,7 +292,7 @@ UI-Verhalten; es gibt keine neue Persistenz, Tabelle oder Migration.
 | `LearningConferenceRepository.list_revision_histories_for_student` | Schülerbezogener Read für alle LEG-Aggregate und Revisionen ohne Abfrage je Revision | Core LEG Port |
 | `LearningReportRevisionReadService.verify_revision` | Öffentliche read-only Verifikationsgrenze für eine bereits gelesene Berichtrevision | Application Report Read |
 | `LearningConferenceRevisionReadService.verify_revision` | Öffentliche read-only Verifikationsgrenze für eine bereits gelesene LEG-Revision | Application LEG Read |
-| `SQLiteStudentDocumentationProjectionRepository.read_batch` | Schülerbezogener Batchread für aktive Beobachtungen, Zuordnungen, aktuelle Kompetenzen, sichere Bestätigungsstände, Fächer und vorhandene Frischeinformation; SJ-2E bindet ihn an die aufrufereigene Connection und denselben konsistenten SQLite-Read-Snapshot wie die Assignment-Session | Core Projection Persistence |
+| `SQLiteStudentDocumentationProjectionRepository.read_batch` | Schülerbezogener Batchread für aktive Beobachtungen, Zuordnungen, aktuelle Kompetenzen, sichere Bestätigungsstände, globale und gebündelte individuelle Fachkonfigurationen sowie vorhandene Frischeinformation; SJ-2E bindet ihn an die aufrufereigene Connection und denselben konsistenten SQLite-Read-Snapshot wie die Assignment-Session | Core Projection Persistence |
 | `ReportTimelineScrollArea` | Ausschließlich darstellungsbezogene horizontale Scrollfläche für die vollständig gelieferte Timeline; verwaltet Wheel-/Tastaturbedienung, nicht aber Auswahl, Ordnung oder Fachlogik | Desktop UI |
 | `REPORT_SUBJECT_SYMBOLS` | UI-only Zuordnung kleiner neutraler Fachsymbole zu vorhandenen stabilen `subject_id`; unbekannte Fächer erhalten einen neutralen Punkt, Symbole sind weder Diagramm noch Bewertung | Desktop UI |
 

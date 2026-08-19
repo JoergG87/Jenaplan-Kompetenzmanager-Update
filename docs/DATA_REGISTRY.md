@@ -833,9 +833,13 @@ Quellen innerhalb eines Refreshs ueber
 ist eine kurzlebige Projektion, keine Datenquelle und kein Cache. Er umfasst
 nur aktive Schueler im angeforderten Gruppen-/Kursscope, aktive Beobachtungen,
 deren Kompetenz-Snapshots, Bestaetigungen, Persistenzereignisse, den
-Kompetenzkatalog, die Dokumentationsfachauswahl sowie aktive Gruppen und Kurse.
-Die Abfragen laufen in einem gemeinsamen read-only Snapshot und fuehren keine
-Schema- oder Stammdateninitialisierung aus.
+Kompetenzkatalog, die globale Dokumentationsfachauswahl, die gebündelten
+schuljahresbezogenen individuellen Fachprofile samt exakter Auswahl sowie
+aktive Gruppen und Kurse. Fehlendes Profil wird als `inherit`, ein vorhandenes
+`custom`-Profil ohne Auswahlzeile als bewusst leer projiziert. Die Abfragen
+laufen in einem gemeinsamen read-only Snapshot, bleiben unabhängig von der
+Schülerzahl konstant und fuehren keine Schema- oder Stammdateninitialisierung
+aus.
 
 Export-Builder duerfen nur nach ausdruecklicher Freigabe Projektionen aus SQLite erzeugen. Der alte Workbook-Builder ist archiviert.
 

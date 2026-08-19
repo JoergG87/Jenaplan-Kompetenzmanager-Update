@@ -2079,12 +2079,12 @@ class SQLiteStudentDocumentationProjectionRepository:
                     str,
                     StudentDocumentationSubjectConfiguration,
                 ] = {}
-                if student_id is not None and current_school_year_id is not None:
-                    student_subject_configurations[student_id] = (
+                if current_school_year_id is not None:
+                    student_subject_configurations.update(
                         SQLiteStudentDocumentationSubjectRepository(
                             connection
-                        ).configuration(
-                            student_id,
+                        ).configurations_for_students(
+                            student_ids,
                             current_school_year_id,
                         )
                     )
