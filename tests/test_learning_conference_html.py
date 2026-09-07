@@ -15,7 +15,6 @@ import pytest
 from PySide6.QtCore import QCoreApplication, QEvent, QEventLoop, QFile, QIODevice, QTimer, QUrl
 from PySide6.QtWidgets import QApplication
 
-from prototypes.report_leg_html.demo_data import conference_bridge
 from src.core.learning_conference import (
     LearningConferenceCompletionError,
     LearningConferenceCompletionErrorCode,
@@ -32,7 +31,13 @@ from src.desktop_app.leg_html.host import (
 from src.desktop_app.leg_ui import leg_ui_mode
 from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
 from src.desktop_app.view_models.learning_conference_view_model import (
+    LearningConferenceCompetencyViewModel,
+    LearningConferenceDraftViewModel,
     LearningConferencePdfArtifactViewModel,
+    LearningConferencePreparationViewModel,
+    LearningConferenceRevisionListItemViewModel,
+    LearningConferenceRevisionStatusViewModel,
+    LearningConferenceSubjectViewModel,
 )
 from tests.helpers.synthetic_v4 import (
     SYNTHETIC_LEG_DRAFT_ID,
@@ -42,14 +47,50 @@ from tests.helpers.synthetic_v4 import (
 
 
 def _session(*, competency_count: int = 3) -> LearningConferenceHtmlSession:
-    spike = conference_bridge(competency_count=competency_count)
-    source = spike._conference
-    assert source is not None
+    competencies = tuple(
+        LearningConferenceCompetencyViewModel(
+            competency_id=f"K-DE-{index + 1:03d}",
+            subject_id="deutsch",
+            subject_name="Deutsch",
+            learning_area="Lesen",
+            competency_group="Texte verstehen",
+            competency_text=f"Synthetische Kompetenz {index + 1}",
+            documentation_state="undocumented",
+            observed_proposal="",
+            confirmed_rating="",
+            historical=False,
+            selectable=True,
+            sort_order=index,
+        )
+        for index in range(competency_count)
+    )
     return LearningConferenceHtmlSession(
-        preparation=source.preparation,
-        draft=source.draft,
-        revision_status=source.revision_status,
-        save_draft=source.save_draft,
+        preparation=LearningConferencePreparationViewModel(
+            student_id="STU-TEST-001",
+            student_name="Mara Beispiel",
+            group_name="Sonnenbogen",
+            subjects=(LearningConferenceSubjectViewModel("deutsch", "Deutsch", competencies),),
+            cross_topics=(),
+            evidence=(),
+        ),
+        draft=LearningConferenceDraftViewModel(
+            student_id="STU-TEST-001",
+            learning_conference_draft_id="LCD-TEST-001",
+            conference_date=date(2026, 8, 10),
+            subject_ids=("deutsch",),
+        ),
+        revision_status=LearningConferenceRevisionStatusViewModel(
+            has_completion=True,
+            status_label="Abgeschlossen · Revision 1",
+            draft_changed=False,
+            hash_valid=True,
+            current_revision_number=1,
+            revisions=(LearningConferenceRevisionListItemViewModel(
+                "LCV-TEST-001", 1, "completed", "Aktuell",
+                "10.08.2026, 12:00", "Beispiel-Lehrkraft", "synthetic-snapshot",
+            ),),
+        ),
+        save_draft=lambda draft: replace(draft, updated_at="2026-08-10T12:00:00"),
     )
 
 

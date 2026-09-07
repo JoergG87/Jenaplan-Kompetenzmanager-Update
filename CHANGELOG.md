@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- LEG-HTML-Vertragstests verwenden eigenständige synthetische ViewModels
+  statt eines nicht versionierten Prototypimports. Damit lässt sich die
+  vollständige Testsuite auch aus dem vorhandenen Repository sammeln; der
+  Produktpfad und die bestehenden Testaussagen bleiben unverändert.
+
 - Dashboard-Heatmap und `Passende Kinder für diese Stunde` verwenden jetzt
   pro Schüler die effektive schuljahresbezogene Dokumentationsfachmenge. Der
   bestehende Projection-Batch lädt `inherit`, exakte `custom`-Auswahlen und
