@@ -1259,3 +1259,8 @@ Fachseiten der Entwurfsvorschau erhalten oberhalb der Papierseite eine ruhige na
 ## Dezenter Sicherungshinweis (07.09.2026)
 
 Sicherungshinweise verwenden eine ruhige Inline-Infomeldung im bestehenden Backupbereich und einen kurzen Status in seiner Navigationskarte. Kein Popup, Alarm, Rot, Countdown oder Blockieren der Arbeit. Die vorhandene bewusste Aktion `Backup erstellen` bleibt das einzige Erstellungsziel.
+
+Die Kontextspalte im Beobachtungsdialog reserviert auch ohne Fokus auf der
+Fachauswahl ausreichend Platz für vollständige Fachnamen, Marker und Pfeil.
+Der Initialfokus in der Suche darf die Lesbarkeit bei 1180 × 760, 1280 × 800
+und 1400 × 900 nicht verschlechtern; die vorhandenen drei Bereiche bleiben.

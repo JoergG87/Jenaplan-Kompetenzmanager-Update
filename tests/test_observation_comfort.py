@@ -94,7 +94,9 @@ def test_shortcut_uses_visible_profile_and_fresh_student(observation_shell, monk
     opened = []
     monkeypatch.setattr(shell, "open_new_observation_dialog", opened.append)
     shell.new_observation_action.trigger()
-    assert [student.student_id for student in opened] == [SYNTHETIC_STUDENT_IDS[0]]
+    assert [student.student_id for student in opened] == [SYNTHETIC_STUDENT_IDS[0]], (
+        app.activeWindow(), app.activeModalWidget(), app.activePopupWidget(),
+    )
     assert not shell.new_observation_action.autoRepeat()
 
 

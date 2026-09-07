@@ -104,29 +104,29 @@ automatisch über eine Funktionsänderung.
 | Beaufsichtigte Pilotupdates | Sind reale Updateprüfung, Aufschub, Rückfall und die Trennung von Pilot, Appcast und Stable im vorgesehenen Betrieb verständlich und sicher? |
 | `Erste Schritte` | Unterstützt der geführte Einstieg die reale Einrichtung, ohne als Pflichtassistent zu wirken? |
 
+### Fünf neue Komfortfunktionen im unveröffentlichten Quellstand
+
+| Funktion | Nachweis und verbleibende Alltagsprüfung |
+| --- | --- |
+| `⌘N` für neue Beobachtung | `7dc1b3c`; Profil, selektierte Schülerzeile und Suche sichtbar geprüft; reale Unterrichtsbedienung noch auswerten. |
+| `Speichern & weitere` | `a094a69`; zwei getrennte Einträge, Fehlererhalt und Abbruch des Folgeentwurfs geprüft; fortlaufende Erfassung im Alltag prüfen. |
+| Verlässlicher Initialfokus | `22edc03`; Neu, Schnellbeobachtung und Bearbeiten sichtbar geprüft. |
+| Einklappbare Berichtsfächer | `b58568e`; Tastatur, Klappzustand und unverändertes Exportmodell geprüft; längere reale Berichte im Alltag prüfen. |
+| Dezenter Sicherungshinweis | `4e6a142`; unbekannt, fehlend, aktuell und alt geprüft; synthetische UI-Abnahme ersetzt keine Cipher-/Bundle-Abnahme. |
+
 ## C - Beschlossen und noch umzusetzen
 
-Am 07.09.2026 hat der Product Owner fünf kleine Funktionen mit freier
-Detailausgestaltung, Computer-Use-Prüfung und einzelnen geprüften Commits
-freigegeben. Der aktuelle Stand wird in `SPRINTS.md` geführt:
-
-| Funktion | Grenze |
-| --- | --- |
-| `⌘N` für `Neue Beobachtung` | vorhandener eindeutiger Kindkontext; sonst bewusste Auswahl |
-| Weitererfassen nach dem Speichern | neue Einzelbeobachtung für dasselbe Kind; keine Datenkopie |
-| Verlässlicher Initialfokus | lokale Tastaturbedienung für Neu und Bearbeiten |
-| Einklappbare Fachbereiche der Berichtsvorschau | nur Anzeigezustand; vollständiger Bericht bleibt erhalten |
-| Dezenter Datensicherungshinweis | vorhandene verifizierte Backupzusammenfassung; kein automatisches Backup |
-
-Die Vorbereitung des Schülerlisten-Imports ist ebenfalls beauftragt; der
-eigentliche Import bleibt bis zum abgeschlossenen Datenmodell- und
-Identitätsreview in Kategorie D.
+Die fünf am 07.09.2026 freigegebenen Komfortfunktionen sind implementiert
+und einzeln nach automatisierter und sichtbarer synthetischer Prüfung
+committet. Sie stehen jetzt in Kategorie B für die Nutzung durch Laura.
+Die Importvorbereitung ist abgeschlossen; der eigentliche Import verbleibt
+in Kategorie D. Es ist kein weiterer Implementierungssprint eröffnet.
 
 ## D - Ideen, noch nicht entschieden
 
 | Idee | Vorläufige Priorität | Entscheidungsbedarf |
 | --- | --- | --- |
-| Schülerlisten-Import | P1-Kandidat | Formate, Pflichtfelder, Vorschau, Dubletten, Zuordnungen und Atomarität entscheiden. |
+| Schülerlisten-Import | P1-Kandidat | Discovery unten abgeschlossen; Erstimportumfang und Wiederholungsidentität vor Implementierung entscheiden. |
 | Dublettenprüfung und Wiederholungsimport | P1-Kandidat, Teil des Import-Gates | Identitätsregeln und Konfliktauflösung entscheiden. |
 | Weitergehende Archivierung ausgeschiedener Kinder | P2-Kandidat | Der im Schuljahreswechsel umgesetzte schuljahresbezogene Austritt ist von Aufbewahrung und normaler Schülerarchivierung zu trennen. |
 | Unterjähriger Mehrkind-/Sammelwechsel | P2-Kandidat | Bleibt getrennt vom umgesetzten jährlichen Schuljahreswechsel und benötigt einen eigenen Lifecycle. |
@@ -287,3 +287,64 @@ nachvollziehbar. Umgesetzte Punkte werden aus D entfernt und in A oder B
 geführt; deshalb steht der Schuljahreswechsel nicht länger als Zukunftsidee im
 Backlog. Excel-/VBA-Punkte wurden in F verschoben. Da der frühere Backlog keine
 stabilen Backlog-IDs führte, konnten keine IDs übernommen werden.
+
+## Schülerlisten-Import – vorbereitete Produktentscheidung vom 07.09.2026
+
+**Ziel und beobachteter Bestand:** Mehrere Kinder mit vorhandenen Stammgruppen
+und Kursen einrichten. `students` enthält `student_id`, Vor-/Nachname, Notiz,
+Aktivstatus und Zeitstempel; weder Geburtsdatum noch externe Schul-ID.
+Zuordnungen liegen ausschließlich in `student_school_year_assignments` mit
+Schuljahr und Gültigkeitsintervall. Grundlage dieses Reviews sind
+`src/core/final_v4_schema.py`, `StudentDesktopAdapter.save_new_student` und
+`CreateStudentWithInitialEnrollment` in `src/application/school_year_assignment.py`.
+
+**Empfohlener kleiner Erstumfang (noch nicht implementiert):** Nur neue Kinder
+anlegen; bekannte Kinder bewusst überspringen. Keine automatische Korrektur,
+Reaktivierung, Archivierung, Gruppen-/Kursanlage oder Umzuordnung. Import nur
+ins aktuelle Schuljahr, gültig ab dem bewusst angezeigten heutigen Datum bis
+Schuljahresende. Liegt heute außerhalb des aktuellen Schuljahrs, ist der
+Import gesperrt. Andere Eintrittsdaten wären eine eigene Produktentscheidung.
+
+| Bereich | Konkreter Vorschlag |
+| --- | --- |
+| Datei | Lokale UTF-8-CSV, BOM zulässig, ausdrücklich gewähltes Komma oder Semikolon. Kein Excel-/VBA-Laufzeitpfad. Obergrenze zunächst 1 MiB und 1.000 Datenzeilen; größere oder fehlerhaft dekodierte Dateien werden vor der Vorschau abgelehnt. |
+| Pflichtfelder | Sichtbare Spalten `Vorname` und `Nachname`; beide nach Entfernen äußerer Leerzeichen gefüllt. CSV-Anführungszeichen, Umlaute und Zeilenumbrüche in korrekt zitierten Zellen sauber parsen. Formeln niemals ausführen; Dateiinhalt ist ausschließlich Text. |
+| Optionale Identität | `Schüler-ID` darf ausschließlich eine schon bekannte interne `student_id` nennen. Unbekannte angegebene IDs sind ein Konflikt; neue interne IDs erzeugt die Anwendung. Keine heimliche externe ID-Zuordnung. |
+| Zuordnung | Vorhandene Stammgruppe und Kurs für den Import bewusst wählen; Vorschau zeigt pro Zeile die stabile Zuordnung. Abweichende Zeilen können ausdrücklich vorhandenen Zielen zugeordnet werden. Freitext erzeugt keine Gruppen/Kurse. |
+| Vorschau | Dateizeile, Vor-/Nachname, geplante Gruppe/Kurs, Aktion `Neu anlegen` oder `Überspringen`, verständlicher Fehler. Zusammenfassung nennt Anzahl, Schuljahr und Gültigkeitsbeginn. Keine Speicherung beim Öffnen oder Navigieren. |
+| Dubletten | Doppelte interne ID oder identische Eingabezeilen blockieren bis zur ausdrücklichen Auflösung. Normalisierte Namen dienen nur als Warnsignal. Gleichnamige Kinder sind zulässig; niemals automatisch zusammenführen. Treffer auch unter archivierten Kindern anzeigen und bewusst überspringen oder als anderes Kind anlegen lassen. |
+| Wiederholung | Bekannte ID mit passenden Stammdaten kann ausdrücklich übersprungen werden; widersprüchliche Namen sind zu klären. Ohne stabile ID sind Namensgleichheit und bereits importiert fachlich nicht unterscheidbar. Eine vollautomatische wiederholbare Synchronisation ist deshalb nicht Bestandteil dieses Erstumfangs. |
+| Datenschutz | Quelle nur lokal lesen; keine vollständige Dateikopie, Kindernamen oder Notizen in Logs. Vorschau und Quellinhalt beim Schließen verwerfen. Keine externe Übertragung. |
+
+**Atomarität und Architektur:** Der existierende Einzelanlage-Service beginnt
+für jedes Kind eine eigene `BEGIN IMMEDIATE`-Transaktion. Eine Schleife über
+`save_new_student` wäre daher kein atomarer Import. Ein späterer Batch muss
+im Application Layer genau eine keyed Verbindung und eine Transaktion für
+sämtliche bestätigten Neuanlagen und Erstzuordnungen besitzen. Gemeinsame
+Validierungen und Repositories sollen auf derselben Verbindung wiederverwendet
+werden; Widgets enthalten weder SQL noch Identitätsentscheidungen.
+
+Unmittelbar vor dem Schreiben müssen Root-/Session-/Maintenance-Schutz,
+aktuelles Schuljahr, Gruppen-/Kursbeziehungen, bekannte Identitäten und der
+bestätigte Vorschauplan erneut geprüft werden. Der freigegebene Plan bezieht
+sich auf die bereits gelesenen Bytes; keine unbemerkte erneute Dateiübernahme.
+Ändert sich eine relevante Zuordnung zwischen Vorschau und Commit, wird die
+Ausführung abgelehnt und eine neue Vorschau verlangt. Bei jedem Fehler wird
+alles zurückgerollt; Erfolg bedeutet alle ausdrücklich gewählten Neuanlagen.
+Ein zweiter Klick während der Ausführung darf keinen zweiten Batch starten.
+
+**Abnahmefälle für die spätere Implementierung:** UTF-8/BOM, Umlaute und
+CSV-Quoting; leere Namen, fehlende/mehrfache Spalten und Grenzen; identische
+Zeilen, gleichnamige Kinder, bekannte/falsche/archivierte IDs; fehlendes oder
+inzwischen gewechseltes Schuljahr; ungültige Gruppen-/Kursrelation; Abbruch
+vor dem Commit; Fehler nach der ersten von mehreren Neuanlagen mit null
+persistierten Änderungen; erneuter Klick und Wiederholung einer Datei;
+Cocoa-Vorschau mit Tastatur und vollständig sichtbarer Fehlermeldung.
+
+**Entscheidungsvorlage:** Der obige lokale Erstimport kann ohne Schemaänderung
+umgesetzt werden, sobald dieser konkrete Umfang freigegeben ist. Für einen
+verlässlichen automatischen Wiederholungsimport muss zuvor geklärt werden,
+welche stabile ID die tatsächliche Schulquelle liefert. Eine neue externe
+ID oder Zuordnungstabelle wäre eine Datenmodelländerung und erfordert die
+vorgeschriebene Rücksprache. Es wurden weder Importcode noch Tabellen,
+UI-Felder oder zukünftige technische Namen als aktive Verträge angelegt.

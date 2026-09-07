@@ -33,7 +33,28 @@ Die Umsetzung verwendet die vorhandenen Daten- und Schreibverträge. Der
 Import bleibt bis zur Entscheidung über Identität, Dubletten und atomare
 Zuordnungen ein Vorbereitungspaket. Die sichtbare Bedienprüfung erfolgt
 per Computer-Use an einer getrennten Instanz mit synthetischen Daten.
-Abgeschlossene und passend geprüfte Schritte werden einzeln committet.
+Alle fünf Funktionen sind implementiert und einzeln nach passenden Tests
+und sichtbarer synthetischer Prüfung committet. Die konkreten Nachweise stehen
+in `SPRINTS.md`; die verbleibende Alltagsabnahme steht in Backlog-Kategorie B.
+Die abgeschlossene Import-Discovery mit CSV-Vertrag, Identitätsgrenzen,
+atomarem Schreibkonzept und Abnahmefällen steht in `BACKLOG.md`.
+
+## Vorbereitung des nächsten kleinen Updates
+
+Der Umfang ist auf den Dashboard-Fachrelevanzfix und die fünf oben genannten
+Komfortfunktionen begrenzt. `docs/RELEASE_NOTES.md` enthält die vorbereitete
+Nutzerbeschreibung; `SPRINTS.md` führt die technischen und sichtbaren Nachweise.
+Der Schülerlisten-Import gehört ausschließlich als Discovery zur Weiterarbeit
+und ist kein auszulieferndes Feature dieses Updates.
+
+Die veröffentlichte Referenz wurde am 07.09.2026 gegen Git-Tag, GitHub-Release,
+Manifest und die vier lokalen Releaseartefakte geprüft. Veröffentlicht bleibt
+`v0.4.0-build400` aus `e96a77e`; neue lokale Commits sind davon getrennt.
+Die Vorbereitung erzeugt kein neues Paket, keinen Push, Tag oder Release.
+Vor einer Paketierung sind mindestens Build 401, eine bewusst festgelegte
+sichtbare Version und alle Paket-/Cipher-/Releaseprüfungen am exakten neuen
+Quellcommit erforderlich. Synthetische Cocoa-Bedienprüfungen ersetzen weder
+Tests am verschlüsselten App-Bundle noch Apple- oder schulische Freigaben.
 
 ## Pilot-Produktionsschutz im laufenden Betrieb
 

@@ -300,7 +300,7 @@ class NewObservationDialog(QDialog):
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
         splitter.setStretchFactor(2, 0)
-        splitter.setSizes([288, 650, 315])
+        splitter.setSizes([312, 626, 315])
         layout.addWidget(splitter, 1)
 
         self.subject_select.currentIndexChanged.connect(self._refresh_competencies)
@@ -312,8 +312,8 @@ class NewObservationDialog(QDialog):
         zone = self._zone("Kind und Kontext", role="context")
         # Keep the longest canonical subject labels readable beside their
         # marker and the combo arrow at the supported dialog widths.
-        zone.setMinimumWidth(282)
-        zone.setMaximumWidth(306)
+        zone.setMinimumWidth(306)
+        zone.setMaximumWidth(330)
         zone_layout = zone.layout()
 
         student_card = self._card("accent")

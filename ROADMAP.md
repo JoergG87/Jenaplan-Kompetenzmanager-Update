@@ -90,8 +90,10 @@ reduzieren. Planungskandidaten sind:
 - sichere Vorschau und Zuordnung importierter Kinder zu den vorhandenen
   Stammgruppen und Kursen
 
-Empfohlene Reihenfolge: zuerst ein Discovery-/Architecture-Gate für den
-Schülerlisten-Import, danach erst eine Implementierungsentscheidung. Der
+Die Discovery vom 07.09.2026 ist in `BACKLOG.md` abgeschlossen: lokaler
+CSV-Erstimport, explizite Identität, Vorschau und eine gemeinsame Transaktion.
+Als Nächstes ist der konkrete Erstumfang zu entscheiden; automatischer
+Wiederholungsimport benötigt zuvor eine belastbare Quellidentität. Der
 Schuljahreswechsel ist bereits Bestandteil von Build 400 und weder von diesem
 Import abhängig noch erneut freizugeben.
 
@@ -100,8 +102,10 @@ Import abhängig noch erneut freizugeben.
 Am 07.09.2026 wurden Tastaturzugang, Weitererfassen und Eingabefokus als
 kleines Komfortpaket freigegeben. Gemeinsam mit den freigegebenen
 einklappbaren Berichtsfächern und dem Datensicherungshinweis werden sie in
-`SPRINTS.md` geführt. Die Importvorbereitung läuft als eigener fachlicher
-Arbeitsschritt; eine Importimplementierung ist damit nicht beschlossen.
+`SPRINTS.md` mit erfolgreichen Einzeltests und Computer-Use-Abnahmen geführt.
+Alle fünf sind im unveröffentlichten Quellstand implementiert. Die
+Importvorbereitung ist abgeschlossen; eine Importimplementierung ist damit
+nicht beschlossen.
 
 Nach Auswertung des Pilotworkflows werden mögliche Mehrkind-Abläufe geprüft:
 

@@ -67,9 +67,13 @@ wird vor der Implementierung in den kanonischen Dokumenten registriert.
   synthetische Zusammenfassungen sowie den Übergang von unbekannt zur
   erfolgreich leeren asynchronen Suche. Hinweise und Aktionen sind ohne
   Überlagerung sichtbar. Dies ist UI-Abnahme, kein neuer Cipher-Backupnachweis.
-- [ ] Dashboard-Folgeupdate anhand neuer Testnachweise vorbereiten.
-- [ ] Schülerlisten-Import mit Formaten, Identität, Dubletten, Vorschau und
-  Transaktionsgrenze fachlich-technisch vorbereiten.
+- [x] Dashboard-Folgeupdate mit abgegrenztem Änderungsumfang und
+  nutzerbezogenen Release Notes vorbereitet. Releasebasis, Manifest und
+  vorhandene Artefakte geprüft; neue Paketierung bleibt an neue Buildidentität
+  und die Paket-/Cipher-Gates gebunden. Gesamtprüfung siehe Abschlussnachweis.
+- [x] Schülerlisten-Import mit Formaten, Identität, Dubletten, Vorschau und
+  Transaktionsgrenze fachlich-technisch vorbereitet. Konkrete Entscheidungsvorlage
+  und Abnahmefälle in `BACKLOG.md`; kein Importcode und keine Schemaänderung.
 
 Technische Prüfungen und sichtbare Abnahme werden pro Schritt dokumentiert.
 Version, Paketierung und Veröffentlichung werden getrennt von der

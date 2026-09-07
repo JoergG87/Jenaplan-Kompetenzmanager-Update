@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Folgeupdate mit Dashboardkorrektur und fünf Komfortfunktionen in den
+  Release Notes vorbereitet. Testbereinigung schließt die bewusst offen
+  gehaltenen Berichts-/Beobachtungsdialoge und wartet auf die Sicherungssuche
+  des Einstiegstests, bevor dessen Qt-Fenster freigegeben wird. Keine neue Paketierung oder Veröffentlichung.
+
+- Die Kontextspalte des Beobachtungsdialogs reserviert auch bei Fokus in
+  der Suche Platz für lange Fachnamen samt Marker und Auswahlpfeil. Ein
+  durch den neuen Initialfokus sichtbar gewordener Layoutfehler ist behoben.
+
+- Schülerlisten-Import fachlich-technisch vorbereitet: begrenzter lokaler
+  CSV-Erstimport, explizite Identität, Dublettenklärung, Vorschau, bestehende
+  Schuljahreszuordnung und eine gemeinsame Transaktion. Die fünf geprüften
+  Komfortfunktionen stehen nun zur Alltagsabnahme im Backlog; Importcode
+  und Datenmodell wurden nicht verändert.
+
 - Die Einstellungen erinnern dezent an fehlende oder mindestens sieben Tage
   alte geprüfte Sicherungen. Ungeprüfte und fehlgeschlagene Suchzustände
   werden getrennt als nicht bestätigt angezeigt; ein erneuter Versuch ist

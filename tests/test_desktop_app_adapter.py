@@ -4488,7 +4488,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIsNotNone(splitter)
         if splitter is not None:
             self.assertEqual(splitter.count(), 3)
-            self.assertEqual(splitter.widget(0).maximumWidth(), 306)
+            self.assertEqual(splitter.widget(0).maximumWidth(), 330)
             self.assertEqual(splitter.widget(2).maximumWidth(), 338)
         self.assertEqual(dialog.size().width(), 1400)
         self.assertEqual(dialog.size().height(), 900)
@@ -5116,6 +5116,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
 
     def test_quick_observation_empty_note_uses_inline_warning(self) -> None:
         dialog = self._observation_dialog_with_hierarchy()
+        self.addCleanup(dialog.close)
         dialog.show()
         QApplication.processEvents()
         dialog.quick_observation_checkbox.setChecked(True)

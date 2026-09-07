@@ -1013,6 +1013,8 @@ class LearningReportTest(unittest.TestCase):
         self.app.processEvents()
         self.assertTrue(continue_dialog.isVisible())
         self.assertTrue(continue_dialog._dirty)
+        continue_dialog._close_choice_provider = lambda _parent: "discard"
+        continue_dialog.close()
 
         discard_dialog = LearningReportDialog(self.preparation)
         discard_dialog.show()

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -357,7 +358,7 @@ def test_shell_opens_onboarding_after_auth_and_navigates_existing_targets(
         assert runtime.preferences.load().onboarding_status is OnboardingStatus.COMPLETED
         assert shell.stack.currentWidget() is shell.dashboard_screen
     finally:
-        shell.close()
+        _dispose_shell(shell)
 
 
 def test_shell_respects_completed_dismissed_in_progress_and_missing_targets(
@@ -377,7 +378,7 @@ def test_shell_respects_completed_dismissed_in_progress_and_missing_targets(
         app.processEvents()
         assert completed_shell.stack.currentWidget() is completed_shell.dashboard_screen
     finally:
-        completed_shell.close()
+        _dispose_shell(completed_shell)
 
     dismissed_shell, dismissed_runtime = _shell_with_onboarding(
         tmp_path / "dismissed",
@@ -396,7 +397,7 @@ def test_shell_respects_completed_dismissed_in_progress_and_missing_targets(
         dismissed_shell._onboarding_next()
         assert dismissed_runtime.preferences.load().onboarding_status is OnboardingStatus.IN_PROGRESS
     finally:
-        dismissed_shell.close()
+        _dispose_shell(dismissed_shell)
 
     progress_shell, progress_runtime = _shell_with_onboarding(
         tmp_path / "progress",
@@ -416,7 +417,20 @@ def test_shell_respects_completed_dismissed_in_progress_and_missing_targets(
         progress_shell._navigate_from_onboarding("missing")
         assert "nicht verfügbar" in progress_shell.status_label.text()
     finally:
-        progress_shell.close()
+        _dispose_shell(progress_shell)
+
+
+def _dispose_shell(shell: AppShell) -> None:
+    # This test opens the asynchronous backup page; finish its worker before
+    # releasing the Qt owner and dispose layouts while the event loop exists.
+    deadline = time.monotonic() + 3
+    while shell.backup_restore_operations.is_busy and time.monotonic() < deadline:
+        QTest.qWait(10)
+    assert not shell.backup_restore_operations.is_busy
+    shell.close()
+    shell.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    QApplication.processEvents()
 
 
 def _shell_with_onboarding(tmp_path: Path, preferences: AppPreferences):

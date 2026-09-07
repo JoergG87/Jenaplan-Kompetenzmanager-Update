@@ -8,6 +8,26 @@ Diese Release Notes dokumentieren den vorbereiteten Final-V4-Pilotstand
 {{PILOT_VERSION}} / Build {{PILOT_BUILD}}. Sie belegen weder ein finales App-Bundle noch Release,
 Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
 
+## Neu im vorbereiteten Folgeupdate
+
+Diese Ergänzungen gehören zum unveröffentlichten Quellstand nach dem bisherigen
+Pilotpaket. Ein neues Paket und dessen eigene Buildnummer stehen noch aus.
+
+- Das Dashboard berücksichtigt die individuellen Dokumentationsfächer jedes
+  Kindes auch in der Heatmap und bei passenden Kindern für die Unterrichtsstunde.
+- `⌘N` öffnet eine Beobachtung für das aktuelle Kind. Ohne eindeutige Auswahl
+  führt das Kürzel zur Schülersuche.
+- `Speichern & weitere` speichert eine Beobachtung und öffnet eine leere
+  Folgeeingabe für dasselbe Kind. Bereits gespeicherte Einträge bleiben auch
+  beim Abbrechen der nächsten Eingabe erhalten.
+- Neue Beobachtungen beginnen mit dem Fokus in der Kompetenzsuche; beim
+  Bearbeiten steht der Fokus in der vorhandenen Notiz.
+- Fachabschnitte der Berichtsvorschau lassen sich ein- und ausklappen.
+  Berichtsinhalte und PDF bleiben dabei vollständig.
+- In den Einstellungen erscheint ein ruhiger Hinweis auf fehlende oder
+  mindestens sieben Tage alte geprüfte Sicherungen. Neue Sicherungen werden
+  weiterhin bewusst gestartet.
+
 ## Fachliche Grundlage und Dokumentation
 
 - Fachliche Grundlage ist das offizielle Jenaplan-Entwicklungsbuch mit 331
