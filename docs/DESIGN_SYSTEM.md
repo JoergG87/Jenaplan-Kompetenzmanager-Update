@@ -1251,3 +1251,7 @@ aber zurückhaltendem Abstand `Fächer` in kanonischer Quellenreihenfolge. Die
 Disclosure- oder Klickebene. Domänenkarten behalten dieselbe neutrale Form;
 Farbe, Größe oder Position dürfen keine Leistungs- oder Prioritätsaussage
 transportieren.
+
+## Einklappbare Berichtsvorschau (07.09.2026)
+
+Fachseiten der Entwurfsvorschau erhalten oberhalb der Papierseite eine ruhige native Schaltfläche mit Fachname, Pfeil und eindeutiger Aktion. Anfangs sind alle Abschnitte offen. Der geschlossene Abschnitt benötigt nur seine Schaltflächenhöhe; Inhalt und Papiergestaltung bleiben unverändert.

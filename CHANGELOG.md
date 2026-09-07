@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fachseiten der Berichtsvorschau lassen sich einzeln ein- und ausklappen.
+  Der lokale Klappzustand bleibt beim Aktualisieren erhalten; Entwurf,
+  bewusste Fachauswahl, vollständige Seitenzahl und PDF bleiben unverändert.
+
 - `Speichern & weitere` erlaubt mehrere bewusst gespeicherte Einzelbeobachtungen
   für dasselbe Kind. Nach Erfolg bleiben nur Kontext und Datum vorgewählt;
   Notiz, Bewertungen und Anhänge werden geleert und der nächste Entwurf erhält

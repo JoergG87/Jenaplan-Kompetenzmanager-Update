@@ -3423,3 +3423,7 @@ LEG behalten ihre getrennten zeitraumbezogenen Reads.
 Die Namen erzeugen keine Kategorie, Fach-ID oder Persistenz. Auswahl- und
 Schreibpfade verwenden weiterhin ausschließlich die vorhandenen `subject_key`-,
 `competency_id`- und Ratingwerte.
+
+## Einklappbare Berichtsvorschau (07.09.2026)
+
+`LearningReportDialog._collapsed_preview_subject_ids` hält Fach-IDs nur für die Lebensdauer des Dialogs. `_subject_preview_section` umschließt die vorhandene Papierseite; `LearningReportSubjectPreviewToggle` bezeichnet die native, checkbare Schaltfläche. `preview_subject_sections` ordnet Fach-IDs ihren Schaltflächen und Papierseiten zu.

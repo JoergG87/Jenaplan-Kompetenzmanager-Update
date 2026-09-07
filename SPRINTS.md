@@ -58,7 +58,10 @@ wird vor der Implementierung in den kanonischen Dokumenten registriert.
   Fokus-/Dialogtests bestanden; Computer-Use unter Cocoa bestätigt direktes
   Tippen in der Suche, Schnellbeobachtungsnotiz und Edit-Notiz mit erhaltenem
   Text an ausschließlich synthetischen Daten.
-- [ ] Fachbereiche der Berichtsvorschau lokal ein-/ausklappen.
+- [x] Fachbereiche der Berichtsvorschau lokal ein-/ausklappen. 46 Berichttests
+  und vier Untertests bestanden. Computer-Use bestätigt kompakte Darstellung,
+  Tab-/Leertastenbedienung und erhaltenen Klappzustand beim Arbeitsraumwechsel.
+  Entwurf, Exportmodell und vollständige Seitenzahl bleiben unverändert.
 - [ ] Dezenter Hinweis bei fehlender oder älterer verifizierter Datensicherung.
 - [ ] Dashboard-Folgeupdate anhand neuer Testnachweise vorbereiten.
 - [ ] Schülerlisten-Import mit Formaten, Identität, Dubletten, Vorschau und

@@ -2472,3 +2472,7 @@ Schreibender Prozess:
 Lesender Prozess:
 
 - vorhandenes LEG-PDF-Artefakt nach Pfad, Dateigroesse und SHA-256 verifizieren
+
+## Einklappbare Berichtsvorschau (07.09.2026)
+
+Die einklappbare Berichtsvorschau liest weiterhin ausschließlich vorhandene Preparation und bewusste Draft-Fachauswahl. Der Klappzustand ist flüchtiger UI-State je vorhandener `subject_id`, keine Datenquelle oder Persistenz.

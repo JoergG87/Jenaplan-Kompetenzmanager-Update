@@ -1496,3 +1496,7 @@ Die Entwicklungsübersicht ergänzt dieselben Schlüssel fest vor der weiterhin
 über `effective_documentation_subjects` bestimmten Unterrichtsfachmenge und
 verwendet für beide Abschnitte unverändert die bestehende neutrale
 Dokumentationskartenprojektion.
+
+## Einklappbare Berichtsvorschau (07.09.2026)
+
+Der Berichtdialog besitzt ausschließlich den flüchtigen Klappzustand. Alle bewusst gewählten Fachseiten werden weiterhin vollständig erzeugt und nummeriert. Entwurf, PDF und finale Revision behalten ihre bestehende Projektion unabhängig von der Sichtbarkeit.

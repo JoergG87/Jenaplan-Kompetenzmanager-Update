@@ -1016,3 +1016,7 @@ beobachtbar sowie bewertbar. In der Entwicklungsübersicht erscheinen sie im
 aktuellen Schuljahr immer als zwei eigene neutrale Karten vor dem Abschnitt
 `Fächer`; dessen Kartenmenge folgt weiterhin der individuellen effektiven
 Fachauswahl.
+
+## Einklappbare Berichtsvorschau (07.09.2026)
+
+`Fachname · einklappen/ausklappen` projiziert vorhandenen Fachnamen und lokalen Klappzustand. Die checkbare Schaltfläche bleibt bei geschlossenem Fach sichtbar und per Tastatur bedienbar. Deckblatt, Überblick und Abschluss bleiben sichtbar; Seitenanzahl bezeichnet weiter das vollständige Dokument.

@@ -350,6 +350,8 @@ class LearningReportDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         self.preparation = preparation
+        self._collapsed_preview_subject_ids: set[str] = set()
+        self.preview_subject_sections: dict[str, tuple[QPushButton, QFrame]] = {}
         self._saved_draft = initial_draft
         self._initial_period = initial_period
         self._revision_status = revision_status or LearningReportRevisionStatusViewModel(
@@ -2308,16 +2310,23 @@ class LearningReportDialog(QDialog):
         if not self._preview_stale:
             return
         self._clear_layout(self.preview_layout)
+        self.preview_subject_sections.clear()
         pages = [self._cover_preview_page(), self._overview_preview_page()]
-        pages.extend(
-            self._subject_preview_page(subject)
+        subjects = [
+            subject
             for subject in self.preparation.subjects
             if subject.subject_id in self.selected_subject_ids
-        )
+        ]
+        pages.extend(self._subject_preview_page(subject) for subject in subjects)
         pages.append(self._closing_preview_page())
         for page_number, page in enumerate(pages, 1):
             self._set_page_number(page, page_number, len(pages))
-            self.preview_layout.addWidget(page, 0, Qt.AlignmentFlag.AlignHCenter)
+            section = (
+                self._subject_preview_section(subjects[page_number - 3], page)
+                if 3 <= page_number < len(pages)
+                else page
+            )
+            self.preview_layout.addWidget(section, 0, Qt.AlignmentFlag.AlignHCenter)
         self.preview_layout.addStretch(1)
         source_status = (
             "enthält noch nicht gespeicherte Änderungen"
@@ -2329,6 +2338,39 @@ class LearningReportDialog(QDialog):
         )
         self._refresh_closing_summary()
         self._preview_stale = False
+
+    def _subject_preview_section(
+        self, subject: LearningReportSubjectViewModel, page: QFrame
+    ) -> QWidget:
+        section = QWidget()
+        section.setFixedWidth(page.width())
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        toggle = QPushButton()
+        toggle.setObjectName("LearningReportSubjectPreviewToggle")
+        configure_button(toggle, "quiet")
+        toggle.setCheckable(True)
+        toggle.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        toggle.setAutoDefault(False)
+
+        def set_expanded(expanded: bool) -> None:
+            if expanded:
+                self._collapsed_preview_subject_ids.discard(subject.subject_id)
+            else:
+                self._collapsed_preview_subject_ids.add(subject.subject_id)
+            action = "einklappen" if expanded else "ausklappen"
+            toggle.setText(f"{'▾' if expanded else '▸'} {subject.subject_name} · {action}")
+            toggle.setAccessibleName(f"{subject.subject_name} {action}")
+            page.setVisible(expanded)
+
+        toggle.setChecked(subject.subject_id not in self._collapsed_preview_subject_ids)
+        toggle.toggled.connect(set_expanded)
+        layout.addWidget(toggle)
+        layout.addWidget(page)
+        set_expanded(toggle.isChecked())
+        self.preview_subject_sections[subject.subject_id] = (toggle, page)
+        return section
 
     def _cover_preview_page(self) -> QFrame:
         page, layout = self._paper_page("Lernentwicklungsbericht")

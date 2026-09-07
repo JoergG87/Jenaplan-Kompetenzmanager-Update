@@ -955,6 +955,34 @@ class LearningReportTest(unittest.TestCase):
         self.assertEqual(dialog.history_header.title_label.text(), "Frühere Fassungen")
         self.assertTrue(dialog.history_header.accessibleName())
 
+    def test_collapsing_preview_preserves_draft_export_and_survives_refresh(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+        dialog.selected_subject_ids.update(("math", "german"))
+        dialog.show_workspace("preview")
+        draft = dialog.report_draft_view_model()
+        output = build_report_output_model(self.preparation, dialog.report_draft())
+        dirty = dialog._dirty
+        toggle, page = dialog.preview_subject_sections["math"]
+        self.assertTrue(toggle.isChecked())
+        toggle.click()
+        self.assertTrue(page.isHidden())
+        self.assertFalse(dialog.preview_subject_sections["german"][1].isHidden())
+        self.assertIn("ausklappen", toggle.accessibleName())
+        self.assertEqual(dialog.report_draft_view_model(), draft)
+        self.assertEqual(build_report_output_model(self.preparation, dialog.report_draft()), output)
+        self.assertEqual(dialog._dirty, dirty)
+        dialog._preview_stale = True
+        dialog.update_preview()
+        toggle, page = dialog.preview_subject_sections["math"]
+        self.assertTrue(page.isHidden())
+        toggle.click()
+        self.assertFalse(page.isHidden())
+        self.assertIn("5 Seiten", dialog.preview_status.text())
+        reopened = LearningReportDialog(self.preparation)
+        reopened.selected_subject_ids.add("math")
+        reopened.show_workspace("preview")
+        self.assertTrue(reopened.preview_subject_sections["math"][0].isChecked())
+
     def test_report_close_dialog_has_safe_three_way_actions(self) -> None:
         confirmation = LearningReportCloseDialog()
         buttons = {

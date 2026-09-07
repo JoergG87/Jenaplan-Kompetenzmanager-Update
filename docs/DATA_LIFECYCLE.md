@@ -3687,3 +3687,7 @@ Regeln:
 7. Bei Render-, Datei-, Hash- oder Persistenzfehlern entsteht keine gueltige neue Artefaktreferenz; eine in diesem Versuch erzeugte Datei wird entfernt.
 
 Archivierung, Verschluesselung, Renderer-Versionierung, Mehrfachartefakte, Rollenmodell und Berichtsdomain sind nicht Bestandteil dieses Lifecycles.
+
+## Einklappbare Berichtsvorschau (07.09.2026)
+
+Ein-/Ausklappen eines Vorschaufachs schreibt nichts, markiert den Entwurf nicht als geändert und verändert weder Fachauswahl noch Export. Der Klappzustand überlebt Vorschau-Neurendern innerhalb des Dialogs; ein neuer Dialog startet vollständig aufgeklappt.
