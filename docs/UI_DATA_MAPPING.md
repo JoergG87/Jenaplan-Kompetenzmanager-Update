@@ -845,6 +845,15 @@ Datenquelle, berechnet keine Membership und besitzt keinen Schreibprozess.
 
 ## Beobachtungsdialog
 
+`Neue Beobachtung` per Qt-Standardkürzel `New` (`⌘N` auf macOS) verwendet
+die `student_id` des sichtbaren Profils oder der bewusst markierten
+Schülerlistenprojektion. Ohne ID führt die Aktion zur Schülerauswahl und
+fokussiert deren Suche. Die vorhandenen Beobachtungsbuttons bleiben als
+Maus-/Accessibility-Alternative verfügbar; das Profil zeigt das Kürzel im
+Tooltip. Keine automatische Auswahl des ersten Kindes.
+Ein Neuaufbau der Liste hebt die Zeilenmarkierung auf; ein alter Zeilenindex
+darf dadurch kein anderes Kind für das Kürzel auswählen.
+
 Startfokus (Freigabe 07.09.2026): `initial_draft` und der lokale
 Schnellbeobachtungszustand bestimmen ausschließlich die Eingabekontrolle.
 Neu → `ObservationCatalogSearch`; Bearbeiten/Schnellbeobachtung →

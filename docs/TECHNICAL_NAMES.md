@@ -3198,6 +3198,11 @@ Regel: Motion ist ausschliesslich lokaler, fluechtiger UI-State. Animationen set
 
 ## UI Sprint 4 - Schuelerprofil und Beobachtungs-Workspace
 
+`AppShell.new_observation_action` ist die fenstergebundene Qt-Standardaktion
+`New`; `AppShell._open_observation_shortcut` delegiert an die vorhandenen
+Beobachtungswege. `StudentsScreen.selected_student_id` liefert ausschließlich
+die stabile ID einer bewusst selektierten sichtbaren Listenzeile.
+
 Ergänzung 07.09.2026: `NewObservationDialog._focus_initial_input` setzt den
 einmaligen Startfokus nach dem ersten sichtbaren Öffnen. Der flüchtige
 Guard `_initial_focus_applied` verhindert Fokuswechsel beim erneuten Anzeigen.

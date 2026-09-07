@@ -700,6 +700,12 @@ Responsive Regel: bei 1400 x 900 ist die Phasenleiste 232 px, bei 1280 x 800 etw
 
 ## Kindbezogene Workspace-Sprache - UI Sprint 4
 
+UX-Ergänzung 07.09.2026: `⌘N` ergänzt die vorhandenen Beobachtungsbuttons.
+Ohne sichtbaren eindeutigen Kindkontext öffnet die Aktion die Schülerliste
+mit fokussierter Suche und dem Hinweis, ein Kind auszuwählen. Autorepeat ist
+deaktiviert; offene Dialoge, Popups und andere aktive Fenster bleiben alleinige
+Tastatureigentümer. Eingabetexte werden durch das Kürzel nicht verändert.
+
 UX-Ergänzung 07.09.2026: Der einmalige Startfokus im Beobachtungsdialog
 liegt für Neu in der Katalogsuche, für Bearbeiten und Schnellbeobachtung in
 der Notiz. Er verwendet den vorhandenen Fokusrahmen, selektiert oder ändert

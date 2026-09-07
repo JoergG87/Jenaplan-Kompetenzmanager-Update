@@ -163,6 +163,16 @@ class StudentsScreen(QWidget):
         self.table.setColumnHidden(1, not show_group_column)
         self.apply_search()
 
+    def selected_student_id(self) -> str | None:
+        """Return only the stable ID of one deliberately selected visible row."""
+        rows = self.table.selectionModel().selectedRows()
+        if len(rows) != 1:
+            return None
+        row = rows[0].row()
+        if not 0 <= row < len(self.filtered_students):
+            return None
+        return self.filtered_students[row].student_id
+
     def search_text(self) -> str:
         """Return current search text."""
         return self.search_input.text()
@@ -181,6 +191,7 @@ class StudentsScreen(QWidget):
         self._render_students(self.filtered_students)
 
     def _render_students(self, students: tuple[StudentListItem, ...]) -> None:
+        self.table.clearSelection()
         self.table.clearContents()
         self.table.setRowCount(len(students))
         self._update_empty_state(students)

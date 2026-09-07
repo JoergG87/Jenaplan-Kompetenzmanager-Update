@@ -8,7 +8,7 @@ from pathlib import Path
 import weakref
 
 from PySide6.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QCloseEvent, QGuiApplication
+from PySide6.QtGui import QAction, QCloseEvent, QGuiApplication, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -357,6 +357,17 @@ class AppShell(QMainWindow):
         self.setMinimumSize(1100, 720)
         self.resize(1400, 900)
         self._build()
+        self.new_observation_action = QAction("Neue Beobachtung", self)
+        self.new_observation_action.setShortcut(QKeySequence.StandardKey.New)
+        self.new_observation_action.setShortcutContext(Qt.ShortcutContext.WindowShortcut)
+        self.new_observation_action.setAutoRepeat(False)
+        self.new_observation_action.triggered.connect(self._open_observation_shortcut)
+        self.addAction(self.new_observation_action)
+        self.student_profile_screen.profile_primary_action.setToolTip(
+            "Neue Beobachtung ("
+            + self.new_observation_action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)
+            + ")"
+        )
         self.dashboard_refresh_timer = QTimer(self)
         self.dashboard_refresh_timer.setInterval(60_000)
         self.dashboard_refresh_timer.timeout.connect(
@@ -2655,6 +2666,35 @@ class AppShell(QMainWindow):
             self.refresh_students()
             self.show_student_profile(student_id)
             self.status_label.setText("Schülerdaten wurden gespeichert.")
+
+    def _open_observation_shortcut(self) -> None:
+        if (
+            not self.isEnabled()
+            or QApplication.activeWindow() is not self
+            or QApplication.activeModalWidget() is not None
+            or QApplication.activePopupWidget() is not None
+        ):
+            return
+        if self.stack.currentWidget() is self.student_profile_screen:
+            current = self.student_profile_screen.current_student
+            if current is not None:
+                student = self.adapter.get_student_profile(current.student_id)
+                if student is not None:
+                    self.open_new_observation_dialog(student)
+                    return
+        elif (
+            self.stack.currentWidget() is self.students_workspace
+            and self.students_workspace.current_content_key() in {"all", "filtered_students"}
+        ):
+            student_id = self.students_screen.selected_student_id()
+            if student_id is not None:
+                self.open_quick_observation_dialog(student_id)
+                return
+        self.show_all_students()
+        self.students_screen.search_input.setFocus(Qt.FocusReason.ShortcutFocusReason)
+        self.status_label.setText(
+            "Wähle ein Kind und öffne „Beobachten“ oder drücke erneut das Kürzel."
+        )
 
     def open_new_observation_dialog(self, student: StudentDetailViewModel) -> None:
         """Open the persistent observation dialog and refresh after success."""

@@ -2959,6 +2959,12 @@ Regel: Defaults fuer Stammgruppen, Kurse und `Mathe/Deutsch Kursverbund A` werde
 
 ## Beobachtung erfassen
 
+`⌘N` öffnet für das sichtbare Profil beziehungsweise die bewusst selektierte
+sichtbare Schülerzeile denselben Dialog. Ohne eindeutiges Kind öffnet es die
+Schülerliste zur bewussten Auswahl. Die Aktion gilt ausschließlich im aktiven
+freigegebenen Shellfenster, nicht in Dialogen, Popups oder gesperrter Shell.
+Öffnen schreibt nichts; Speichern bleibt der nachstehende Einzelwrite.
+
 Der am 07.09.2026 freigegebene Startfokus ist rein lokal: Neue Beobachtungen
 beginnen in der Katalogsuche; Bearbeiten und kompetenzfreie Schnellbeobachtung
 beginnen in der Notiz. Öffnen, Fokus und erneutes Anzeigen speichern nichts.

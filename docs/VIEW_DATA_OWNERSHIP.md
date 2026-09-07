@@ -1116,6 +1116,11 @@ Der PySide-Dialog `Neuer Schüler` ist der aktive Eingabepfad fuer fachliche Sch
 
 ## Beobachtungsdialog
 
+Die Shell besitzt die fenstergebundene Aktion `⌘N` und die Auflösung des
+sichtbaren Kindkontexts. `StudentsScreen` liefert nur die ID der selektierten
+sichtbaren Zeile; der vorhandene Adapter prüft den aktuellen Kindkontext.
+Andere Fenster und Dialoge erhalten keine globale Beobachtungsaktion.
+
 Der Dialog besitzt den einmaligen Startfokus. Bei neuen Beobachtungen erhält
 die Katalogsuche Fokus, bei Bearbeitung beziehungsweise Schnellbeobachtung die
 Notiz. Spätere Fokuswechsel bleiben bei Qt und der Lehrkraft; der Dialog

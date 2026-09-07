@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- `⌘N` öffnet die neue Beobachtung für das sichtbare Profil oder eine
+  bewusst selektierte Schülerzeile. Ohne eindeutige Auswahl führt es zur
+  Schülersuche. Offene Dialoge und andere aktive Fenster bleiben unberührt;
+  die bisherigen Buttons sind weiterhin verfügbar.
+  Die dabei geprüfte Fensterbereinigung bindet den verzögerten Profil-Layout-
+  Callback an sein Widget, damit er nach dessen Zerstörung nicht mehr läuft.
+
 - Der Beobachtungsdialog startet bei Neu in der Kompetenzsuche und beim
   Bearbeiten in der Notiz. Der Fokus wird nur beim ersten Öffnen gesetzt;
   vorhandene Eingaben und bewusst gewählte spätere Fokusziele bleiben erhalten.

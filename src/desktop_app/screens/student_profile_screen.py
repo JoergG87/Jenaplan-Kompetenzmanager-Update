@@ -3042,7 +3042,7 @@ class StudentProfileScreen(QWidget):
             toggle_row.addWidget(toggle)
             self.report_subjects_layout.addWidget(toggle_container)
         self._sync_report_subjects_content_height()
-        QTimer.singleShot(0, self._sync_report_subjects_content_height)
+        QTimer.singleShot(0, self, self._sync_report_subjects_content_height)
 
     def _sync_report_subjects_content_height(self) -> None:
         """Prevent the outer responsive grid from compressing dynamic card rows."""

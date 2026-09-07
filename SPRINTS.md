@@ -44,7 +44,11 @@ Import wird zuerst auf bestehende IDs und Assignmentverträge abgebildet.
 Tastaturbedienung und synthetische Computer-Use-Prüfung. Jede neue UI-Aktion
 wird vor der Implementierung in den kanonischen Dokumenten registriert.
 
-- [ ] `⌘N` für neue Beobachtung aus eindeutigem Kontext.
+- [x] `⌘N` für neue Beobachtung aus eindeutigem Kontext. 29 passende Tests
+  bestanden; zusätzliche Prüfung der Markierungsrücksetzung bestanden.
+  Computer-Use bestätigt Profilzugang, keinen zweiten Dialog bei erneutem
+  Kürzel, Suchfokus ohne Auswahl und Dialog für das per Tab/Pfeiltaste bewusst
+  markierte zweite Testkind.
 - [ ] Nach erfolgreichem Speichern eine weitere Einzelbeobachtung beginnen.
 - [x] Verlässlicher Fokus für neue und bearbeitete Beobachtungen. Sechs
   Fokus-/Dialogtests bestanden; Computer-Use unter Cocoa bestätigt direktes
