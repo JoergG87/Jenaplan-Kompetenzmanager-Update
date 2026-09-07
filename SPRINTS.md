@@ -62,7 +62,11 @@ wird vor der Implementierung in den kanonischen Dokumenten registriert.
   und vier Untertests bestanden. Computer-Use bestätigt kompakte Darstellung,
   Tab-/Leertastenbedienung und erhaltenen Klappzustand beim Arbeitsraumwechsel.
   Entwurf, Exportmodell und vollständige Seitenzahl bleiben unverändert.
-- [ ] Dezenter Hinweis bei fehlender oder älterer verifizierter Datensicherung.
+- [x] Dezenter Hinweis bei fehlender oder älterer verifizierter Datensicherung.
+  37 passende Tests bestanden. Computer-Use bestätigt alte und aktuelle
+  synthetische Zusammenfassungen sowie den Übergang von unbekannt zur
+  erfolgreich leeren asynchronen Suche. Hinweise und Aktionen sind ohne
+  Überlagerung sichtbar. Dies ist UI-Abnahme, kein neuer Cipher-Backupnachweis.
 - [ ] Dashboard-Folgeupdate anhand neuer Testnachweise vorbereiten.
 - [ ] Schülerlisten-Import mit Formaten, Identität, Dubletten, Vorschau und
   Transaktionsgrenze fachlich-technisch vorbereiten.

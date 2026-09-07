@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 
@@ -16,6 +17,52 @@ class BackupSummaryViewModel:
     @property
     def size_label(self) -> str:
         return f"{self.size_bytes / 1024 / 1024:.1f} MB"
+
+
+@dataclass(frozen=True)
+class BackupReminderViewModel:
+    state: str
+    status_text: str
+    message: str
+
+
+def build_backup_reminder(
+    summary: BackupSummaryViewModel | None,
+    *,
+    now: datetime,
+    checked: bool,
+) -> BackupReminderViewModel:
+    """Project a quiet reminder solely from a verified creation timestamp."""
+    unknown = BackupReminderViewModel(
+        "unknown", "Sicherungsstand nicht bestätigt",
+        "Der Sicherungsstand ist noch nicht bestätigt. Prüfe eine vorhandene Sicherung oder erstelle eine neue.",
+    )
+    if not checked:
+        return unknown
+    if summary is None:
+        return BackupReminderViewModel(
+            "missing", "Noch keine geprüfte Sicherung gefunden",
+            "Es wurde noch keine geprüfte lokale Sicherung gefunden. Erstelle eine Sicherung über „Backup erstellen“.",
+        )
+    if not summary.verified:
+        return unknown
+    try:
+        created_at = datetime.fromisoformat(summary.created_at)
+    except (TypeError, ValueError):
+        return unknown
+    if created_at.tzinfo is None:
+        return unknown
+    age = now.astimezone(UTC) - created_at.astimezone(UTC)
+    if age < timedelta(0):
+        return unknown
+    if age >= timedelta(days=7):
+        return BackupReminderViewModel(
+            "due", f"Geprüfte Sicherung vor {age.days} Tagen · neue Sicherung empfohlen",
+            f"Die letzte bestätigte Sicherung ist {age.days} Tage alt. Erstelle eine aktuelle Sicherung über „Backup erstellen“.",
+        )
+    return BackupReminderViewModel(
+        "current", f"Geprüfte Sicherung vom {created_at.astimezone().strftime('%d.%m.%Y')}", "",
+    )
 
 
 @dataclass(frozen=True)

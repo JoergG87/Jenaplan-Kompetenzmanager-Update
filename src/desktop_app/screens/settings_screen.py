@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from typing import Callable
 
 from PySide6.QtCore import QDate, Qt, Signal
 from PySide6.QtGui import QKeySequence, QKeyEvent
@@ -16,7 +17,7 @@ from src.core.app_preferences import DISPLAY_NAME_MAX_LENGTH
 from src.desktop_app.components import AppCard, InlineMessage, PageHeader, SubjectAccentMarker, configure_button
 from src.desktop_app.theme import create_card, set_label_style, subject_accent_icon
 from src.desktop_app.view_models.backup_restore_view_model import (
-    BackupSummaryViewModel, RestorePreviewViewModel,
+    BackupSummaryViewModel, RestorePreviewViewModel, build_backup_reminder,
 )
 from src.desktop_app.view_models.settings_view_model import (
     DOCUMENTATION_SUBJECTS_SAVE_SUCCESS_MESSAGE, DocumentationSubjectOptionViewModel,
@@ -102,8 +103,11 @@ class SettingsScreen(QWidget):
     updates_page_opened = Signal()
     school_year_transition_preview_requested = Signal(str, object, object)
 
-    def __init__(self) -> None:
+    def __init__(self, *, now_provider: Callable[[], datetime] = datetime.now) -> None:
         super().__init__()
+        self._now_provider = now_provider
+        self._backup_summary: BackupSummaryViewModel | None = None
+        self._backup_checked = False
         self.documentation_subject_checkboxes: dict[str, QCheckBox] = {}
         self.documentation_subjects_layout = QVBoxLayout()
         self.documentation_status_label = QLabel("")
@@ -125,6 +129,7 @@ class SettingsScreen(QWidget):
         self.detail_back_buttons: dict[str, QPushButton] = {}
         self._school_year_signature: tuple[str, date, date] | None = None
         self._build()
+        self._refresh_backup_reminder()
 
     def _build(self) -> None:
         outer = QVBoxLayout(self)
@@ -224,6 +229,7 @@ class SettingsScreen(QWidget):
         return self._scroll_page(content)
 
     def show_page(self, key: str) -> None:
+        self._refresh_backup_reminder()
         page_indexes = {
             "timetable": 1,
             "documentation_subjects": 2,
@@ -243,6 +249,7 @@ class SettingsScreen(QWidget):
             self.updates_page_opened.emit()
 
     def show_overview(self) -> None:
+        self._refresh_backup_reminder()
         if self.operation_active:
             return
         self.current_page = "overview"
@@ -266,6 +273,7 @@ class SettingsScreen(QWidget):
     def set_backup_restore_available(self, available: bool) -> None:
         """Disable the existing ZIP-v1 controls in Cipher product mode."""
         self.backup_restore_available = bool(available)
+        self._refresh_backup_reminder()
         if not self.backup_restore_available:
             message = (
                 "Datensicherung und Wiederherstellung sind in diesem "
@@ -371,13 +379,27 @@ class SettingsScreen(QWidget):
         self.timetable_tabs.blockSignals(False)
         self._render_selected_timetable_day()
 
-    def set_backup_status(self, backup: BackupSummaryViewModel | None) -> None:
-        if backup is None:
-            self.settings_cards["backup_restore"].status.setText("Noch keine geprüfte Sicherung")
-            self.latest_backup_label.setText("Noch keine geprüfte Sicherung")
+    def set_backup_status(self, backup: BackupSummaryViewModel | None, *, checked: bool = True) -> None:
+        self._backup_summary = backup
+        self._backup_checked = checked
+        self._refresh_backup_reminder()
+        if not checked or (backup is not None and not backup.verified):
+            self.latest_backup_label.setText("Sicherungsstand nicht bestätigt")
+        elif backup is None:
+            self.latest_backup_label.setText("Noch keine geprüfte Sicherung gefunden")
         else:
-            self.settings_cards["backup_restore"].status.setText(f"Letzte geprüfte Sicherung: {backup.created_at}")
             self.latest_backup_label.setText(f"{backup.created_at} · {backup.file_name} · {backup.size_label} · Geprüft")
+
+    def _refresh_backup_reminder(self) -> None:
+        reminder = build_backup_reminder(
+            self._backup_summary, now=self._now_provider(), checked=self._backup_checked,
+        )
+        self.backup_reminder.set_message(
+            reminder.message if self.backup_restore_available else "", tone="info",
+        )
+        self.settings_cards["backup_restore"].status.setText(
+            reminder.status_text if self.backup_restore_available else "Noch nicht verfügbar"
+        )
 
     def set_security_status(self, inactivity_minutes: int) -> None:
         self.settings_cards["security"].status.setText(
@@ -621,7 +643,8 @@ class SettingsScreen(QWidget):
     def _backup_restore_card(self) -> QFrame:
         card = create_card(); card.setObjectName("BackupRestoreSettingsSection"); layout = QVBoxLayout(card)
         title = QLabel("Letzte geprüfte lokale Sicherung"); set_label_style(title, "section_title"); layout.addWidget(title)
-        self.latest_backup_label = QLabel("Noch keine geprüfte Sicherung"); self.latest_backup_label.setWordWrap(True); set_label_style(self.latest_backup_label, "muted"); layout.addWidget(self.latest_backup_label)
+        self.latest_backup_label = QLabel("Sicherungsstand nicht bestätigt"); self.latest_backup_label.setWordWrap(True); set_label_style(self.latest_backup_label, "muted"); layout.addWidget(self.latest_backup_label)
+        self.backup_reminder = InlineMessage(); layout.addWidget(self.backup_reminder)
         note = QLabel("Freie Exporte und externe Dateireferenzen sind nicht Bestandteil der Sicherung."); note.setWordWrap(True); set_label_style(note, "small"); layout.addWidget(note)
         self.operation_status_label = QLabel(""); self.operation_status_label.setWordWrap(True); self.operation_status_label.setObjectName("BackupRestoreOperationStatus"); self.operation_status_label.setAccessibleName("Status der Datensicherung"); set_label_style(self.operation_status_label, "muted"); layout.addWidget(self.operation_status_label)
         self.operation_progress = QProgressBar(); self.operation_progress.setObjectName("BackupRestoreOperationProgress"); self.operation_progress.setRange(0, 0); self.operation_progress.setTextVisible(False); self.operation_progress.setVisible(False); layout.addWidget(self.operation_progress)

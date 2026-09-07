@@ -1500,3 +1500,7 @@ Dokumentationskartenprojektion.
 ## Einklappbare Berichtsvorschau (07.09.2026)
 
 Der Berichtdialog besitzt ausschließlich den flüchtigen Klappzustand. Alle bewusst gewählten Fachseiten werden weiterhin vollständig erzeugt und nummeriert. Entwurf, PDF und finale Revision behalten ihre bestehende Projektion unabhängig von der Sichtbarkeit.
+
+## Dezenter Sicherungshinweis (07.09.2026)
+
+Das Backup-ViewModel besitzt Altersregel und Hinweistext. Settings rendert den Hinweis und den knappen Zustand in der bestehenden Datensicherungskarte. Die Shell liefert Ergebnisse und unterscheidet fehlgeschlagene von erfolgreicher leerer Discovery. Geprüfte Auswahl und Sicherungsdateien werden durch den Hinweis nicht verändert.

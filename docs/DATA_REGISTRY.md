@@ -2476,3 +2476,7 @@ Lesender Prozess:
 ## Einklappbare Berichtsvorschau (07.09.2026)
 
 Die einklappbare Berichtsvorschau liest weiterhin ausschließlich vorhandene Preparation und bewusste Draft-Fachauswahl. Der Klappzustand ist flüchtiger UI-State je vorhandener `subject_id`, keine Datenquelle oder Persistenz.
+
+## Dezenter Sicherungshinweis (07.09.2026)
+
+Quelle des Sicherungshinweises bleibt `BackupSummaryViewModel` aus vollständiger Verifikation. Nur `verified=True` mit gültigem zeitzonenbehaftetem ISO-Zeitpunkt bis zur aktuellen Zeit erlaubt eine Altersaussage. Sieben volle Tage markieren einen unverbindlichen Komfort-Hinweis. Systemzeit ist ein injizierter Laufzeitwert, keine neue persistente Datenquelle.

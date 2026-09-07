@@ -3427,3 +3427,7 @@ Schreibpfade verwenden weiterhin ausschließlich die vorhandenen `subject_key`-,
 ## Einklappbare Berichtsvorschau (07.09.2026)
 
 `LearningReportDialog._collapsed_preview_subject_ids` hält Fach-IDs nur für die Lebensdauer des Dialogs. `_subject_preview_section` umschließt die vorhandene Papierseite; `LearningReportSubjectPreviewToggle` bezeichnet die native, checkbare Schaltfläche. `preview_subject_sections` ordnet Fach-IDs ihren Schaltflächen und Papierseiten zu.
+
+## Dezenter Sicherungshinweis (07.09.2026)
+
+`BackupReminderViewModel(state, status_text, message)` und `build_backup_reminder(summary, now, checked)` projizieren ausschließlich den vorhandenen verifizierten Sicherungszeitpunkt. Zustände: `unknown`, `missing`, `due`, `current`. `SettingsScreen.backup_reminder` ist der dezente Hinweis mit bestehendem `InlineMessage`-Stil; `_refresh_backup_reminder` rendert die Projektion aus lokal gecachter Summary/Prüfstatus und injizierter Uhr.

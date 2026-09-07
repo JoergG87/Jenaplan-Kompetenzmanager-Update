@@ -465,7 +465,7 @@ class AppShell(QMainWindow):
             export_directory=self.exports_directory
         )
         self.master_data_screen = MasterDataScreen()
-        self.settings_screen = SettingsScreen()
+        self.settings_screen = SettingsScreen(now_provider=self.now_provider)
         self.settings_screen.set_backup_restore_available(
             self.backup_restore_available
         )
@@ -1401,8 +1401,8 @@ class AppShell(QMainWindow):
                 )
             )
         elif operation_type is BackupRestoreOperationType.DISCOVER_VERIFIED_BACKUPS:
-            self._backup_status_loaded = True
-            self.settings_screen.set_backup_status(None)
+            self._backup_status_loaded = False
+            self.settings_screen.set_backup_status(None, checked=False)
         else:
             messages = {
                 "backup_context_mismatch": (

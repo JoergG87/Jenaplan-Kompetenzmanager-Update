@@ -3691,3 +3691,7 @@ Archivierung, Verschluesselung, Renderer-Versionierung, Mehrfachartefakte, Rolle
 ## Einklappbare Berichtsvorschau (07.09.2026)
 
 Ein-/Ausklappen eines Vorschaufachs schreibt nichts, markiert den Entwurf nicht als geändert und verändert weder Fachauswahl noch Export. Der Klappzustand überlebt Vorschau-Neurendern innerhalb des Dialogs; ein neuer Dialog startet vollständig aufgeklappt.
+
+## Dezenter Sicherungshinweis (07.09.2026)
+
+Der Sicherungshinweis wird bei Statusrückgabe und Navigation in den Einstellungen neu projiziert. Vor der bestehenden asynchronen Prüfung oder bei einem Prüfungsfehler bleibt der Stand unbekannt; ein Fehler ist kein Beweis einer fehlenden Sicherung. Nur erfolgreiche Discovery ohne Ergebnis ergibt `missing`. Die vorhandene Discovery startet weiter erst beim Öffnen von Datensicherung; ein Fehler darf bei erneutem Öffnen erneut geprüft werden. Keine neue Abfrage, automatische Sicherung, Fristpersistenz oder Erinnerung außerhalb der App.

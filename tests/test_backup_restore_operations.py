@@ -26,6 +26,7 @@ from src.desktop_app.backup_restore_operations import (
     BackupRestoreOperationWorker,
     BackupRestoreOperationsController,
     BackupRestoreOperationType,
+    BackupRestoreOperationErrorInfo,
     BackupRestoreProgressPhase,
 )
 from src.core.sqlite_store import SQLiteDatabase
@@ -402,6 +403,20 @@ class TestBackupRestoreShellLifecycle:
             assert not window.settings_screen.backup_verify_button.isEnabled()
             _wait_for_controller(window.backup_restore_operations)
             assert "2026-07-16T08:00:00Z" in window.settings_screen.latest_backup_label.text()
+            window.close()
+
+    def test_failed_discovery_remains_unknown_and_can_be_retried(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            window = self._window(Path(temporary))
+            operation = BackupRestoreOperationType.DISCOVER_VERIFIED_BACKUPS
+            window._handle_backup_restore_failure(
+                operation, BackupRestoreOperationErrorInfo(operation, "OSError")
+            )
+            assert not window._backup_status_loaded
+            assert "nicht bestätigt" in window.settings_screen.latest_backup_label.text()
+            with mock.patch.object(window.backup_restore_operations, "start") as start:
+                window._load_backup_status()
+                start.assert_called_once()
             window.close()
 
     def test_close_is_rejected_until_operation_finishes(self) -> None:

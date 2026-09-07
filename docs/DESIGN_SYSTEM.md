@@ -1255,3 +1255,7 @@ transportieren.
 ## Einklappbare Berichtsvorschau (07.09.2026)
 
 Fachseiten der Entwurfsvorschau erhalten oberhalb der Papierseite eine ruhige native Schaltfläche mit Fachname, Pfeil und eindeutiger Aktion. Anfangs sind alle Abschnitte offen. Der geschlossene Abschnitt benötigt nur seine Schaltflächenhöhe; Inhalt und Papiergestaltung bleiben unverändert.
+
+## Dezenter Sicherungshinweis (07.09.2026)
+
+Sicherungshinweise verwenden eine ruhige Inline-Infomeldung im bestehenden Backupbereich und einen kurzen Status in seiner Navigationskarte. Kein Popup, Alarm, Rot, Countdown oder Blockieren der Arbeit. Die vorhandene bewusste Aktion `Backup erstellen` bleibt das einzige Erstellungsziel.

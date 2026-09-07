@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Die Einstellungen erinnern dezent an fehlende oder mindestens sieben Tage
+  alte geprüfte Sicherungen. Ungeprüfte und fehlgeschlagene Suchzustände
+  werden getrennt als nicht bestätigt angezeigt; ein erneuter Versuch ist
+  möglich. Der Hinweis startet keine Sicherung und ändert keine Daten.
+
 - Fachseiten der Berichtsvorschau lassen sich einzeln ein- und ausklappen.
   Der lokale Klappzustand bleibt beim Aktualisieren erhalten; Entwurf,
   bewusste Fachauswahl, vollständige Seitenzahl und PDF bleiben unverändert.

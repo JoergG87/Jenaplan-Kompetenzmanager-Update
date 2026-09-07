@@ -1020,3 +1020,7 @@ Fachauswahl.
 ## Einklappbare Berichtsvorschau (07.09.2026)
 
 `Fachname · einklappen/ausklappen` projiziert vorhandenen Fachnamen und lokalen Klappzustand. Die checkbare Schaltfläche bleibt bei geschlossenem Fach sichtbar und per Tastatur bedienbar. Deckblatt, Überblick und Abschluss bleiben sichtbar; Seitenanzahl bezeichnet weiter das vollständige Dokument.
+
+## Dezenter Sicherungshinweis (07.09.2026)
+
+`Datensicherung` in der Einstellungsübersicht zeigt den projizierten bekannten Sicherungsstand. `SettingsScreen.backup_reminder` auf der vorhandenen Detailseite nennt bei fehlender bzw. mindestens sieben Tage alter Sicherung die bestehende Aktion zur Neuerstellung. Bei unbekanntem, unbestätigtem, ungültigem oder zukünftigem Zeitpunkt wird kein Alter behauptet. Bei aktueller Sicherung oder nicht verfügbarem Backupbereich ist kein Erinnerungstext sichtbar.
