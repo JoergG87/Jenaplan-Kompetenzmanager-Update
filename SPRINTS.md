@@ -79,6 +79,36 @@ Technische Prüfungen und sichtbare Abnahme werden pro Schritt dokumentiert.
 Version, Paketierung und Veröffentlichung werden getrennt von der
 Funktionsentwicklung bewertet.
 
+### Abschlussnachweis 08.09.2026
+
+Geprüfter Produkt-/Testquellstand: `42113150e945bd6476074a59e2859aa572d94344`.
+Die anschließende Ergänzung dieses Nachweises verändert ausschließlich Dokumentation.
+
+- Vollständige Suite unter Python 3.14 / PySide6 mit `QT_QPA_PLATFORM=offscreen`:
+  **2.419 bestanden, 104 übersprungen, 100 Untertests bestanden**, 389,58 Sekunden,
+  Prozess-Exitcode 0. Ausgeführt mit `python3 -m pytest -v -p no:cacheprovider
+  -o faulthandler_timeout=90 --junitxml=<Ergebnisdatei>` sowie deaktiviertem
+  Bytecode-Schreiben und aktiviertem Python-Faulthandler.
+- Die 104 Auslassungen sind transparent: 94 verlangen den exakten lokalen
+  SQLCipher-4.17-Build, sieben eine ausdrückliche reale Keychain-Abnahme,
+  zwei den sichtbaren Cocoa-/WebEngine-Lifecycle und eine den gesonderten
+  Live-Metadatencheck der historischen Build-303-Referenz.
+- Lokale Nachweise: `/private/tmp/jkm-final-committed-suite.yXBsmL/pytest.log`,
+  `results.xml` und `exit-code.txt`. Diese temporären Dateien sind kein
+  dauerhaftes Releaseartefakt; der obige Aufruf ermöglicht die Wiederholung.
+- Alle fünf Funktionen wurden zusätzlich bewusst per Computer-Use in der
+  echten Cocoa-Oberfläche mit fiktiven temporären Daten geprüft. Der später
+  gefundene Breitenfehler der Fachauswahl wurde korrigiert und erneut sichtbar
+  geprüft. Die Alt-Tests schließen ihre modalen Dialoge und beenden den
+  Hintergrundworker vor der Freigabe seiner Qt-Fenster.
+- Datenbankschema, produktive Daten, Versionsquellen und veröffentlichte
+  Build-400-Artefakte sind unverändert. Die fünf Funktionen, Folgeupdate-
+  Vorbereitung und Import-Discovery sind abgeschlossen und lokal committet.
+  Kein neues Installationspaket, Push, Tag oder Release wurde erstellt.
+
+Damit ist der Quellstand im ausgeführten Testumfang bestätigt. Eine neue
+Paket-/Cipher-/Apple- oder schulische Betriebsfreigabe folgt daraus nicht.
+
 ## Pilot-Produktionsschutz im laufenden Betrieb
 
 - [x] Integrierte `Erste Schritte` auf einen exakt fünfstufigen, nicht

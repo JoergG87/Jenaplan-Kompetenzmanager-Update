@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Abschließende Gesamtprüfung des Quellstands `4211315` dokumentiert:
+  2.419 Tests und 100 Untertests bestanden, 104 explizit übersprungen,
+  sauberer Prozessabschluss. Alle fünf Komfortfunktionen zusätzlich per
+  Computer-Use mit fiktiven Daten geprüft. Paket-/Cipher-Freigaben bleiben
+  von diesem Quellnachweis getrennt.
+
 - Folgeupdate mit Dashboardkorrektur und fünf Komfortfunktionen in den
   Release Notes vorbereitet. Testbereinigung schließt die bewusst offen
   gehaltenen Berichts-/Beobachtungsdialoge und wartet auf die Sicherungssuche
