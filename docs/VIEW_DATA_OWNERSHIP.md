@@ -1116,6 +1116,12 @@ Der PySide-Dialog `Neuer Schüler` ist der aktive Eingabepfad fuer fachliche Sch
 
 ## Beobachtungsdialog
 
+Der Dialog besitzt den einmaligen Startfokus. Bei neuen Beobachtungen erhält
+die Katalogsuche Fokus, bei Bearbeitung beziehungsweise Schnellbeobachtung die
+Notiz. Spätere Fokuswechsel bleiben bei Qt und der Lehrkraft; der Dialog
+erzwingt seinen Startfokus bei erneuter Aktivierung nicht nochmals.
+Adapter-, Daten- und Speicherownership bleiben unverändert.
+
 Liest:
 
 - neue Beobachtung: V3-`students` und aktuelle `ENROLLED`-Mitgliedschaft aus

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Der Beobachtungsdialog startet bei Neu in der Kompetenzsuche und beim
+  Bearbeiten in der Notiz. Der Fokus wird nur beim ersten Öffnen gesetzt;
+  vorhandene Eingaben und bewusst gewählte spätere Fokusziele bleiben erhalten.
+
 - Kompositions-Abfragebudgets auf den bereits implementierten, konstanten
   Final-V4-Fachprofilbatch ausgerichtet: 15 SELECTs für Mehrkindlisten und
   16 für das kombinierte Dashboard; die Gleichheit für 1, 10 und 100 Kinder

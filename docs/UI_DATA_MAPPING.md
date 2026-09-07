@@ -845,6 +845,11 @@ Datenquelle, berechnet keine Membership und besitzt keinen Schreibprozess.
 
 ## Beobachtungsdialog
 
+Startfokus (Freigabe 07.09.2026): `initial_draft` und der lokale
+Schnellbeobachtungszustand bestimmen ausschließlich die Eingabekontrolle.
+Neu → `ObservationCatalogSearch`; Bearbeiten/Schnellbeobachtung →
+`Beobachtungsnotiz`. Es gibt keinen Write oder vorbelegten Notiztext.
+
 | UI-Information | Datenherkunft | Projektionstyp | Schreibend? | Verantwortliche Datenquelle | Regel |
 | --- | --- | --- | --- | --- | --- |
 | ausgewaehlter Schueler | neue Beobachtung: `student_id` aus dem aktuellen `CurrentMembershipReadSnapshot`; Bearbeitung: gespeicherte `observations.student_id` -> V3-`students` | Anzeige | Nein | V3-`students` / `student_school_year_assignments` / `observations` | Namen werden nicht als technische Identitaet verwendet; beim Edit bleibt der bestehende Schülerbezug erhalten |

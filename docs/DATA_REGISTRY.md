@@ -2,6 +2,10 @@
 
 ## Cipher-Produktrollen und Datenquellen
 
+Der Beobachtungs-Startfokus verwendet ausschließlich den bereits geöffneten
+`ObservationDraftViewModel` und lokale Widgetzustände. Es entsteht keine
+Datenquelle, gespeicherte Präferenz oder fachliche Ableitung.
+
 | Rolle / Quelle | Produktiver Pfad relativ zur Runtime-Root | Owner | Regel |
 |---|---|---|---|
 | Pilot-Produktionsroot-Autorität | `.jkm-runtime-root-v1` | Core Runtime | versionierter nicht geheimer Schutzmarker `pilot_product`/`synthetic_test`; keine Schülerdaten, Secrets, Schlüssel oder fachliche Wahrheit |

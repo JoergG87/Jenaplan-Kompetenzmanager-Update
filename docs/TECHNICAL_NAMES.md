@@ -3198,6 +3198,10 @@ Regel: Motion ist ausschliesslich lokaler, fluechtiger UI-State. Animationen set
 
 ## UI Sprint 4 - Schuelerprofil und Beobachtungs-Workspace
 
+Ergänzung 07.09.2026: `NewObservationDialog._focus_initial_input` setzt den
+einmaligen Startfokus nach dem ersten sichtbaren Öffnen. Der flüchtige
+Guard `_initial_focus_applied` verhindert Fokuswechsel beim erneuten Anzeigen.
+
 Registrierte Profilnamen:
 
 - `StudentProfilePageHeader`

@@ -46,7 +46,10 @@ wird vor der Implementierung in den kanonischen Dokumenten registriert.
 
 - [ ] `⌘N` für neue Beobachtung aus eindeutigem Kontext.
 - [ ] Nach erfolgreichem Speichern eine weitere Einzelbeobachtung beginnen.
-- [ ] Verlässlicher Fokus für neue und bearbeitete Beobachtungen.
+- [x] Verlässlicher Fokus für neue und bearbeitete Beobachtungen. Sechs
+  Fokus-/Dialogtests bestanden; Computer-Use unter Cocoa bestätigt direktes
+  Tippen in der Suche, Schnellbeobachtungsnotiz und Edit-Notiz mit erhaltenem
+  Text an ausschließlich synthetischen Daten.
 - [ ] Fachbereiche der Berichtsvorschau lokal ein-/ausklappen.
 - [ ] Dezenter Hinweis bei fehlender oder älterer verifizierter Datensicherung.
 - [ ] Dashboard-Folgeupdate anhand neuer Testnachweise vorbereiten.

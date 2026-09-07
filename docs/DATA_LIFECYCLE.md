@@ -2959,6 +2959,10 @@ Regel: Defaults fuer Stammgruppen, Kurse und `Mathe/Deutsch Kursverbund A` werde
 
 ## Beobachtung erfassen
 
+Der am 07.09.2026 freigegebene Startfokus ist rein lokal: Neue Beobachtungen
+beginnen in der Katalogsuche; Bearbeiten und kompetenzfreie Schnellbeobachtung
+beginnen in der Notiz. Öffnen, Fokus und erneutes Anzeigen speichern nichts.
+
 Start: Lehrkraft dokumentiert eine Beobachtung zu einem Schueler.
 
 Schreibprozess: PySide-Beobachtungsdialog ueber `StudentDesktopAdapter`, `observation.create`, `ObservationService`, `SQLiteObservationRepository` und SQLite.

@@ -7,7 +7,7 @@ from typing import Callable
 import uuid
 
 from PySide6.QtCore import QDate, QTimer, Qt
-from PySide6.QtGui import QKeyEvent, QMouseEvent, QResizeEvent
+from PySide6.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QShowEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -196,6 +196,7 @@ class NewObservationDialog(QDialog):
         self.curriculum_adapter = curriculum_adapter
         self.observation_adapter = observation_adapter
         self.initial_draft = initial_draft
+        self._initial_focus_applied = False
         self.subject_options = subject_options
         self.competency_subject_groups = competency_subject_groups
         self.recent_competencies = recent_competencies
@@ -238,6 +239,22 @@ class NewObservationDialog(QDialog):
         self.setMinimumSize(1180, 680)
         self.resize(1400, 900)
         self._build()
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
+        super().showEvent(event)
+        if not self._initial_focus_applied:
+            QTimer.singleShot(0, self, self._focus_initial_input)
+
+    def _focus_initial_input(self) -> None:
+        if self._initial_focus_applied or not self.isVisible():
+            return
+        self._initial_focus_applied = True
+        target = (
+            self.note_input
+            if self.initial_draft is not None or self.quick_observation_checkbox.isChecked()
+            else self.catalog_search_input
+        )
+        target.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)

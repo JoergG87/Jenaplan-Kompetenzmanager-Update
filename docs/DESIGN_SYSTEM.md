@@ -700,6 +700,11 @@ Responsive Regel: bei 1400 x 900 ist die Phasenleiste 232 px, bei 1280 x 800 etw
 
 ## Kindbezogene Workspace-Sprache - UI Sprint 4
 
+UX-Ergänzung 07.09.2026: Der einmalige Startfokus im Beobachtungsdialog
+liegt für Neu in der Katalogsuche, für Bearbeiten und Schnellbeobachtung in
+der Notiz. Er verwendet den vorhandenen Fokusrahmen, selektiert oder ändert
+keinen vorhandenen Text und wird beim erneuten Anzeigen nicht erzwungen.
+
 Schuelerprofil, Kompetenz-Cockpit und Beobachtungsdialog bilden einen zusammenhaengenden paedagogischen Workspace. Die Hierarchie ist verbindlich: zuerst Kind und aktueller Kontext, danach primaere paedagogische Information, relevante Aktion, sekundaere Details und zuletzt historische beziehungsweise ergaenzende Inhalte. Der Kindername bleibt im Profilkopf und im Dialog-`PageHeader` dauerhaft sichtbar. Im Profil markiert genau eine blaue Primaeraktion `Neue Beobachtung`; Datei und seltenere bestehende Aktionen bleiben sekundaer.
 
 Das Profil nutzt `AppCard[accent]` fuer den kompakten Kindkontext, `SegmentedControl` fuer die lokale Navigation sowie `SectionHeader`, `FilterBar`, `SearchField`, `FilterChip`, `StatusBadge` und `EmptyState` fuer bestehende Inhalte. Beobachtungen erscheinen als scanbare Kartenzeilen: Datum und Fach bilden den Kopf, Kontext und Notiz bleiben darunter ruhig, Details und Bearbeiten sind bewusst erreichbar. Leere Beobachtungslisten bieten genau die naechste sinnvolle Aktion an.
