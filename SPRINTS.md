@@ -10,21 +10,54 @@ Profilnavigation aus `Passende Kinder` mit getrennter Aktion `Beobachten`, der
 Kontext `Partnerarbeit`, die sichtbare Stammgruppe in kombinierten
 Schülerlisten und die Fachillustrationen/Fachvignetten.
 
-Der aktuelle HEAD `926582f7db3a44642b05301fbbb676a91a1f500c` liegt genau
-einen Commit danach. Die dort umgesetzte Korrektur der individuellen
+Der erste Produktfix nach Build 400 ist
+`926582f7db3a44642b05301fbbb676a91a1f500c`. Die dort umgesetzte Korrektur der individuellen
 Fachrelevanz von Dashboard-Heatmap und `Passende Kinder` ist unveröffentlicht.
 Da `src/version.py` weiterhin 0.4.0 / Build 400 ausweist, ist aus diesem
 Quellstand keine Paketierung erlaubt. Ein Folgebuild benötigt mindestens die
 Buildnummer 401; über die sichtbare Version 0.4.0 oder 0.4.1 entscheidet der
 Product Owner gesondert.
 
-Weiterhin offen und nicht als Implementierungssprint freigegeben sind globales
-`⌘N`, `Weitere Beobachtung`, verbindlicher Initialfokus,
-einklappbare Fachbereiche der Berichtsvorschau, Backup-Erinnerung, `Zuletzt
-bearbeitet` auf `Heute`, bewusster Klartextexport finaler RPA-/LCA-Artefakte,
+Weiterhin nicht zur Implementierung freigegeben sind `Zuletzt bearbeitet`
+auf `Heute`, bewusster Klartextexport finaler RPA-/LCA-Artefakte, der eigentliche
 Schülerlisten-Import, Mehrkind-/Gruppenbeobachtung und Klassen-/Kursmatrix.
 
-## Pilot-Produktionsschutz im Feature Freeze
+## Kleine Folgefunktionen – Freigabe 07.09.2026
+
+**Vision:** Vorhandene Alltagswege verkürzen und den lokalen Betrieb leichter
+überblicken. Der Product Owner hat fünf kleine Funktionen, ihre notwendige
+Detailausgestaltung, bewusste Computer-Use-Prüfungen und Commits nach
+erfolgreicher Prüfung freigegeben. Dashboard-Updatevorbereitung und
+Importvorbereitung gehören ebenfalls zum Auftrag.
+
+**Discovery:** Der Beobachtungsdialog speichert bereits über den kanonischen
+Adapter, schließt danach aber und bietet keinen globalen Tastaturzugang.
+Der Startfokus ist nicht ausdrücklich festgelegt. Berichtsvorschau und
+Backupzusammenfassung besitzen bereits die benötigten Lesequellen.
+
+**Datenmodell-/Architekturreview:** Keine neue fachliche Entität oder
+Schemaänderung. Fokus, Navigation und Disclosure bleiben lokaler UI-State;
+weitere Beobachtungen verwenden jeweils den bestehenden Einzelwrite. Der
+Import wird zuerst auf bestehende IDs und Assignmentverträge abgebildet.
+
+**UX-/Promptreview:** Bestehende Komponenten, verständliche Beschriftungen,
+Tastaturbedienung und synthetische Computer-Use-Prüfung. Jede neue UI-Aktion
+wird vor der Implementierung in den kanonischen Dokumenten registriert.
+
+- [ ] `⌘N` für neue Beobachtung aus eindeutigem Kontext.
+- [ ] Nach erfolgreichem Speichern eine weitere Einzelbeobachtung beginnen.
+- [ ] Verlässlicher Fokus für neue und bearbeitete Beobachtungen.
+- [ ] Fachbereiche der Berichtsvorschau lokal ein-/ausklappen.
+- [ ] Dezenter Hinweis bei fehlender oder älterer verifizierter Datensicherung.
+- [ ] Dashboard-Folgeupdate anhand neuer Testnachweise vorbereiten.
+- [ ] Schülerlisten-Import mit Formaten, Identität, Dubletten, Vorschau und
+  Transaktionsgrenze fachlich-technisch vorbereiten.
+
+Technische Prüfungen und sichtbare Abnahme werden pro Schritt dokumentiert.
+Version, Paketierung und Veröffentlichung werden getrennt von der
+Funktionsentwicklung bewertet.
+
+## Pilot-Produktionsschutz im laufenden Betrieb
 
 - [x] Integrierte `Erste Schritte` auf einen exakt fünfstufigen, nicht
   blockierenden Final-V4-Pilotflow ohne Beispielrestore und globale
@@ -861,11 +894,8 @@ Migration-Review.
   Entscheidung über Beobachtungsaggregat, Einzelbewertungen und Transaktion
 - Klassen-/Kursmatrix erst nach Pilottest des vorhandenen
   Dokumentationsstatus und der Dashboard-Heatmap
-- globales `⌘N`, `Weitere Beobachtung` und verbindlicher Initialfokus erst nach
-  Pilotbefund und eigener UX-/Accessibility-Entscheidung
-- einklappbare Fachbereiche der Berichtsvorschau und `Zuletzt bearbeitet` auf
-  `Heute` erst nach eigener Produkt-/UX-Entscheidung
-- Backup-Erinnerung und bewusster Klartextexport finaler RPA-/LCA-Artefakte
+- `Zuletzt bearbeitet` auf `Heute` erst nach eigener Produkt-/UX-Entscheidung
+- bewusster Klartextexport finaler RPA-/LCA-Artefakte
   erst nach eigener Betriebs- und Securityentscheidung
 - Professioneller Betrieb erst nach Entscheidungen zu Signierung,
   Notarisierung, produktivem Supportprozess, Updates und Diagnose

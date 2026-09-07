@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Kompositions-Abfragebudgets auf den bereits implementierten, konstanten
+  Final-V4-Fachprofilbatch ausgerichtet: 15 SELECTs für Mehrkindlisten und
+  16 für das kombinierte Dashboard; die Gleichheit für 1, 10 und 100 Kinder
+  bleibt verbindlich geprüft. Keine Produktabfrage wurde verändert.
+
+- Weiterarbeit vom 07.09.2026 mit fünf freigegebenen Komfortfunktionen,
+  Dashboard-Folgeupdatevorbereitung und Schülerimport-Discovery in den
+  kanonischen Planungsdokumenten eingeordnet. Der Dashboard-Fix wird als
+  konkreter Änderungscommit statt als vermeintlich dauerhafter HEAD benannt.
+
 - LEG-HTML-Vertragstests verwenden eigenständige synthetische ViewModels
   statt eines nicht versionierten Prototypimports. Damit lässt sich die
   vollständige Testsuite auch aus dem vorhandenen Repository sammeln; der

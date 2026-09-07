@@ -71,8 +71,8 @@ Notarisierung sind getrennte Gates.
 
 ### Unreleased nach Build 400
 
-Der aktuelle HEAD `926582f7db3a44642b05301fbbb676a91a1f500c` liegt genau
-einen Commit nach der veröffentlichten Referenz. Er korrigiert die individuelle
+Der erste Produktfix nach Build 400,
+`926582f7db3a44642b05301fbbb676a91a1f500c`, korrigiert die individuelle
 Fachrelevanz der Dashboard-Heatmap und von `Passende Kinder für diese Stunde`,
 ist aber noch nicht als neuer Build veröffentlicht. Da `src/version.py`
 weiterhin 0.4.0 / Build 400 ausweist, darf aus diesem Stand kein weiteres
@@ -97,12 +97,16 @@ Import abhängig noch erneut freizugeben.
 
 ## Phase 3 - Beobachtung im Unterricht beschleunigen
 
+Am 07.09.2026 wurden Tastaturzugang, Weitererfassen und Eingabefokus als
+kleines Komfortpaket freigegeben. Gemeinsam mit den freigegebenen
+einklappbaren Berichtsfächern und dem Datensicherungshinweis werden sie in
+`SPRINTS.md` geführt. Die Importvorbereitung läuft als eigener fachlicher
+Arbeitsschritt; eine Importimplementierung ist damit nicht beschlossen.
+
 Nach Auswertung des Pilotworkflows werden mögliche Mehrkind-Abläufe geprüft:
 
 - Gruppenbeobachtung
 - Schnellbeobachtung mehrerer Kinder beziehungsweise Gruppenbewertung
-- globales `⌘N` für `Neue Beobachtung`
-- `Weitere Beobachtung` nach dem Speichern und verbindlicher Initialfokus
 - geplante Beobachtungen
 - Kompetenzvorlagen für Unterrichtssituationen
 
@@ -119,7 +123,6 @@ Dashboard-Heatmaps werden zusätzliche Übersichten bewertet:
 - Klassenmatrix und Kursmatrix
 - gruppenbezogene Dokumentationsstände
 - `Zuletzt bearbeitet` auf `Heute`
-- einklappbare Fachbereiche in der Berichtsvorschau
 - historische Kompetenz- und Entwicklungsansichten
 - pädagogische Hinweise aus vorhandener Evidenz ohne automatische Bewertung
 
@@ -132,7 +135,7 @@ Analyseflächen benötigen eine eigene Produktentscheidung.
 Der produktive Support-Reset ist als lokaler Ausnahmeweg umgesetzt.
 Planungskandidaten bleiben Developer-ID-Signierung und Apple-Notarisierung,
 Stable-Inbetriebnahme, ein erst vor Schemaänderungen zu entscheidender
-Migrationsprozess, Diagnosepaket, Backup-Erinnerung, der bewusste
+Migrationsprozess, Diagnosepaket, der bewusste
 Klartextexport finaler verschlüsselter RPA-/LCA-Artefakte, geregelter
 Gerätewechsel sowie eine spätere Windows-Version mit plattformeigener
 Credential-Anbindung.

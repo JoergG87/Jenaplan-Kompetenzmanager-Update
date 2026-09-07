@@ -576,11 +576,13 @@ def test_composed_product_query_budgets_are_constant_for_1_10_100_students(
 
     assert counts_by_size[1] == counts_by_size[10]
     assert counts_by_size[10] == counts_by_size[100]
+    # Final V4 adds one shared profile/selection read to each multi-child
+    # projection. Its cost stays constant, including deliberately empty profiles.
     assert counts_by_size[100] == {
-        "student_list": 14,
-        "group_overview": 14,
-        "course_members": 14,
-        "course_group": 14,
-        "dashboard": 15,
+        "student_list": 15,
+        "group_overview": 15,
+        "course_members": 15,
+        "course_group": 15,
+        "dashboard": 16,
         "report_preparation": 14,
     }

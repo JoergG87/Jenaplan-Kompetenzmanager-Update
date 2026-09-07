@@ -24,9 +24,8 @@ Leistungsbewertung einführen.
 ## Release-Baseline und Statusstichtag
 
 Der veröffentlichte, unveränderliche Pilotstand 0.4.0 / Build 400 stammt aus
-Commit `e96a77e328da98bfb3622201110e6e08c8b3e312`. Der aktuelle HEAD
-`926582f7db3a44642b05301fbbb676a91a1f500c` liegt genau einen Commit danach
-und korrigiert ausschließlich die individuelle Fachrelevanz der
+Commit `e96a77e328da98bfb3622201110e6e08c8b3e312`. Der erste Produktfix danach,
+`926582f7db3a44642b05301fbbb676a91a1f500c`, korrigiert die individuelle Fachrelevanz der
 Dashboard-Heatmap und von `Passende Kinder für diese Stunde`. Dieser Fix ist
 umgesetzt, aber unveröffentlicht. Solange `src/version.py` noch Build 400
 ausweist, darf daraus kein Artefakt entstehen. Ein Folgebuild benötigt
@@ -107,12 +106,21 @@ automatisch über eine Funktionsänderung.
 
 ## C - Beschlossen und noch umzusetzen
 
-Es gibt weiterhin keine fachliche offene Funktion, die zugleich eindeutig
-beschlossen, datenmodellseitig geklärt und als Implementierungssprint
-freigegeben ist. Die früher hier geführte deaktivierte Sparkle-2-Updatebasis ist
-inzwischen implementiert und deshalb kein C-Punkt mehr. P0-Fehler aus dem
-Pilottest werden befundbezogen priorisiert; daraus entsteht keine pauschale
-Funktionsfreigabe.
+Am 07.09.2026 hat der Product Owner fünf kleine Funktionen mit freier
+Detailausgestaltung, Computer-Use-Prüfung und einzelnen geprüften Commits
+freigegeben. Der aktuelle Stand wird in `SPRINTS.md` geführt:
+
+| Funktion | Grenze |
+| --- | --- |
+| `⌘N` für `Neue Beobachtung` | vorhandener eindeutiger Kindkontext; sonst bewusste Auswahl |
+| Weitererfassen nach dem Speichern | neue Einzelbeobachtung für dasselbe Kind; keine Datenkopie |
+| Verlässlicher Initialfokus | lokale Tastaturbedienung für Neu und Bearbeiten |
+| Einklappbare Fachbereiche der Berichtsvorschau | nur Anzeigezustand; vollständiger Bericht bleibt erhalten |
+| Dezenter Datensicherungshinweis | vorhandene verifizierte Backupzusammenfassung; kein automatisches Backup |
+
+Die Vorbereitung des Schülerlisten-Imports ist ebenfalls beauftragt; der
+eigentliche Import bleibt bis zum abgeschlossenen Datenmodell- und
+Identitätsreview in Kategorie D.
 
 ## D - Ideen, noch nicht entschieden
 
@@ -125,9 +133,6 @@ Funktionsfreigabe.
 | Gruppenbeobachtung | P1-Kandidat | Gemeinsames Aggregat gegenüber mehreren Einzelbeobachtungen entscheiden. |
 | Schnellbeobachtung mehrerer Kinder | P1-Kandidat | Auswahl, gemeinsamer Kontext und atomare Einzelresultate entscheiden. |
 | Gruppenbewertung | P1-Kandidat | Individuelle Bewertung ohne automatische Gleichsetzung entscheiden. |
-| Globales `⌘N` für `Neue Beobachtung` | P2-Kandidat | Geltungsbereich, aktiver Kindkontext, Konflikte mit Texteingaben und barrierefreie Alternative entscheiden. |
-| `Weitere Beobachtung` nach dem Speichern | P2-Kandidat | Rücksetz-, Vorbelegungs- und Abbruchverhalten entscheiden; kein automatisches Duplizieren. |
-| Verbindlicher Initialfokus im Beobachtungsdialog | P2-Kandidat | Zielkontrolle für Neu/Bearbeiten, Tastaturreihenfolge und Screenreader-Verhalten entscheiden. |
 | Klassenmatrix | P1/P2-Kandidat | Fachlicher Zweck nach Pilottest des Dokumentationsstatus entscheiden. |
 | Kursmatrix | P1/P2-Kandidat | Abgrenzung zur vorhandenen Kursübersicht und Datenaggregation entscheiden. |
 | Gruppenbezogene Dokumentationsstände für Kurs/Kursverbund | P2-Kandidat | Die vorhandene Stammgruppen-Heatmap nicht unbemerkt verallgemeinern. |
@@ -140,13 +145,11 @@ Funktionsfreigabe.
 | Erweiterte historische Entwicklungen | P2-Kandidat | Nur belegte Ereignisse, keine erfundenen Zwischenwerte oder Trendnoten. |
 | Zusätzliche Ansichten auf Beobachtungsverläufe | P2-Kandidat | Nutzen und Abgrenzung zu vorhandener Suche, Filtern und Kompetenz-Evidenz entscheiden. |
 | Historische Trends außerhalb des Schülerprofils | P2-Kandidat | Eigene Auswertungsfläche statt allgemeiner Dashboardanalyse entscheiden. |
-| Einklappbare Fachbereiche in der Berichtsvorschau | P2-Kandidat | Disclosure-State, Tastaturbedienung, Druck-/PDF-Unabhängigkeit und Verhalten bei langen Berichten entscheiden. |
 | Formulierungshilfen für Berichte | P2-Kandidat | Manuelle Verantwortung, Vorlagenumfang und klare Grenze zu KI-/Automatiktext entscheiden. |
 | Word-Export | P2-Kandidat | Format, Inhalt, Layout, Historienquelle und Datenschutz entscheiden. |
 | Medienvorschau | P2-Kandidat | Dateitypen, sichere Darstellung, Performance und externe Referenzen entscheiden. |
 | Stammgruppen archivieren | P2-Kandidat | Historien- und Zuordnungsregeln vor Schreibprozess entscheiden. |
 | Kurse archivieren | P2-Kandidat | Historien- und Zuordnungsregeln vor Schreibprozess entscheiden. |
-| Automatisierte Backup-Erinnerung | P3-Kandidat | Erinnerung ist kein automatisches Backup; Frequenz und lokale Speicherung entscheiden. |
 | Bewusster Klartextexport finaler RPA-/LCA-Artefakte | P2/P3-Kandidat | Zielwahl, No-Clobber, Integritätsprüfung, Warnung und Verantwortung für die bewusst unverschlüsselte Ausgabedatei entscheiden; der sichere Viewer bleibt unverändert. |
 | Developer-ID-Signierung und Apple-Notarisierung | P3-Kandidat | Zertifikat, Verantwortlichkeit und reproduzierbaren Releaseprozess klären. |
 | Schemaändernde Update-Migrationen | P3-Kandidat | Vor der ersten Schemaänderung Vorwärtsmigration, Sicherung, Wiederanlauf, Kompatibilitätsfenster und Downgradeverbot gesondert entscheiden. |
@@ -218,15 +221,16 @@ und daher keine P1-Punkte.
 
 ### P2 - Fachliche Komfortfunktionen
 
-Globales `⌘N`, `Weitere Beobachtung`, Initialfokus, geplante Beobachtungen,
-Kompetenzvorlagen, `Zuletzt bearbeitet`, einklappbare Berichtsvorschau,
+Die am 07.09.2026 freigegebenen Funktionen stehen in Kategorie C.
+Weitere Kandidaten bleiben geplante Beobachtungen,
+Kompetenzvorlagen, `Zuletzt bearbeitet`,
 historische Ansichten, Formulierungshilfen, Medienvorschau, Word-Export und
 fachlich geklärte Archivierungsfunktionen.
 
 ### P3 - Betrieb und Verteilung
 
 Developer-ID/Notarisierung, Stable-Updateprozess, Diagnosepaket,
-Backup-Erinnerung, bewusster Klartextexport finaler RPA-/LCA-Artefakte,
+bewusster Klartextexport finaler RPA-/LCA-Artefakte,
 Gerätewechsel und später Windows. Der produktive
 Support-Reset-Schlüssel und der beaufsichtigte Pilot-Updateprozess sind mit
 `0.2.2` umgesetzt und bleiben im realen Pilottest zu validieren.

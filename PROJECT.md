@@ -9,8 +9,8 @@ ist eine unveränderliche Referenz: Er wird weder neu gebaut noch unter
 derselben Buildnummer aus einem anderen Quellstand erneut paketiert oder
 veröffentlicht.
 
-Der aktuelle Repository-HEAD `926582f7db3a44642b05301fbbb676a91a1f500c`
-liegt genau einen Commit nach der veröffentlichten Referenz. Er korrigiert die
+Der erste Produktfix nach der veröffentlichten Referenz,
+`926582f7db3a44642b05301fbbb676a91a1f500c`, korrigiert die
 individuelle schuljahresbezogene Fachrelevanz der Dashboard-Heatmap und von
 `Passende Kinder für diese Stunde`. Diese Korrektur ist umgesetzt, aber nicht
 als neuer Build veröffentlicht. `src/version.py` weist am aktuellen HEAD noch
@@ -19,7 +19,23 @@ zulässig. Vor einem neuen Artefakt ist mindestens die monotone Buildnummer
 `401` erforderlich. Ob die sichtbare Version dabei `0.4.0` oder `0.4.1`
 lautet, bleibt einer gesonderten Product-Owner-Entscheidung vorbehalten.
 
-## Pilot-Produktionsschutz im Feature Freeze
+## Aktuelle Weiterarbeit – freigegeben am 07.09.2026
+
+Der Product Owner hat die Vorbereitung des Dashboard-Folgeupdates, fünf
+kleine Komfortfunktionen und die fachlich-technische Vorbereitung des
+Schülerlisten-Imports beauftragt. Die fünf Funktionen sind: Tastaturzugang
+`⌘N` zur Beobachtung, Weitererfassen nach erfolgreichem Speichern,
+verlässlicher Eingabefokus, einklappbare Fachbereiche der Berichtsvorschau
+und ein dezenter Datensicherungshinweis. Details, Abnahmen und aktueller
+Umsetzungsstatus stehen im entsprechenden Abschnitt von `SPRINTS.md`.
+
+Die Umsetzung verwendet die vorhandenen Daten- und Schreibverträge. Der
+Import bleibt bis zur Entscheidung über Identität, Dubletten und atomare
+Zuordnungen ein Vorbereitungspaket. Die sichtbare Bedienprüfung erfolgt
+per Computer-Use an einer getrennten Instanz mit synthetischen Daten.
+Abgeschlossene und passend geprüfte Schritte werden einzeln committet.
+
+## Pilot-Produktionsschutz im laufenden Betrieb
 
 Der integrierte Fünf-Schritt-Onboardingflow und der veröffentlichte Build 400
 verwenden denselben Final-V4-Produktvertrag. Historische Build-302- und
@@ -1443,31 +1459,27 @@ Jede Implementierung folgt dieser Reihenfolge:
 
 ## Aktueller Entwicklungsstatus
 
-Die veröffentlichte Produktbasis ist 0.4.0 / Build 400 aus `e96a77e`. Der
-aktuelle HEAD `926582f` enthält ausschließlich danach die unveröffentlichte
-Korrektur der individuellen Dashboard-Fachrelevanz. Die aktive Phase ist die
-beaufsichtigte Pilotvalidierung der Build-400-Basis mit anschließender,
-befundbasierter Fehlerbehebung; aus `926582f` darf vor einer monotonen
-Buildanhebung kein Artefakt entstehen.
+Die veröffentlichte Produktbasis ist 0.4.0 / Build 400 aus `e96a77e`.
+`926582f` ergänzt die unveröffentlichte Korrektur der individuellen
+Dashboard-Fachrelevanz. Die Weiterarbeit vom 07.09.2026 ergänzt die oben
+genannten fünf freigegebenen Funktionen. Vor einer neuen Paketierung bleibt
+eine monotone Buildanhebung erforderlich.
 
 Aktuelle Arbeitsschwerpunkte sind:
 
 - reale fachliche, ergonomische und betriebliche Pilotpruefung
-- ausschliesslich befundbasierte P0-Fehlerbehebung
+- befundbasierte Fehlerbehebung und die fünf freigegebenen Komfortfunktionen
 - Accessibility- und Tastaturqualitaet
 - robuste Desktop-Darstellung in den festgelegten Zielgroessen
-- Vorbereitung der noch nicht freigegebenen Planungskandidaten aus `BACKLOG.md`
+- fachlich-technische Vorbereitung des Schülerlisten-Imports
 - Betriebs- und Datenschutzentscheidungen ohne Vorwegnahme einer Auslieferung
 
 Weiterhin offen und durch diesen Dokumentationsabgleich nicht freigegeben sind
 insbesondere:
 
-- globales `⌘N` für `Neue Beobachtung`, `Weitere Beobachtung` nach dem
-  Speichern und ein verbindlicher Initialfokus im Beobachtungsdialog;
-- einklappbare Fachbereiche in der Berichtsvorschau;
-- Backup-Erinnerung und `Zuletzt bearbeitet` auf `Heute`;
+- `Zuletzt bearbeitet` auf `Heute`;
 - bewusster Klartextexport finaler verschlüsselter RPA-/LCA-Artefakte;
-- Schülerlisten-Import;
+- Implementierung des Schülerlisten-Imports nach abgeschlossener Vorbereitung;
 - Mehrkind-Schnellbeobachtung beziehungsweise Gruppenbeobachtung;
 - Klassen-/Kursmatrix.
 
