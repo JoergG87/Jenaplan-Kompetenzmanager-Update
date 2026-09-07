@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `Speichern & weitere` erlaubt mehrere bewusst gespeicherte Einzelbeobachtungen
+  für dasselbe Kind. Nach Erfolg bleiben nur Kontext und Datum vorgewählt;
+  Notiz, Bewertungen und Anhänge werden geleert und der nächste Entwurf erhält
+  einen neuen Operation-Token. Ein Speicherfehler erhält die Eingabe. Bereits
+  gespeicherte Einträge werden auch nach Abbruch der nächsten Eingabe angezeigt.
+
 - `⌘N` öffnet die neue Beobachtung für das sichtbare Profil oder eine
   bewusst selektierte Schülerzeile. Ohne eindeutige Auswahl führt es zur
   Schülersuche. Offene Dialoge und andere aktive Fenster bleiben unberührt;

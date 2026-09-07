@@ -2959,6 +2959,15 @@ Regel: Defaults fuer Stammgruppen, Kurse und `Mathe/Deutsch Kursverbund A` werde
 
 ## Beobachtung erfassen
 
+`Speichern & weitere` steht ausschließlich beim Anlegen bereit und verwendet
+den unveränderten atomaren Einzelwrite. Erst ein bestätigter Erfolg setzt den
+lokalen Entwurf zurück und erzeugt einen neuen Operation-Token. Bei Fehler
+bleiben Entwurf und Token für den vorhandenen Wiederholungsvertrag erhalten.
+Während des Speicherns sind reentrante Speicherung und Schließen gesperrt.
+Ein späterer Abbruch verwirft nur die noch ungespeicherte Eingabe; bereits
+gespeicherte Beobachtungen bleiben erhalten und lösen den Shell-Refresh aus.
+Die Funktion ist keine Mehrkindbeobachtung oder automatische Duplizierung.
+
 `⌘N` öffnet für das sichtbare Profil beziehungsweise die bewusst selektierte
 sichtbare Schülerzeile denselben Dialog. Ohne eindeutiges Kind öffnet es die
 Schülerliste zur bewussten Auswahl. Die Aktion gilt ausschließlich im aktiven

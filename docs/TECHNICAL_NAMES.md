@@ -3198,6 +3198,14 @@ Regel: Motion ist ausschliesslich lokaler, fluechtiger UI-State. Animationen set
 
 ## UI Sprint 4 - Schuelerprofil und Beobachtungs-Workspace
 
+`NewObservationDialog.save_draft(continue_entry=True)` verwendet denselben
+Einzelwrite und ruft erst nach Erfolg `_reset_for_next_observation` auf.
+`ObservationSaveAndContinueButton` / `save_and_continue_button` ist die
+sekundäre Aktion für neue Beobachtungen; `observation_actions` hält die
+vorhandene Aktionsleiste. `_save_pending` sperrt reentrante Writes;
+`has_saved_observation` ist ein rein flüchtiger Erfolgsbeleg für den Shell-
+Refresh nach Abbruch einer späteren, noch ungespeicherten Eingabe.
+
 `AppShell.new_observation_action` ist die fenstergebundene Qt-Standardaktion
 `New`; `AppShell._open_observation_shortcut` delegiert an die vorhandenen
 Beobachtungswege. `StudentsScreen.selected_student_id` liefert ausschließlich

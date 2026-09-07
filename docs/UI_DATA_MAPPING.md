@@ -845,6 +845,14 @@ Datenquelle, berechnet keine Membership und besitzt keinen Schreibprozess.
 
 ## Beobachtungsdialog
 
+`Speichern & weitere` ist eine zusätzliche sekundäre Aktion nur für neue
+Beobachtungen. Sie speichert den vollständigen aktuellen
+`ObservationDraftViewModel` über denselben Adapter wie `Speichern`. Nach
+Erfolg zeigt die Inline-Meldung den Abschluss an; die nächste Eingabe behält
+Kind, Datum, Fach, Kontext und Schnellbeobachtungsmodus. Notiz, ausgewählte
+Kompetenzen/Ratings, Anhänge, Katalogsuche und Beobachtungs-ID sind leer.
+`Speichern` schließt weiterhin nach Erfolg, `Abbrechen` schreibt nichts.
+
 `Neue Beobachtung` per Qt-Standardkürzel `New` (`⌘N` auf macOS) verwendet
 die `student_id` des sichtbaren Profils oder der bewusst markierten
 Schülerlistenprojektion. Ohne ID führt die Aktion zur Schülerauswahl und

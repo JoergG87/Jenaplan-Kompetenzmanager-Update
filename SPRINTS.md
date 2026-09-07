@@ -49,7 +49,11 @@ wird vor der Implementierung in den kanonischen Dokumenten registriert.
   Computer-Use bestätigt Profilzugang, keinen zweiten Dialog bei erneutem
   Kürzel, Suchfokus ohne Auswahl und Dialog für das per Tab/Pfeiltaste bewusst
   markierte zweite Testkind.
-- [ ] Nach erfolgreichem Speichern eine weitere Einzelbeobachtung beginnen.
+- [x] Nach erfolgreichem Speichern eine weitere Einzelbeobachtung beginnen.
+  Zwölf Komforttests bestanden, vorhandene Beobachtungs-/UoW-Regressionen
+  geprüft. Computer-Use bestätigt zwei getrennte gespeicherte Einträge,
+  leere Folgeentwürfe mit Notizfokus, sichtbare Aktionen und erhaltene Einträge
+  nach Abbruch des dritten Entwurfs.
 - [x] Verlässlicher Fokus für neue und bearbeitete Beobachtungen. Sechs
   Fokus-/Dialogtests bestanden; Computer-Use unter Cocoa bestätigt direktes
   Tippen in der Suche, Schnellbeobachtungsnotiz und Edit-Notiz mit erhaltenem

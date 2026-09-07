@@ -700,6 +700,14 @@ Responsive Regel: bei 1400 x 900 ist die Phasenleiste 232 px, bei 1280 x 800 etw
 
 ## Kindbezogene Workspace-Sprache - UI Sprint 4
 
+UX-Ergänzung 07.09.2026: `Speichern & weitere` liegt als sekundärer Button
+unter der bestehenden Beobachtungs-Aktionsleiste. `Speichern` bleibt die
+einzige primäre Aktion. Der Button ist per Tab/Space erreichbar, kein
+Defaultbutton und bei Bearbeitung verborgen. Nach Erfolg erhalten neue
+Normalbeobachtungen die Katalogsuche, Schnellbeobachtungen die leere Notiz als
+Fokusziel. Die bestehende Drei-Zonen-Struktur und getrennte Scrollbereiche
+bleiben erhalten.
+
 UX-Ergänzung 07.09.2026: `⌘N` ergänzt die vorhandenen Beobachtungsbuttons.
 Ohne sichtbaren eindeutigen Kindkontext öffnet die Aktion die Schülerliste
 mit fokussierter Suche und dem Hinweis, ein Kind auszuwählen. Autorepeat ist

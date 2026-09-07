@@ -1116,6 +1116,12 @@ Der PySide-Dialog `Neuer Schüler` ist der aktive Eingabepfad fuer fachliche Sch
 
 ## Beobachtungsdialog
 
+Der Dialog besitzt den flüchtigen Weitererfassungszustand und setzt ihn erst
+nach bestätigtem Adapter-Erfolg zurück. Die Shell wertet ausschließlich den
+Erfolgsbeleg `has_saved_observation` aus, um auch nach späterem Abbruch die
+vorhandenen Ansichten neu zu lesen. Persistenz und Atomarität bleiben bei
+Application-/Domain-Service, Repository und Managed-Document-Lifecycle.
+
 Die Shell besitzt die fenstergebundene Aktion `⌘N` und die Auflösung des
 sichtbaren Kindkontexts. `StudentsScreen` liefert nur die ID der selektierten
 sichtbaren Zeile; der vorhandene Adapter prüft den aktuellen Kindkontext.

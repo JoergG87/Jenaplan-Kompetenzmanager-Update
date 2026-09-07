@@ -4160,6 +4160,12 @@ Die folgende Reihenfolge dokumentiert den damaligen Planungsstand. Die produktiv
 
 Status: Umgesetzt
 
+Komfortergänzung 07.09.2026: `Speichern & weitere` startet nach einem
+bestätigten Einzelwrite eine neue Beobachtung für dasselbe Kind. Der nächste
+Entwurf erhält einen neuen Operation-Token und übernimmt keine fachlichen
+Inhalte, Ratings oder Anhänge. Dies erweitert weder die Beobachtungsdomain
+noch den Unit-of-Work und ist keine Gruppen- oder Mehrkindbeobachtung.
+
 Eine Schnellbeobachtung ist eine bewusst kompetenzfreie aktive Beobachtung mit verpflichtender, nichtleerer Notiz. Sie wird ohne Eintraege in `observation_competency_ratings` gespeichert; ein neues SQLite-Feld ist nicht erforderlich, weil der produktive Schreibprozess Beobachtungen ohne Kompetenzbewertung zuvor nicht zuliess und der Zustand damit eindeutig ist.
 
 Eine spaetere Kompetenzzuordnung und Bewertung ist im normalen Bearbeitungsdialog moeglich. Es erfolgt weder beim Speichern noch spaeter eine automatische Zuordnung oder Bewertung. Sobald eine Kompetenz ergaenzt wird, gelten wieder die normalen Kompetenz- und Bewertungsregeln.

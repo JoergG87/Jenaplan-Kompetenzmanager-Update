@@ -2738,7 +2738,7 @@ class AppShell(QMainWindow):
             parent=self,
         )
         self._clear_pending_timetable_observation()
-        if exec_maximized_workspace(dialog, self):
+        if exec_maximized_workspace(dialog, self) or dialog.has_saved_observation is True:
             self.show_student_profile(student.student_id)
             self.status_label.setText("Beobachtung wurde gespeichert.")
 
@@ -2788,7 +2788,7 @@ class AppShell(QMainWindow):
             parent=self,
         )
         self._clear_pending_timetable_observation()
-        if exec_maximized_workspace(dialog, self):
+        if exec_maximized_workspace(dialog, self) or dialog.has_saved_observation is True:
             self.refresh_overview()
             self.refresh_students()
             self.status_label.setText("Beobachtung wurde gespeichert.")

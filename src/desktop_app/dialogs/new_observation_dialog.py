@@ -197,6 +197,8 @@ class NewObservationDialog(QDialog):
         self.observation_adapter = observation_adapter
         self.initial_draft = initial_draft
         self._initial_focus_applied = False
+        self._save_pending = False
+        self.has_saved_observation = False
         self.subject_options = subject_options
         self.competency_subject_groups = competency_subject_groups
         self.recent_competencies = recent_competencies
@@ -470,6 +472,7 @@ class NewObservationDialog(QDialog):
             | QDialogButtonBox.StandardButton.Save
         )
         buttons.setObjectName("ObservationPersistentActions")
+        self.observation_actions = buttons
         configure_save_cancel_buttons(buttons)
         save_button = buttons.button(QDialogButtonBox.StandardButton.Save)
         if save_button is not None:
@@ -478,6 +481,19 @@ class NewObservationDialog(QDialog):
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.save_draft)
         zone_layout.addWidget(buttons, 0)
+        self.save_and_continue_button = QPushButton("Speichern & weitere")
+        self.save_and_continue_button.setObjectName("ObservationSaveAndContinueButton")
+        configure_button(
+            self.save_and_continue_button,
+            "secondary",
+            "Beobachtung speichern und eine weitere für dieses Kind erfassen",
+        )
+        self.save_and_continue_button.setAutoDefault(False)
+        self.save_and_continue_button.setVisible(self.initial_draft is None)
+        self.save_and_continue_button.clicked.connect(
+            lambda _checked=False: self.save_draft(continue_entry=True)
+        )
+        zone_layout.addWidget(self.save_and_continue_button)
         return zone
 
     def _zone(self, title: str = "", *, role: str = "primary") -> QFrame:
@@ -1348,8 +1364,14 @@ class NewObservationDialog(QDialog):
             return self.initial_draft.competency_ratings[0].subject_key
         return self.initial_draft.subject_id
 
-    def save_draft(self) -> None:
+    def reject(self) -> None:
+        if not self._save_pending:
+            super().reject()
+
+    def save_draft(self, *, continue_entry: bool = False) -> None:
         """Persist the observation draft through the adapter and return on success."""
+        if self._save_pending or (continue_entry and self.initial_draft is not None):
+            return
         draft = self.create_draft()
         self.validation_message.set_message("")
         if draft.is_quick_observation and not draft.note.strip():
@@ -1377,10 +1399,18 @@ class NewObservationDialog(QDialog):
                 tone="error",
             )
             return
-        if draft.observation_id:
-            result = self.observation_adapter.update_observation(draft)
-        else:
-            result = self.observation_adapter.save_observation(draft)
+        self._save_pending = True
+        self.observation_actions.setEnabled(False)
+        self.save_and_continue_button.setEnabled(False)
+        try:
+            if draft.observation_id:
+                result = self.observation_adapter.update_observation(draft)
+            else:
+                result = self.observation_adapter.save_observation(draft)
+        finally:
+            self._save_pending = False
+            self.observation_actions.setEnabled(True)
+            self.save_and_continue_button.setEnabled(True)
         if not getattr(result, "success", False):
             self.validation_message.set_message(
                 str(
@@ -1393,8 +1423,32 @@ class NewObservationDialog(QDialog):
                 tone="error",
             )
             return
+        self.has_saved_observation = True
+        if continue_entry:
+            self._reset_for_next_observation()
         self._refresh_recent_competencies_from_adapter()
-        self.accept()
+        if not continue_entry:
+            self.accept()
+
+    def _reset_for_next_observation(self) -> None:
+        for key in tuple(self.competency_rating_entries):
+            self._remove_competency_rating(key)
+        self.note_input.clear()
+        self.attachment_drafts.clear()
+        self.attachment_feedback_label.clear()
+        self._render_attachments()
+        self.catalog_search_input.clear()
+        self.operation_token = uuid.uuid4().hex
+        self.validation_message.set_message(
+            "Gespeichert. Du kannst die nächste Beobachtung erfassen.",
+            tone="success",
+        )
+        target = (
+            self.note_input
+            if self.quick_observation_checkbox.isChecked()
+            else self.catalog_search_input
+        )
+        target.setFocus(Qt.FocusReason.OtherFocusReason)
 
     @staticmethod
     def _clear_layout(layout: QVBoxLayout) -> None:

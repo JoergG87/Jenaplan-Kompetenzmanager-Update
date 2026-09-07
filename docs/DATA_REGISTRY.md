@@ -10,6 +10,13 @@ Der Tastaturzugang zur Beobachtung liest ausschließlich die sichtbare
 Profil-/Listenauswahl und lädt das Kind über den bestehenden Adapter frisch.
 Eine frühere unsichtbare Auswahl oder ein angezeigter Name ist keine Quelle.
 
+Weitererfassen nutzt die bestehenden `observations`, Kompetenzratings und
+Anhangverträge. Nur Kind, Datum, Fach, Kontext und der bewusst gewählte
+Schnellbeobachtungsmodus werden als flüchtige Vorbelegung weiterverwendet.
+Jede neue Eingabe erhält einen frischen vorhandenen `operation_token`;
+Notizen, Ratings, Kompetenzauswahl, Anhänge und Beobachtungs-ID werden nicht
+übernommen. Kein Sammelaggregat und keine zusätzliche Persistenz.
+
 | Rolle / Quelle | Produktiver Pfad relativ zur Runtime-Root | Owner | Regel |
 |---|---|---|---|
 | Pilot-Produktionsroot-Autorität | `.jkm-runtime-root-v1` | Core Runtime | versionierter nicht geheimer Schutzmarker `pilot_product`/`synthetic_test`; keine Schülerdaten, Secrets, Schlüssel oder fachliche Wahrheit |
