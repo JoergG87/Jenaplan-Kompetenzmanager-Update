@@ -201,3 +201,16 @@ Der Befehl prüft read-only: veröffentlichtes Pre-Release, Tagziel,
 Assetmetadaten, Pilot-Appcast Build 303, Updatefähigkeit eines niedrigeren
 Builds, Sperre desselben Builds und deaktivierten Stable-Kanal. Er baut und
 veröffentlicht nichts.
+
+## Sichtbare DMG-Layoutprüfung
+
+Mit `JENAPLAN_DMG_LAYOUT_MODE=computer-use` erfolgt die Gestaltung des neuen
+Arbeitsvolumes ausdrücklich per Computer-Use statt durch den automatischen
+Finder-Layoutblock. Der Build schreibt den Mountpunkt nach
+`<Buildroot>/dmg-layout.request` und wartet höchstens 15 Minuten. Nach
+sichtbarer Prüfung der Symboldarstellung, des Hintergrunds und der drei
+Installationsziele wird `<Buildroot>/dmg-layout.ready` als neue reguläre
+Datei angelegt. Bereits vorhandene oder symbolische Ready-Dateien sind
+unzulässig; Finder muss seine `.DS_Store`-Metadaten geschrieben haben.
+Danach laufen unverändert Konvertierung, Manifestbindung und Paketgates.
+Dies ist eine technische Bedienübergabe, keine Veröffentlichung.

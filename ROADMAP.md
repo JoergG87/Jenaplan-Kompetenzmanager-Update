@@ -74,11 +74,10 @@ Notarisierung sind getrennte Gates.
 Der erste Produktfix nach Build 400,
 `926582f7db3a44642b05301fbbb676a91a1f500c`, korrigiert die individuelle
 Fachrelevanz der Dashboard-Heatmap und von `Passende Kinder für diese Stunde`,
-ist aber noch nicht als neuer Build veröffentlicht. Da `src/version.py`
-weiterhin 0.4.0 / Build 400 ausweist, darf aus diesem Stand kein weiteres
-Build-400-Artefakt entstehen. Vor erneuter Paketierung ist mindestens Build 401
-erforderlich. Ob die sichtbare Version 0.4.0 oder 0.4.1 lautet, bleibt einer
-Product-Owner-Entscheidung vorbehalten.
+ist aber noch nicht als neuer Build veröffentlicht. Die am 08.09.2026
+beauftragte lokale Paketierung verwendet 0.4.1 / Build 401. Die
+Paketqualifikation bleibt vom bisherigen Quellnachweis und von einer
+späteren Veröffentlichung getrennt.
 
 ## Phase 2 - Alltagsdaten effizient einrichten
 

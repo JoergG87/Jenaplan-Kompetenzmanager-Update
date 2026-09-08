@@ -13,11 +13,11 @@ Der erste Produktfix nach der veröffentlichten Referenz,
 `926582f7db3a44642b05301fbbb676a91a1f500c`, korrigiert die
 individuelle schuljahresbezogene Fachrelevanz der Dashboard-Heatmap und von
 `Passende Kinder für diese Stunde`. Diese Korrektur ist umgesetzt, aber nicht
-als neuer Build veröffentlicht. `src/version.py` weist am aktuellen HEAD noch
-`0.4.0` / Build `400` aus; deshalb ist aus diesem Quellstand keine Paketierung
-zulässig. Vor einem neuen Artefakt ist mindestens die monotone Buildnummer
-`401` erforderlich. Ob die sichtbare Version dabei `0.4.0` oder `0.4.1`
-lautet, bleibt einer gesonderten Product-Owner-Entscheidung vorbehalten.
+als neuer Build veröffentlicht. Für das am 08.09.2026 mit freier Hand
+beauftragte Folgeupdate ist die neue Quellidentität `0.4.1` / Build `401`
+festgelegt. Sie wird lokal paketiert und qualifiziert; erst das konkrete
+Manifest bestätigt einen fertigen Build. Die veröffentlichte Basis bleibt
+davon getrennt unverändert.
 
 ## Aktuelle Weiterarbeit – freigegeben am 07.09.2026
 
@@ -51,9 +51,9 @@ Die veröffentlichte Referenz wurde am 07.09.2026 gegen Git-Tag, GitHub-Release,
 Manifest und die vier lokalen Releaseartefakte geprüft. Veröffentlicht bleibt
 `v0.4.0-build400` aus `e96a77e`; neue lokale Commits sind davon getrennt.
 Die Vorbereitung erzeugt kein neues Paket, keinen Push, Tag oder Release.
-Vor einer Paketierung sind mindestens Build 401, eine bewusst festgelegte
-sichtbare Version und alle Paket-/Cipher-/Releaseprüfungen am exakten neuen
-Quellcommit erforderlich. Synthetische Cocoa-Bedienprüfungen ersetzen weder
+Für die lokale Paketierung ist 0.4.1 / Build 401 festgelegt. Alle
+Paket-/Cipher-/Releaseprüfungen bleiben an den exakten neuen Quellcommit
+gebunden. Synthetische Cocoa-Bedienprüfungen ersetzen weder
 Tests am verschlüsselten App-Bundle noch Apple- oder schulische Freigaben.
 
 ## Pilot-Produktionsschutz im laufenden Betrieb

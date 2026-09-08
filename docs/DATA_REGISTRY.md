@@ -2480,3 +2480,7 @@ Die einklappbare Berichtsvorschau liest weiterhin ausschließlich vorhandene Pre
 ## Dezenter Sicherungshinweis (07.09.2026)
 
 Quelle des Sicherungshinweises bleibt `BackupSummaryViewModel` aus vollständiger Verifikation. Nur `verified=True` mit gültigem zeitzonenbehaftetem ISO-Zeitpunkt bis zur aktuellen Zeit erlaubt eine Altersaussage. Sieben volle Tage markieren einen unverbindlichen Komfort-Hinweis. Systemzeit ist ein injizierter Laufzeitwert, keine neue persistente Datenquelle.
+
+Die lokalen Dateien `dmg-layout.request` und `dmg-layout.ready` sind abgeleitete
+Buildkoordination im frischen macOS-Buildroot, keine Produktdatenquelle. Der
+Request nennt ausschließlich das frisch erzeugte DMG-Arbeitsvolume.

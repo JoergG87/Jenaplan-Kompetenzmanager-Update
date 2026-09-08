@@ -7,6 +7,11 @@ cd "$ROOT"
 DATA_MODE="empty"
 BUILD_LAURA_PACKAGE="0"
 DEFER_PACKAGE_TESTS="0"
+DMG_LAYOUT_MODE="${JENAPLAN_DMG_LAYOUT_MODE:-automatic}"
+case "$DMG_LAYOUT_MODE" in
+    automatic|computer-use) ;;
+    *) echo "Ungültiger DMG-Layoutmodus." >&2; exit 2 ;;
+esac
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --data-mode)
@@ -43,12 +48,16 @@ if [ "$ARCHITECTURE" != "arm64" ]; then
     echo "Dieser Pilotbuild ist für arm64 konfiguriert; gefunden: $ARCHITECTURE" >&2
     exit 1
 fi
-for tool in python3 hdiutil codesign ditto sips iconutil security osascript xcrun file lipo; do
+for tool in python3 hdiutil codesign ditto sips iconutil security xcrun file lipo; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "Benötigtes Build-Werkzeug fehlt: $tool" >&2
         exit 1
     fi
 done
+if [ "$DMG_LAYOUT_MODE" = "automatic" ] && ! command -v osascript >/dev/null 2>&1; then
+    echo "Benötigtes Build-Werkzeug fehlt: osascript" >&2
+    exit 1
+fi
 PYTHON_VERSION="$(python3 -c 'import platform; print(platform.python_version())')"
 if [ "$PYTHON_VERSION" != "3.14.6" ]; then
     echo "Für diesen reproduzierbaren Pilotbuild wird Python 3.14.6 benötigt; gefunden: $PYTHON_VERSION" >&2
@@ -317,6 +326,27 @@ if [ -z "$MOUNT_DIR" ] || [ ! -d "$MOUNT_DIR" ]; then
     echo "DMG-Arbeitsvolume konnte nicht eingebunden werden." >&2
     exit 1
 fi
+if [ "$DMG_LAYOUT_MODE" = "computer-use" ]; then
+    if [ -e "$BUILD_ROOT/dmg-layout.ready" ] || [ -L "$BUILD_ROOT/dmg-layout.ready" ]; then
+        echo "DMG-Layoutbestätigung existiert bereits." >&2
+        exit 1
+    fi
+    printf '%s\n' "$MOUNT_DIR" > "$BUILD_ROOT/dmg-layout.request"
+    echo "Computer-Use-Layoutprüfung wartet: $BUILD_ROOT/dmg-layout.request"
+    layout_deadline=$((SECONDS + 900))
+    while [ ! -e "$BUILD_ROOT/dmg-layout.ready" ]; do
+        if [ -L "$BUILD_ROOT/dmg-layout.ready" ] || [ "$SECONDS" -ge "$layout_deadline" ]; then
+            echo "DMG-Layoutbestätigung fehlt oder ist ungültig." >&2
+            exit 1
+        fi
+        sleep 1
+    done
+    if [ ! -f "$BUILD_ROOT/dmg-layout.ready" ] || [ -L "$BUILD_ROOT/dmg-layout.ready" ] \
+        || [ ! -f "$MOUNT_DIR/.DS_Store" ] || [ -L "$MOUNT_DIR/.DS_Store" ]; then
+        echo "DMG-Layoutprüfung ist nicht vollständig bestätigt." >&2
+        exit 1
+    fi
+else
 osascript <<OSA
 tell application "Finder"
     repeat with attempt from 1 to 100
@@ -347,6 +377,7 @@ tell application "Finder"
     end tell
 end tell
 OSA
+fi
 sync
 rm -rf "$MOUNT_DIR/.fseventsd" "$MOUNT_DIR/.Trashes"
 hdiutil detach "$MOUNT_DIR" -quiet

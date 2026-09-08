@@ -3431,3 +3431,11 @@ Schreibpfade verwenden weiterhin ausschließlich die vorhandenen `subject_key`-,
 ## Dezenter Sicherungshinweis (07.09.2026)
 
 `BackupReminderViewModel(state, status_text, message)` und `build_backup_reminder(summary, now, checked)` projizieren ausschließlich den vorhandenen verifizierten Sicherungszeitpunkt. Zustände: `unknown`, `missing`, `due`, `current`. `SettingsScreen.backup_reminder` ist der dezente Hinweis mit bestehendem `InlineMessage`-Stil; `_refresh_backup_reminder` rendert die Projektion aus lokal gecachter Summary/Prüfstatus und injizierter Uhr.
+
+## Lokale Paketierung mit sichtbarer Layoutprüfung
+
+`JENAPLAN_DMG_LAYOUT_MODE` wählt im bestehenden macOS-Build ausschließlich
+`automatic` (bisheriger Finder-Ablauf) oder `computer-use` (bewusste sichtbare
+Layoutgestaltung). `dmg-layout.request` und `dmg-layout.ready` liegen nur im
+frischen Buildroot und koordinieren diese technische Übergabe. Die Ready-Datei
+ist keine fachliche, Paket-, Signatur- oder Veröffentlichungsfreigabe.

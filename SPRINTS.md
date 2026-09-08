@@ -109,6 +109,27 @@ Die anschließende Ergänzung dieses Nachweises verändert ausschließlich Dokum
 Damit ist der Quellstand im ausgeführten Testumfang bestätigt. Eine neue
 Paket-/Cipher-/Apple- oder schulische Betriebsfreigabe folgt daraus nicht.
 
+## Lokales Folgeupdate – beauftragt am 08.09.2026
+
+**Produktentscheidung:** Der Product Owner hat die nächsten Schritte mit
+freier Hand übertragen. Der bereits geprüfte Dashboardfix und die fünf
+Komfortfunktionen werden als lokales Folgeupdate 0.4.1 / Build 401 paketiert.
+Der Schülerimport bleibt ein eigener anschließender Entwicklungsschritt.
+
+**Review:** Keine fachlichen Daten-, Schema- oder UI-Vertragsänderungen.
+Version und Build bleiben in der bestehenden einzigen Versionsquelle.
+Der Build erhält eine ausdrücklich wählbare Computer-Use-Übergabe für die
+Gestaltung des neuen Installationsvolumes. Die vorhandenen Paketgates bleiben
+verbindlich. Die technische Übergabe ist in den kanonischen Registern und
+`docs/RELEASE_AUTOMATION.md` dokumentiert.
+
+- [x] Exakte SQLCipher-4.17-Bibliothek aus gepinnten Quellen reproduziert;
+  Wheel-SHA-256 entspricht dem unveränderten freigegebenen Manifest.
+- [ ] Quellstand mit exakter Cipher-Bibliothek prüfen.
+- [ ] Lokales Paket am sauberen Versionscommit erstellen.
+- [ ] Installationsfenster und paketierte Oberfläche per Computer-Use prüfen.
+- [ ] Konkretes Paket einschließlich Manifest und Prüfsummen qualifizieren.
+
 ## Pilot-Produktionsschutz im laufenden Betrieb
 
 - [x] Integrierte `Erste Schritte` auf einen exakt fünfstufigen, nicht

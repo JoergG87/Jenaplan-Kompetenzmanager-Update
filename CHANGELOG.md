@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Lokales Folgeupdate als 0.4.1 / Build 401 festgelegt. Der bestehende
+  macOS-Build erlaubt eine ausdrückliche Computer-Use-Übergabe für die
+  Gestaltung des frischen Installationsvolumes; die Paketgates bleiben
+  unverändert. Die Verschlüsselungsbibliothek wurde mit identischem
+  freigegebenem Wheel-Hash reproduziert.
+
 - Abschließende Gesamtprüfung des Quellstands `4211315` dokumentiert:
   2.419 Tests und 100 Untertests bestanden, 104 explizit übersprungen,
   sauberer Prozessabschluss. Alle fünf Komfortfunktionen zusätzlich per

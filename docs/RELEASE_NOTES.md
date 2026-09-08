@@ -11,7 +11,8 @@ Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
 ## Neu im vorbereiteten Folgeupdate
 
 Diese Ergänzungen gehören zum unveröffentlichten Quellstand nach dem bisherigen
-Pilotpaket. Ein neues Paket und dessen eigene Buildnummer stehen noch aus.
+Pilotpaket. Das neue Paket verwendet die oben ausgewiesene eigene Versions- und
+Buildidentität; die Paketprüfung erfolgt am zugehörigen Manifest.
 
 - Das Dashboard berücksichtigt die individuellen Dokumentationsfächer jedes
   Kindes auch in der Heatmap und bei passenden Kindern für die Unterrichtsstunde.

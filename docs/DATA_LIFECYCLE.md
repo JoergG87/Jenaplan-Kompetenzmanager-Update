@@ -3695,3 +3695,9 @@ Ein-/Ausklappen eines Vorschaufachs schreibt nichts, markiert den Entwurf nicht 
 ## Dezenter Sicherungshinweis (07.09.2026)
 
 Der Sicherungshinweis wird bei Statusrückgabe und Navigation in den Einstellungen neu projiziert. Vor der bestehenden asynchronen Prüfung oder bei einem Prüfungsfehler bleibt der Stand unbekannt; ein Fehler ist kein Beweis einer fehlenden Sicherung. Nur erfolgreiche Discovery ohne Ergebnis ergibt `missing`. Die vorhandene Discovery startet weiter erst beim Öffnen von Datensicherung; ein Fehler darf bei erneutem Öffnen erneut geprüft werden. Keine neue Abfrage, automatische Sicherung, Fristpersistenz oder Erinnerung außerhalb der App.
+
+Beim optionalen Computer-Use-Paketbau wartet das bestehende Buildskript nach
+dem Mount des frischen DMG-Arbeitsvolumes auf dessen sichtbare Gestaltung.
+Erst eine neu angelegte reguläre `dmg-layout.ready` und vorhandene Finder-
+Layoutmetadaten erlauben die bestehende Konvertierung; Timeout oder Symlink
+bricht ab. Das verändert keine Produktdaten, Sicherheits- oder Releasegates.

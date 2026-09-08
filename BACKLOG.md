@@ -27,9 +27,10 @@ Der veröffentlichte, unveränderliche Pilotstand 0.4.0 / Build 400 stammt aus
 Commit `e96a77e328da98bfb3622201110e6e08c8b3e312`. Der erste Produktfix danach,
 `926582f7db3a44642b05301fbbb676a91a1f500c`, korrigiert die individuelle Fachrelevanz der
 Dashboard-Heatmap und von `Passende Kinder für diese Stunde`. Dieser Fix ist
-umgesetzt, aber unveröffentlicht. Solange `src/version.py` noch Build 400
-ausweist, darf daraus kein Artefakt entstehen. Ein Folgebuild benötigt
-mindestens Build 401; die sichtbare Version 0.4.0 oder 0.4.1 bleibt PO-offen.
+umgesetzt, aber unveröffentlicht. Für die am 08.09.2026 beauftragte lokale
+Paketierung ist 0.4.1 / Build 401 als neue Identität festgelegt. Fertigstellung
+und Paketprüfung ergeben sich erst aus dem neuen Manifest; Build 400 bleibt
+unverändert.
 
 ## A - Umgesetzt und bestätigt
 
