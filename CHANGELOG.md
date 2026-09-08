@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Die sichtbare Versionsprüfung im App-Info-Dialog erwartet ebenfalls den
+  beauftragten Stand `0.4.1 / Build 401`.
+
 - Lokales Folgeupdate als 0.4.1 / Build 401 festgelegt. Der bestehende
   macOS-Build erlaubt eine ausdrückliche Computer-Use-Übergabe für die
   Gestaltung des frischen Installationsvolumes; die Paketgates bleiben
