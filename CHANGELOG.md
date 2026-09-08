@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Lokalen Paketkandidaten 0.4.1 / Build 401 aus `ad4bd32` gebaut und geprüft:
+  2.419 Quelltests / 100 Untertests plus 94 exakte Cipher-Tests bestanden.
+  Zehn von elf Paketgates bestanden; sichtbarer Erststart per Computer-Use
+  bestätigt `data_master_key_access_denied`. Paket bleibt NO-GO, nichts
+  veröffentlicht. Installationslayout, Anmeldung und Schutzmeldungen geprüft;
+  die vollständige paketierte Produktshell und Restore-Worker-Abnahme bleiben
+  bis zur Klärung des Schlüsselzugriffs offen. Ein unbeabsichtigter normaler
+  Anmeldefenster-Start ohne Eingabe ist mit Metadatenbefund dokumentiert; die
+  Bedienprüfung verlangt künftig eine vorher bestätigte laufende Testinstanz.
+
 - Die sichtbare Versionsprüfung im App-Info-Dialog erwartet ebenfalls den
   beauftragten Stand `0.4.1 / Build 401`.
 

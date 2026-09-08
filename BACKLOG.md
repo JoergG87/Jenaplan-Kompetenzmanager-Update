@@ -28,9 +28,11 @@ Commit `e96a77e328da98bfb3622201110e6e08c8b3e312`. Der erste Produktfix danach,
 `926582f7db3a44642b05301fbbb676a91a1f500c`, korrigiert die individuelle Fachrelevanz der
 Dashboard-Heatmap und von `Passende Kinder für diese Stunde`. Dieser Fix ist
 umgesetzt, aber unveröffentlicht. Für die am 08.09.2026 beauftragte lokale
-Paketierung ist 0.4.1 / Build 401 als neue Identität festgelegt. Fertigstellung
-und Paketprüfung ergeben sich erst aus dem neuen Manifest; Build 400 bleibt
-unverändert.
+Paketierung ist 0.4.1 / Build 401 als neue Identität festgelegt. Das Paket
+ist aus `ad4bd32` gebaut; vollständige Abnahme bleibt wegen
+`data_master_key_access_denied` **NO-GO** (zehn von elf Paketgates bestanden).
+Nachweise und Wiederaufnahmebedingungen stehen in `SPRINTS.md`; Build 400
+bleibt unverändert.
 
 ## A - Umgesetzt und bestätigt
 

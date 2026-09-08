@@ -15,8 +15,10 @@ individuelle schuljahresbezogene Fachrelevanz der Dashboard-Heatmap und von
 `Passende Kinder für diese Stunde`. Diese Korrektur ist umgesetzt, aber nicht
 als neuer Build veröffentlicht. Für das am 08.09.2026 mit freier Hand
 beauftragte Folgeupdate ist die neue Quellidentität `0.4.1` / Build `401`
-festgelegt. Sie wird lokal paketiert und qualifiziert; erst das konkrete
-Manifest bestätigt einen fertigen Build. Die veröffentlichte Basis bleibt
+festgelegt. Das lokale Paket aus `ad4bd32` ist erstellt, bleibt aber **NO-GO**:
+zehn von elf Paketgates bestanden, der Erststart wird mit
+`data_master_key_access_denied` gesperrt. Nachweise und nächste Bedingungen
+stehen in `SPRINTS.md`. Die veröffentlichte Basis bleibt
 davon getrennt unverändert.
 
 ## Aktuelle Weiterarbeit – freigegeben am 07.09.2026
@@ -50,8 +52,8 @@ und ist kein auszulieferndes Feature dieses Updates.
 Die veröffentlichte Referenz wurde am 07.09.2026 gegen Git-Tag, GitHub-Release,
 Manifest und die vier lokalen Releaseartefakte geprüft. Veröffentlicht bleibt
 `v0.4.0-build400` aus `e96a77e`; neue lokale Commits sind davon getrennt.
-Die Vorbereitung erzeugt kein neues Paket, keinen Push, Tag oder Release.
-Für die lokale Paketierung ist 0.4.1 / Build 401 festgelegt. Alle
+Das lokale Paket 0.4.1 / Build 401 ist erstellt, jedoch nicht freigegeben.
+Ein Push, Tag oder Release wurde nicht erzeugt. Alle
 Paket-/Cipher-/Releaseprüfungen bleiben an den exakten neuen Quellcommit
 gebunden. Synthetische Cocoa-Bedienprüfungen ersetzen weder
 Tests am verschlüsselten App-Bundle noch Apple- oder schulische Freigaben.

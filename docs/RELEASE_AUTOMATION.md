@@ -214,3 +214,10 @@ Datei angelegt. Bereits vorhandene oder symbolische Ready-Dateien sind
 unzulässig; Finder muss seine `.DS_Store`-Metadaten geschrieben haben.
 Danach laufen unverändert Konvertierung, Manifestbindung und Paketgates.
 Dies ist eine technische Bedienübergabe, keine Veröffentlichung.
+
+Für die sichtbare App-Prüfung den Startprozess mit explizitem synthetischem
+Datenroot in einer laufenden Terminalsession gebunden halten. Vor jedem
+Computer-Use-App-Aufruf die laufende Prozessidentität und Testargumente
+bestätigen: Der App-Aufruf kann eine bereits beendete App automatisch neu
+starten und dabei den Testpfad-Override verlieren. Ein dann angezeigtes normales
+Anmeldefenster ohne Eingabe schließen; es ist kein gültiger Testnachweis.

@@ -75,9 +75,10 @@ Der erste Produktfix nach Build 400,
 `926582f7db3a44642b05301fbbb676a91a1f500c`, korrigiert die individuelle
 Fachrelevanz der Dashboard-Heatmap und von `Passende Kinder für diese Stunde`,
 ist aber noch nicht als neuer Build veröffentlicht. Die am 08.09.2026
-beauftragte lokale Paketierung verwendet 0.4.1 / Build 401. Die
-Paketqualifikation bleibt vom bisherigen Quellnachweis und von einer
-späteren Veröffentlichung getrennt.
+beauftragte lokale Paketierung 0.4.1 / Build 401 ist aus `ad4bd32` erstellt.
+Der Schlüsselzugriff blockiert den Erststart (`data_master_key_access_denied`);
+die vollständige Paketabnahme bleibt **NO-GO**. Wiederaufnahmebedingungen
+stehen in `SPRINTS.md`. Quellnachweis und Veröffentlichung bleiben getrennt.
 
 ## Phase 2 - Alltagsdaten effizient einrichten
 

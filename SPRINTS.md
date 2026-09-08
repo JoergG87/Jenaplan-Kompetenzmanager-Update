@@ -125,10 +125,67 @@ verbindlich. Die technische Übergabe ist in den kanonischen Registern und
 
 - [x] Exakte SQLCipher-4.17-Bibliothek aus gepinnten Quellen reproduziert;
   Wheel-SHA-256 entspricht dem unveränderten freigegebenen Manifest.
-- [ ] Quellstand mit exakter Cipher-Bibliothek prüfen.
-- [ ] Lokales Paket am sauberen Versionscommit erstellen.
-- [ ] Installationsfenster und paketierte Oberfläche per Computer-Use prüfen.
-- [ ] Konkretes Paket einschließlich Manifest und Prüfsummen qualifizieren.
+- [x] Quellstand geprüft: am Paketcommit `ad4bd32` 2.419 Tests und 100
+  Untertests bestanden (104 umgebungsgebundene Skips); zusätzlich alle 94
+  exakten SQLCipher-4.17-Tests in ihrer gepinnten Umgebung bestanden.
+- [x] Lokales Paket aus sauberem Commit `ad4bd321670f6043850211f5de5781c69bade6ec`
+  erstellt; eigener Manifestlauf `0.4.1-build401-ad4bd321670f`.
+- [x] Installationsfenster per Computer-Use angeordnet und nach erneutem Öffnen
+  geprüft: App links, Programme rechts, Anleitung darunter; schlicht weißer
+  Hintergrund. Das separate Finder-Optionenfenster war nicht zuverlässig über
+  die Bedienhilfe erreichbar, deshalb keine dekorative Hintergrundabnahme.
+- [x] Paketierte Cocoa-Anmeldung und Schutzmeldungen per Computer-Use geprüft.
+  Der explizit isolierte Erststart zeigt `data_master_key_access_denied`;
+  der dadurch unvollständige synthetische Vergleichsbestand wird mit
+  `cipher_product_runtime_partial` gesperrt. Die Produktshell konnte im
+  fertigen Bundle deshalb nicht abgenommen werden.
+- [ ] Vollständige Paketfreigabe: **NO-GO**. Zehn von elf Manifestgates bestanden;
+  `app_start_smoke` blieb nach 120 Sekunden offen. Der sichtbare isolierte
+  Erststart erklärt den Zeitablauf durch eine blockierende Schutzmeldung.
+  Restore-Worker-Smoke wurde wegen dieses Vorgängerfehlers nicht erreicht.
+
+**Abweichung bei der Testisolation:** Ein kurz gestarteter Hintergrundprozess
+wurde beim Ende seines Startbefehls beendet. Der anschließende Computer-Use-
+App-Aufruf öffnete deshalb automatisch ein normales Anmeldefenster ohne den
+Testpfad-Override. Dieses Fenster wurde ohne Eingabe oder Anmeldung geschlossen.
+Der normale Anmeldepfad wurde dadurch kurz angesprochen; eine vollständige
+Unberührtheit des Produktroots darf nicht behauptet werden. Die ausschließlich
+lesende Metadatenprüfung ergab unveränderte ältere Änderungszeitpunkte für
+Hauptdatenbank (16.08.), Dokumentdatenbank (15.08.), Security-Datenbank und
+Security-WAL (07.09.); nur die technische Security-SHM-Datei hatte einen neuen
+Zeitpunkt (08.09., 20:30). Die installierte App bleibt 0.4.0 / Build 400.
+Es erfolgten keine Anmeldung und keine fachlichen Aktionen in diesem Fenster.
+Der wiederholte Erststart blieb anschließend als gebundener Prozess mit
+explizitem synthetischem Root erhalten; nur dieser lieferte den oben genannten
+sichtbaren Schlüsselzugriffsfehler. Vor weiteren Computer-Use-App-Aufrufen muss
+prozessseitig bestätigt sein, dass genau der isolierte Testprozess noch läuft.
+
+**Nachweise am 08.09.2026:** Quelllauf `jkm-041-source-suite`:
+2.419 Tests / 100 Untertests, Exit 0; separater Lauf
+`jkm-041-product-cipher-suite`: 94 Tests, Exit 0. Der anfängliche Gesamtversuch
+mit der 4.17-Umgebung ergab 157 Fehler: die alte Versionsassertion sowie
+156 inkompatible historische Spike-Verträge und deren Folgefehler. Diese
+historischen Tests bestehen im vollständigen Lauf ihrer bisherigen Umgebung;
+der Produktlauf bleibt getrennt. Es wurden keine Versionsprüfungen der
+Verschlüsselung abgeschwächt und keine Tests verborgen.
+
+Das fertige Bundle bestätigt Binding `0.6.2+jkm.sqlcipher4170.1`,
+SQLCipher `4.17.0 community`, SQLite `3.53.3` und CommonCrypto.
+Die lokale Signierinventur meldet `0 valid identities found`; der
+Schlüsselzugriff ist aktuell verweigert. Die genaue Ursache bzw. die
+benötigte vertrauenswürdige Signierung/Keychain-Konfiguration muss vor
+weiterer Paketabnahme geklärt werden. Kein Sicherheitsbypass und keine
+Paketfreigabe. Danach App-/Neustart-, Restore-Worker- und Keychain-Lifecycle-
+Prüfungen sowie sichtbare Produktshell am konkreten neuen Paket wiederholen.
+
+**Artefaktidentität:** Manifest unter
+`release/output/0.4.1-build401-ad4bd321670f/release-manifest.json`;
+DMG `Jenaplan-Kompetenzmanager-0.4.1-macOS-arm64.dmg`, 206.429.771 Byte,
+SHA-256 `dcb36c521e5e6bd784bfd4df8eb301ee290371bad92b2771c7a638e23079d60e`.
+Der lokale Prepare-Schritt nutzte den vorhandenen Modus ohne Netzprüfung,
+weil `gh auth status` die Anmeldung ablehnte. Die öffentliche API bestätigte
+separat Build 400 als neuesten Pilot und keinen öffentlichen Tag für Build
+401. Kein Push, Tag, GitHub-Release oder Appcast-Update erfolgt.
 
 ## Pilot-Produktionsschutz im laufenden Betrieb
 
