@@ -2,19 +2,12 @@
 
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
-## Status dieser Release Notes
+## Neu in diesem Pilotupdate
 
-Diese Release Notes dokumentieren den vorbereiteten Final-V4-Pilotstand
-{{PILOT_VERSION}} / Build {{PILOT_BUILD}}. Sie belegen weder ein finales App-Bundle noch Release,
-Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
-
-## Neu im vorbereiteten Folgeupdate
-
-- Die Kompetenzübersicht lässt sich pro Fach oder für alle aktuellen Bereiche als PDF exportieren. Pflanzenstufen zeigen den bestätigten Entwicklungsstand. Unbestätigte und fehlende Stände sind klar gekennzeichnet. Das PDF wird nach bewusster Bestätigung unverschlüsselt im gewählten externen Ordner gespeichert.
-
-Diese Ergänzungen gehören zum unveröffentlichten Quellstand nach dem bisherigen
-Pilotpaket. Das neue Paket verwendet die oben ausgewiesene eigene Versions- und
-Buildidentität; die Paketprüfung erfolgt am zugehörigen Manifest.
+- Die Kompetenzübersicht exportiert immer alle aktuellen Fächer und überfachlichen Bereiche als PDF für Eltern. Ansichtsfilter verkürzen den Export nicht.
+- Vier neu gezeichnete Pflanzen mit transparentem Hintergrund zeigen die Entwicklungsstufen. Interne Bestätigungsangaben und Bestätigungsdaten erscheinen nicht auf dem Elternblatt.
+- Vor dem Export müssen alle aktuellen Kompetenzen einen ausdrücklich gewählten Entwicklungsstand haben. Ein Ergänzungsdialog führt durch die noch offenen Kompetenzen. Es gibt keine automatische Bewertung.
+- Der native macOS-Speicherdialog ermöglicht die Wahl von Dateiname und Zielordner, einschließlich Downloads. Die Erfolgsmeldung zeigt auch lange Dateinamen vollständig.
 
 - Das Dashboard berücksichtigt die individuellen Dokumentationsfächer jedes
   Kindes auch in der Heatmap und bei passenden Kindern für die Unterrichtsstunde.
