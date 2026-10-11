@@ -10,6 +10,8 @@ Pilot-GO, Developer-ID-Signierung oder Apple-Notarisierung.
 
 ## Neu im vorbereiteten Folgeupdate
 
+- Die Kompetenzübersicht lässt sich pro Fach oder für alle aktuellen Bereiche als PDF exportieren. Pflanzenstufen zeigen den bestätigten Entwicklungsstand. Unbestätigte und fehlende Stände sind klar gekennzeichnet. Das PDF wird nach bewusster Bestätigung unverschlüsselt im gewählten externen Ordner gespeichert.
+
 Diese Ergänzungen gehören zum unveröffentlichten Quellstand nach dem bisherigen
 Pilotpaket. Das neue Paket verwendet die oben ausgewiesene eigene Versions- und
 Buildidentität; die Paketprüfung erfolgt am zugehörigen Manifest.

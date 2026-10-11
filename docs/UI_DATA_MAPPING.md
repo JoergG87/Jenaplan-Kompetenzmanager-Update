@@ -1024,3 +1024,15 @@ Fachauswahl.
 ## Dezenter Sicherungshinweis (07.09.2026)
 
 `Datensicherung` in der Einstellungsübersicht zeigt den projizierten bekannten Sicherungsstand. `SettingsScreen.backup_reminder` auf der vorhandenen Detailseite nennt bei fehlender bzw. mindestens sieben Tage alter Sicherung die bestehende Aktion zur Neuerstellung. Bei unbekanntem, unbestätigtem, ungültigem oder zukünftigem Zeitpunkt wird kein Alter behauptet. Bei aktueller Sicherung oder nicht verfügbarem Backupbereich ist kein Erinnerungstext sichtbar.
+
+Die isolierte macOS-Testkopie führt keine Produktfelder ein. Ihr eigener
+Finder-Appname kennzeichnet das lokale Prüfartefakt; Statusbits und OSStatus
+der Schlüsselbunddiagnose bleiben im technischen Prüfprotokoll.
+
+Das separate native Diagnosefenster zeigt ausschließlich Create-/Read-/
+Delete-Statuscodes des neu erzeugten Testschlüssels; keine Produktfelder.
+
+
+## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
+
+Aktion im Profilreiter `Kompetenzen`: `Kompetenzen als PDF exportieren`. Fachauswahl aus bestehendem Fachfilter; `Alle Kompetenzen` exportiert alle aktuellen Bereiche. Jede PDF-Zeile nutzt `competency_text`, Lernbereich und Thema aus Cockpit; Balken und Quellenbeschriftung aus `confirmed_rating`, `confirmed_at`, `documentation_state`. Namen und Schuljahr kommen aus demselben frischen Profil-Bundle. Unbestätigte Beobachtungen heißen `Beobachtet, noch nicht bestätigt`; undokumentierte `Noch nicht dokumentiert`; unklare `Bestätigungsstand unklar`. Keine implizite Vorschlagsübernahme.

@@ -1,5 +1,10 @@
 # Architekturentscheidungen
 
+## PO-Entscheidung 11.10.2026 – Kompetenz-PDF mit Pflanzen
+
+Die vom PO gelieferte Entwicklungsbuchdatei bestätigt vier aufsteigende Pflanzenbilder. Der PO hat den visuellen Entwurf und die Implementierung freigegeben. Export verwendet diese statischen Bilder ausschließlich als Darstellung stabiler Ratingtokens und verändert weder Schema noch Ratingprofile. Bestätigungen bleiben Quelle der Balken; unbestätigte und unklare Stände bleiben explizit leer. Ausgabe ist eine bewusst bestätigte unverschlüsselte externe Datei; keine RPA/LCA-Revision und kein Managed-Document-Fallback. App-Farben und Fachhierarchie bleiben konsistent. Neuer Kandidat 0.4.2/402; 0.4.1/401 und veröffentlichte 0.4.0/400 bleiben unveränderliche Referenzen.
+
+
 ## ADR-105 - Pilot-Produktionsroot ist eine atomare technische Autorität
 
 **Status:** Angenommen. Präzisiert ADR-101/103 ohne Schema-, Backupformat-,
@@ -4331,3 +4336,13 @@ Kompetenzen wurde einschließlich Python-Gruppierung in 0,3171 Sekunden
 projiziert. Für den realistischen lokalen Pilotbestand ist dies kein kritischer
 Scan. Ein möglicher Index auf `(student_id, event_sequence)` bleibt deshalb ein
 separater, erneut zu prüfender Vorschlag und wird in P1-Paket 1 nicht angelegt.
+
+## 2026-09-08: Gebundene Testkopie gegen verlorene Startparameter
+
+Nach einem automatischen App-Neustart ohne Test-Override reichen laufende
+Terminalparameter allein nicht als Isolation. Für Computer-Use wird eine
+separate temporäre App-Kopie mit eigener Bundle-ID und festem, vor Produktcode
+prüfendem Einstieg verwendet. Ihre Signatur unterscheidet sich ausdrücklich
+vom Releasepaket; sie ersetzt keine Prüfung des Originalpakets. Die Diagnose
+beginnt mit nativen read-only Statuscodes, nicht mit Änderungen an ACL,
+Signieridentitäten oder Produktdaten.

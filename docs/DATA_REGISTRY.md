@@ -2484,3 +2484,21 @@ Quelle des Sicherungshinweises bleibt `BackupSummaryViewModel` aus vollständige
 Die lokalen Dateien `dmg-layout.request` und `dmg-layout.ready` sind abgeleitete
 Buildkoordination im frischen macOS-Buildroot, keine Produktdatenquelle. Der
 Request nennt ausschließlich das frisch erzeugte DMG-Arbeitsvolume.
+
+## Gebundene Test-App und native Diagnose
+
+Die temporäre Test-App ist eine separat ad-hoc signierte Kopie eines vorhandenen
+Bundles mit eigener App-Identität und gebundenem systemtemporärem Testroot.
+Sie ist kein Releaseartefakt und kein Nachweis identischer Signieridentität.
+Bootstrap, lokaler Testpfad und Interpreterpfad sind ausschließlich lokale technische
+Testkonfiguration; keine neue Produktquelle. Die native Diagnose liest nur
+Status und Vertrauensprüfung, weder Keychain-Einträge noch Datenbanken.
+
+Die getrennte Roundtrip-Diagnose hält 32 zufällige Testbytes ausschließlich
+im Speicher und vorübergehend in ihrem neuen Keychain-Namespace. Ein
+Statusreport enthält nur Rückgabecodes und Gleichheitsprüfung, keine Secrets.
+
+
+## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
+
+Keine neue Tabelle, Datenquelle oder Schemaänderung. Die flüchtige Exportprojektion verwendet das transaktionskonsistente Schülerprofil-Bundle: Schülername aus `students`, Schuljahr/Fachrelevanz aus bestehender Schuljahr-/Fachprojektion, Texte und Reihenfolge aus aktuellen aktiven `competencies`, bestätigter Stand und Frische aus kanonischer Kompetenzstatusprojektion. Nur `confirmed` und `newer_observations` mit gültigem `confirmed_rating` füllen den Balken. `confirmation_unknown` bleibt leer. Neue Beobachtungen werden zusätzlich textlich bezeichnet. Historische/nicht relevante Fächer sind nicht Bestandteil dieses aktuellen Exports.

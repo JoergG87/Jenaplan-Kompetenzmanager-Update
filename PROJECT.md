@@ -1,5 +1,10 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Aktueller Updateauftrag – 11.10.2026
+
+PO-freigegeben ist der PDF-Export der Kompetenzübersicht mit den Originalpflanzen. Die neue Quellidentität ist 0.4.2 / Build 402; das unveränderte Paket 401 wird nicht ersetzt. Der Export nutzt bestätigte kanonische Stände und keine automatisch übernommenen Vorschläge, bleibt schemafrei und speichert ausschließlich eine bewusst gewählte externe unverschlüsselte PDF-Datei. Für Paket 401 bestand die Wiederholungsprüfung vom 11.10. alle elf Gates plus Restore-Worker-Smoke (Abbruch vor Datenaustausch). Die darunterstehenden NO-GO-Befunde sind der historische Stand vom 08.09.; die damalige Fehlerursache ist nicht bewiesen. Neue Paketfreigabe und Veröffentlichung werden ausschließlich an den neuen sauberen Quellcommit gebunden.
+
+
 ## Release-Baseline und aktueller Quellstand
 
 Der veröffentlichte macOS-Pilotstand ist Version `0.4.0` / Build `400` aus
@@ -15,10 +20,11 @@ individuelle schuljahresbezogene Fachrelevanz der Dashboard-Heatmap und von
 `Passende Kinder für diese Stunde`. Diese Korrektur ist umgesetzt, aber nicht
 als neuer Build veröffentlicht. Für das am 08.09.2026 mit freier Hand
 beauftragte Folgeupdate ist die neue Quellidentität `0.4.1` / Build `401`
-festgelegt. Das lokale Paket aus `ad4bd32` ist erstellt, bleibt aber **NO-GO**:
-zehn von elf Paketgates bestanden, der Erststart wird mit
-`data_master_key_access_denied` gesperrt. Nachweise und nächste Bedingungen
-stehen in `SPRINTS.md`. Die veröffentlichte Basis bleibt
+festgelegt. Das lokale Paket aus `ad4bd32` scheiterte am 08.09. zunächst beim Erststart
+mit `data_master_key_access_denied`. Die unveränderte Wiederholungsprüfung
+vom 11.10. bestand alle elf Paketgates und den Restore-Worker-Smoke. Die
+ursprüngliche Ursache bleibt ungeklärt; neue Funktionen werden ausschließlich
+als 0.4.2 / Build 402 gebaut. Nachweise und getrennte Abnahmen stehen in `SPRINTS.md`. Die veröffentlichte Basis bleibt
 davon getrennt unverändert.
 
 ## Aktuelle Weiterarbeit – freigegeben am 07.09.2026
@@ -43,8 +49,8 @@ atomarem Schreibkonzept und Abnahmefällen steht in `BACKLOG.md`.
 
 ## Vorbereitung des nächsten kleinen Updates
 
-Der Umfang ist auf den Dashboard-Fachrelevanzfix und die fünf oben genannten
-Komfortfunktionen begrenzt. `docs/RELEASE_NOTES.md` enthält die vorbereitete
+Der Umfang enthält den Dashboard-Fachrelevanzfix, die fünf oben genannten
+Komfortfunktionen und den am 11.10. freigegebenen Kompetenz-PDF-Export. `docs/RELEASE_NOTES.md` enthält die vorbereitete
 Nutzerbeschreibung; `SPRINTS.md` führt die technischen und sichtbaren Nachweise.
 Der Schülerlisten-Import gehört ausschließlich als Discovery zur Weiterarbeit
 und ist kein auszulieferndes Feature dieses Updates.
@@ -52,11 +58,24 @@ und ist kein auszulieferndes Feature dieses Updates.
 Die veröffentlichte Referenz wurde am 07.09.2026 gegen Git-Tag, GitHub-Release,
 Manifest und die vier lokalen Releaseartefakte geprüft. Veröffentlicht bleibt
 `v0.4.0-build400` aus `e96a77e`; neue lokale Commits sind davon getrennt.
-Das lokale Paket 0.4.1 / Build 401 ist erstellt, jedoch nicht freigegeben.
+Das lokale Paket 0.4.1 / Build 401 ist erstellt und am 11.10. technisch erneut
+geprüft; es enthält den neuen Export nicht und wird nicht veröffentlicht.
 Ein Push, Tag oder Release wurde nicht erzeugt. Alle
 Paket-/Cipher-/Releaseprüfungen bleiben an den exakten neuen Quellcommit
 gebunden. Synthetische Cocoa-Bedienprüfungen ersetzen weder
 Tests am verschlüsselten App-Bundle noch Apple- oder schulische Freigaben.
+
+Die anschließende Diagnose am 08.09.2026 sichert automatische Teststarts
+über eine eigene temporäre App-Identität und einen gebundenen Launcher ab.
+55 gezielte Tests und die sichtbare leere Ersteinrichtung per Computer-Use
+bestanden. Die damalige separate native Diagnose bestätigte `SecItemAdd=-25293`
+auch nach manuellem Entsperren; Vertrauensreferenz und ACL-Erzeugung bestanden.
+Am 11.10. besteht der Roundtrip außerhalb der Sandbox einschließlich Löschen.
+Die Ursache der verweigerten Schlüsselerzeugung ist weiter offen. Eine
+fehlende Developer-ID ist damit nicht als Ursache bewiesen. Produktcode,
+installierte App und Releaseartefakte wurden in diesem Diagnoseschritt nicht
+verändert. Die Testkopie besitzt eine andere Signatur und qualifiziert das
+Originalpaket ausdrücklich nicht.
 
 ## Pilot-Produktionsschutz im laufenden Betrieb
 

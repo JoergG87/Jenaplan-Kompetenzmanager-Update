@@ -1504,3 +1504,15 @@ Der Berichtdialog besitzt ausschließlich den flüchtigen Klappzustand. Alle bew
 ## Dezenter Sicherungshinweis (07.09.2026)
 
 Das Backup-ViewModel besitzt Altersregel und Hinweistext. Settings rendert den Hinweis und den knappen Zustand in der bestehenden Datensicherungskarte. Die Shell liefert Ergebnisse und unterscheidet fehlgeschlagene von erfolgreicher leerer Discovery. Geprüfte Auswahl und Sicherungsdateien werden durch den Hinweis nicht verändert.
+
+Die gebundene lokale macOS-Testkopie besitzt ausschließlich den technischen
+Prozesseinstieg. Die fachlichen Views bleiben unverändert; die native
+Schlüsselbunddiagnose liefert einen internen Statusreport ohne Produkt-View.
+
+Die eigenständige native Roundtrip-Diagnose zeigt ihren eigenen Teststatus.
+Sie besitzt weder Produktfenster noch Zugriff auf App-Datenordner.
+
+
+## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
+
+Owner der neuen Ausgabe ist die Kompetenz-PDF-Projektion. Der Adapter liest ausschließlich das bestehende Schülerprofil-Bundle. Export enthält alle aktuellen Kompetenzen je effektivem Fach sowie die beiden überfachlichen Bereiche, optional ein bewusst ausgewähltes Fach. Such-/Dokumentationsfilter und eingeklappte Themen verkürzen den Export nicht. Renderer kennt weder Repository noch SQLite, Widgets enthalten ausschließlich Interaktions-/Dialoglogik.

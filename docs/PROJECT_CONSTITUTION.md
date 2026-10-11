@@ -49,7 +49,8 @@ Der Katalog dieses frischen Piloten stammt ausschließlich aus dem
 `Entwicklungsbuch Jenaplanschule Erfurt`. Frühere Lehrplan-, V3-/V4-, Test-
 oder Pilotkompetenzen werden weder übernommen noch migriert; neue Installationen
 erhalten unmittelbar nur den neuen Katalog. Seine Papier-Pflanzen und
-Schulbesuchsjahr-Farbsemantik werden nicht digitalisiert. Die vier stabilen
+Schulbesuchsjahr-Farbsemantik werden in der allgemeinen App-Oberfläche nicht digitalisiert.
+Die PO-Freigabe vom 11.10.2026 erlaubt Pflanzen ausschließlich im Kompetenz-PDF-Export. Die vier stabilen
 Ratingwerte und App-Farben bleiben erhalten; nur ihre sichtbaren Texte werden
 zentral als `standard`, `social` oder `sport` aufgelöst.
 
@@ -1494,3 +1495,8 @@ Nicht erlaubt sind:
 - Navigation ueber Namen statt IDs
 - doppelte Datenhaltung fuer dieselbe fachliche Information
 - Designaenderungen ohne eigenen UX-Sprint
+
+
+## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
+
+Der PO gibt einen bewussten PDF-Export aus dem Kompetenz-Cockpit frei. Ausschließlich diese Exportprojektion verwendet die vier Originalpflanzen des Entwicklungsbuchs in der Reihenfolge Samen, Keimling, Knospe, Blüte. Gespeicherte Ratings, Widgetdarstellung und Schulbesuchsjahr-Farben bleiben unverändert. Der Balken zeigt ausschließlich den kanonischen bestätigten Wert, keine Vorschläge, Scores oder pädagogischen Ableitungen. Unbestätigte, undokumentierte und unklare Stände bleiben ausdrücklich gekennzeichnet ohne Balken. Der Export ist eine bewusst gewählte unverschlüsselte externe Datei und keine finale RPA-/LCA-Ausgabe.

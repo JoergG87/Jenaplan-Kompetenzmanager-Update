@@ -1,5 +1,10 @@
 # Pilot-Releaseautomation
 
+## Aktueller Kandidat 11.10.2026
+
+Die neue Implementierung wird als 0.4.2 / Build 402 vorbereitet. Das vorhandene Paket 401 bleibt unverändert; seine erneute isolierte Prüfung bestand elf Gates plus Restore-Worker-Smoke. Der Abbruch vor Datenaustausch ist keine vollständige Restore-Abnahme. Die Testkopie ist weiterhin kein Originalpaketnachweis. Der überarbeitete Launcher lehnt interne Links/Sonderdateien ab, übernimmt ausschließlich minimale OS-Umgebung und startet Python mit -I -B. Native Roundtripdiagnose schreibt `report.json` mit synthetischer Service-/Accountautorität vor SecItemAdd und `result.json` mit vollständigem Status danach; Cleanupfehler oder Inhaltsabweichung ergeben Exitcode 1. Vorhandene Reportziele werden nie überschrieben.
+
+
 ## Zweck und Grenze
 
 `scripts/release_pilot.py` automatisiert ausschließlich den lokalen
@@ -215,9 +220,52 @@ unzulässig; Finder muss seine `.DS_Store`-Metadaten geschrieben haben.
 Danach laufen unverändert Konvertierung, Manifestbindung und Paketgates.
 Dies ist eine technische Bedienübergabe, keine Veröffentlichung.
 
-Für die sichtbare App-Prüfung den Startprozess mit explizitem synthetischem
-Datenroot in einer laufenden Terminalsession gebunden halten. Vor jedem
-Computer-Use-App-Aufruf die laufende Prozessidentität und Testargumente
-bestätigen: Der App-Aufruf kann eine bereits beendete App automatisch neu
-starten und dabei den Testpfad-Override verlieren. Ein dann angezeigtes normales
-Anmeldefenster ohne Eingabe schließen; es ist kein gültiger Testnachweis.
+## Gebundene lokale Testkopie
+
+Für Computer-Use eine eigene Testkopie erzeugen:
+
+```bash
+python3 scripts/create_isolated_macos_test_app.py /absoluter/pfad/zum/Testbuild.app
+```
+
+Der JSON-Bericht nennt die neue App, ihren privaten synthetischen Root und die
+UUID-Bundle-ID. Ausschließlich diese App per Computer-Use öffnen. Ihr nativer
+Einstieg setzt den gebundenen Testroot auch beim automatischen Neustart ohne
+Startargumente; ein fehlender oder ungültiger Root sperrt vor Produktcode.
+Die App kann mit leerem Testroot normal zur Kontoeinrichtung starten oder die
+bestehenden `--packaged-smoke-test`-Modi ausführen. Fremde Pfadargumente sind
+gesperrt. Der Guard liegt in der neu signierten Kopie, benötigt aber weiterhin
+den beim Erzeugen gebundenen lokalen Python-Interpreter. Die Kopie ist nicht
+portabel und ihre eigene Ad-hoc-Signatur ersetzt kein Gate am Originalpaket.
+Originalpaket und installierte Produkt-App nicht über einen möglicherweise
+neu startenden Computer-Use-App-Aufruf zur synthetischen Prüfung öffnen.
+
+## Native Schlüsselbunddiagnose
+
+`macos_keychain_diagnostic.m` prüft nur Standard-Keychain-Status,
+Vertrauensreferenz und ACL-Erzeugung. Es liest oder ändert keine Einträge.
+`macos_keychain_roundtrip_diagnostic.m` prüft anschließend einen ausschließlich
+neu erzeugten UUID-Testeintrag. Keine Produkt-Accounts sind wählbar. Nur nach
+erfolgreichem Anlegen werden Lesen, Vergleich und Löschen desselben Eintrags
+versucht. Fehlgeschlagenes Löschen ist ein offener Diagnosebefund und darf nicht
+als erfolgreicher Roundtrip gelten. Reports enthalten keine Schlüsselbytes.
+
+```bash
+xcrun clang -fobjc-arc -framework Foundation -framework Security scripts/macos_keychain_diagnostic.m -o /private/tmp/jkm-keychain-status
+xcrun clang -fobjc-arc -framework AppKit -framework Security scripts/macos_keychain_roundtrip_diagnostic.m -o /private/tmp/jkm-keychain-roundtrip
+```
+
+Die Statusprobe erwartet den absoluten Pfad des zu prüfenden Executables.
+Die Roundtrip-Probe erwartet `--report <root>` mit einem neuen leeren privaten
+Verzeichnis direkt im kanonischen System-Temporärordner, dessen Name mit
+`jkm-keychain-roundtrip-` beginnt. Der Report wird exklusiv neu angelegt.
+Für eine separate GUI-Diagnose bindet `JKMDiagnosticReportDirectory` denselben
+Root im Info.plist; darin darf zuvor ausschließlich die eigene
+`JKM-Schluesselbund-Diagnose.app` liegen. Der Start ohne Argumente zeigt die
+Ergebnisse in einem nativen Dialog. Exit 0 bestätigt nur den geschriebenen
+Report; die einzelnen Statuscodes und `secret_matches` bestimmen das Ergebnis.
+
+Am 08.09.2026 wurde der Fehler auch nach manuellem Entsperren und im separat
+per Computer-Use geprüften Diagnosefenster reproduziert: Vertrauensreferenz
+und ACL-Erzeugung Status 0, `SecItemAdd=-25293`. Lesen/Löschen nicht erreicht.
+Die verbleibende Ursache ist offen; diese Diagnose ist keine Paketfreigabe.

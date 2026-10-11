@@ -1,5 +1,25 @@
 # Sprintplanung
 
+## Update 0.4.2 / Build 402 – Auftrag 11.10.2026
+
+- [x] Vision/Discovery: vollständige fachweise Kompetenz-PDF-Tabelle mit Pflanzenstufen; visueller Entwurf vom PO freigegeben.
+- [x] Produktentscheidung: externer bewusster Export, bestätigte Werte mit Herkunft; Vorschläge nicht als Lehrkraftentscheidung ausgeben.
+- [x] Datenmodell- und Architekturreview: bestehender Single-Snapshot-Profilvertrag, kein Schema/keine neue Persistenz; kanonische Register vor Implementierung erweitert.
+- [x] UX-/Prompt-Review: A4, App-Palette, wiederholte Köpfe, aktuelle Fachauswahl, leere fehlende Werte, klare Quellen- und Datenschutzkennzeichnung.
+- [x] Implementierung: Adapter/Builder/Memory-Renderer und Profilaktion, exklusive externe Ausgabe.
+- [x] Testwerkzeug-Reviewbefunde behoben: interne Links, fremde Umgebung, Bytecode, langlebige Diagnoseidentität und vollständiger Erfolgsausweis.
+- [x] Quell-Gesamtsuite: 2.457 Tests / 100 Untertests, 104 explizite umgebungsgebundene Skips, Exit 0. Finale fokussierte Suite: 53 Tests, Exit 0.
+- [x] PDF-Struktur und Renderprüfung: alle 331 Katalogtexte vollständig, alle 31 A4-Seiten visuell geprüft, vier Originalbilder, wiederholte Fach-/Spaltenköpfe und Kind-/Schuljahrzuordnung auf Folgeseiten.
+- [x] Reale signierte Launcher-Negativprüfung: fremde Argumente, interner Lock-Symlink und fehlende Autorität ergeben Exit 2 vor Produktcode; Bundle danach weiter deep/strict gültig, kein __pycache__.
+- [x] Native Diagnose außerhalb Sandbox: Journal vor SecItemAdd, Add/Read/Delete jeweils 0, Inhaltsgleichheit true, success true, Exit 0. Sandboxvergleich liefert -50/Exit 1 und keine irreführende Erfolgsmeldung.
+- [x] Exakter Cipher-Lauf: 94 Tests bestanden; sechs separat gegatete reale Keychain-Prozesstests zunächst übersprungen. Der Export wurde zusätzlich über denselben keyed Produktprovider geprüft.
+- [x] Sechs reale macOS-Keychain-Prozesstests zusätzlich bestanden: fünf Crashgrenzen und erneutes Öffnen im neuen Prozess; eigene Testschlüssel vollständig aufgeräumt. Der erste Versuch ohne gebaute native Bridge wurde als fehlende Testvoraussetzung abgewiesen, der vollständige Wiederholungslauf mit explizitem synthetischem Bridgepfad bestand.
+- [ ] Neuer Paketnachweis und sichtbare Bedienabnahme des neuen Builds.
+- [ ] Veröffentlichung nach Prüfung des neuen Builds.
+
+Build 401: Wiederholungsprüfung 11.10.2026 im getrennten Systemtemp-Root `jkm-build401-requalification-l9rz22ai`: alle elf Paketgates plus Restore-Smoke bestanden. DMG unverändert (SHA-256 `dcb36c521e5e6bd784bfd4df8eb301ee290371bad92b2771c7a638e23079d60e`). Der Worker erreichte RESTORE_READY und worker_started, endete bewusst vor Austausch. Eigenständige native Diagnose erreichte Anlegen/Lesen/Inhaltsgleichheit/Löschen erfolgreich. Dies erklärt die frühere Ursache nicht und ersetzt keine Prüfung von Build 402. Die folgenden NO-GO-Einträge bleiben historische Befunde.
+
+
 ## Release- und Quellbaseline 0.4.0 / Build 400
 
 Der veröffentlichte macOS-Pilotstand 0.4.0 / Build 400 ist unveränderlich an
@@ -157,8 +177,9 @@ Zeitpunkt (08.09., 20:30). Die installierte App bleibt 0.4.0 / Build 400.
 Es erfolgten keine Anmeldung und keine fachlichen Aktionen in diesem Fenster.
 Der wiederholte Erststart blieb anschließend als gebundener Prozess mit
 explizitem synthetischem Root erhalten; nur dieser lieferte den oben genannten
-sichtbaren Schlüsselzugriffsfehler. Vor weiteren Computer-Use-App-Aufrufen muss
-prozessseitig bestätigt sein, dass genau der isolierte Testprozess noch läuft.
+sichtbaren Schlüsselzugriffsfehler. Die anschließende Absicherung ersetzt
+diese ausschließlich prozessabhängige Bediengrenze durch die unten beschriebene
+eigenständige Testkopie.
 
 **Nachweise am 08.09.2026:** Quelllauf `jkm-041-source-suite`:
 2.419 Tests / 100 Untertests, Exit 0; separater Lauf
@@ -186,6 +207,48 @@ Der lokale Prepare-Schritt nutzte den vorhandenen Modus ohne Netzprüfung,
 weil `gh auth status` die Anmeldung ablehnte. Die öffentliche API bestätigte
 separat Build 400 als neuesten Pilot und keinen öffentlichen Tag für Build
 401. Kein Push, Tag, GitHub-Release oder Appcast-Update erfolgt.
+
+## Abgesicherter Teststart und native Diagnose – 08.09.2026
+
+**Produkt-/Architektur-/UX-Review:** Der Auftrag zur sicheren Fortsetzung
+umfasst lokale Testwerkzeuge; keine weitere Produktfunktion, Schemaänderung
+oder Lockerung des Schlüsselzugriffs. Kanonische Register vor Implementierung
+ergänzt. Der originale Build bleibt unverändert und weiterhin NO-GO.
+
+- [x] Eigene Testkopie mit UUID-Bundle-ID, nativem Launcher und in der
+  signierten Kopie enthaltenem Root-Prüfer. Fester privater synthetischer Root;
+  fremde Pfadargumente, fehlende/beschädigte Autorität und unsichere Rechte
+  sperren den Start vor Produktcode. Keine Produkt-URL-/Dateizuordnung und
+  keine Sparkle-Konfiguration in der Testkopie.
+- [x] 55 Tests in `test_isolated_macos_test_app`, `test_runtime_root_protection`
+  und `test_macos_runtime` bestanden. Der reale native Launcher verweigert
+  außerdem fremde Pfadargumente und fehlenden Root, auch mit geleerter Umgebung.
+  Die Testkopie besteht die tiefe strikte Codesign-Prüfung.
+- [x] Endgültige Testkopie nach manuellem Entsperren ohne Testargumente über
+  Computer-Use geöffnet: App-Identität `Jenaplan-Isolierter-Test`, sichtbare
+  leere Kontoeinrichtung, keine Eingabe; anschließend geschlossen.
+- [x] Read-only native Vorprüfung: Standardschlüsselbund vorhanden, Status
+  entsperrt/lesbar/schreibbar. Vertrauensreferenz und ACL-Deskriptor jeweils
+  Status 0. Diese Statusbits beweisen keine erfolgreiche Schlüsselerzeugung.
+- [x] Instrumentierte temporäre Kopie der nativen Produktbridge und unabhängige
+  native Diagnose reproduzieren `SecItemAdd=-25293` (`errSecAuthFailed`);
+  vorgeschaltete Vertrauensreferenz und ACL-Erzeugung bleiben Status 0.
+  Auch nach bestätigtem manuellem Entsperren gleicher Befund. Das endgültige
+  eigenständige Diagnosefenster wurde per Computer-Use geprüft und geschlossen.
+  Lesen/Löschen wurde wegen fehlgeschlagenem Anlegen nicht erreicht; kein
+  Testschlüssel wurde dabei angelegt. Produktbridge nicht geändert.
+- [ ] Ursache der macOS-Verweigerung klären. Bildschirm-Sperre allein erklärt
+  den Befund nicht; fehlende Developer-ID ist ebenfalls nicht als Ursache
+  belegt. Keine ACL-Abschwächung, kein Schlüsselbund-Reset oder Suchlistenwechsel.
+  Danach erst Originalpaket, Neustart und Restore-Worker erneut qualifizieren.
+
+Reproduktionswege stehen in `docs/RELEASE_AUTOMATION.md`. Lokale Statusbelege:
+`/private/tmp/jkm-keychain-after-unlock.json`,
+`/private/tmp/jkm-guarded-native-trace.log`; die Pfadberichte
+`/private/tmp/jkm-guarded-test-app-final.json` und
+`/private/tmp/jkm-keychain-gui-final.json` identifizieren die temporären Kopien.
+Die Testkopie hängt vom lokalen Python-Interpreter ab und ist wegen ihrer
+abweichenden Signatur ausschließlich Diagnoseartefakt, kein Release-Gate.
 
 ## Pilot-Produktionsschutz im laufenden Betrieb
 
@@ -2440,3 +2503,10 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 - [x] Keine Berichte
 - [x] Keine Kursverwaltung
 - [x] Keine Stammgruppenverwaltung
+
+
+### Prüfhinweis Kompetenz-PDF und Testbereinigung 11.10.2026
+
+Die vollständige Quellsuite lief in ihrer historischen SQLCipher-0.6.2-Umgebung; Produktprüfungen verwenden separat das exakt reproduzierte 4.17-Wheel mit SHA-256 `60e337f882ed8d283529019c7799be09b8f68773fa277f6b7bc86e3722f52fdb`. Der erste exakte Lauf zeigte einen zufälligen `Ada`-Dreibyte-Treffer im Ciphertext. Der Test verwendet jetzt einen langen eindeutigen Testvornamen, prüft dessen Abwesenheit weiter und ergänzt echten PDF-Export über denselben keyed Provider. Ein zunächst unvollständiges Exportfixture besaß keinen Katalog; das Fixture legt den offiziellen Katalog ausschließlich in seinem bestehenden synthetischen Root an. Produktcode erhielt weder Fallback noch Defaultkatalog bei Export.
+
+Nachweise des neuen Quell-/Werkzeuglaufs liegen lokal unter `/private/tmp/jkm-plants-reference/`: full-suite.log, targeted-final.log, cipher-tests-qualified.log, guarded-launcher-checks.json. Native erfolgreiche Diagnose: `jkm-keychain-roundtrip-rlgcb0of` im Systemtemp mit getrenntem report.json/result.json. Die fehlgeschlagene Sandboxprobe ist getrennte Evidenz und kein macOS-Produktfehlernachweis.

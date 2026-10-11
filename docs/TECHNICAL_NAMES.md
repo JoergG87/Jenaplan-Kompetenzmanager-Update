@@ -3439,3 +3439,29 @@ Schreibpfade verwenden weiterhin ausschließlich die vorhandenen `subject_key`-,
 Layoutgestaltung). `dmg-layout.request` und `dmg-layout.ready` liegen nur im
 frischen Buildroot und koordinieren diese technische Übergabe. Die Ready-Datei
 ist keine fachliche, Paket-, Signatur- oder Veröffentlichungsfreigabe.
+
+## Gebundene lokale macOS-Testkopie und Schlüsselbunddiagnose
+
+`create_isolated_macos_test_app.py` erzeugt ausschließlich eine temporäre
+`Jenaplan-Isolierter-Test.app` mit eigener Bundle-ID
+`de.jenaplan.kompetenzmanager.isolatedtest.<UUID>` und dem nativen Einstieg
+`jkm-isolated-launcher`. `isolated-test-bootstrap.py` prüft vor jedem Start
+die gebundene `synthetic_test`-Autorität und setzt ausschließlich den festen
+Testroot. Erlaubt sind normaler Teststart und die bestehenden Paket-Smoke-Modi
+`initialize`, `restart`, `cleanup`, `restore-worker`; Pfadargumente sind gesperrt.
+`macos_keychain_diagnostic.m` meldet ausschließlich Stufen, OSStatus und
+Schlüsselbundstatusbits; keine Einträge, Accounts oder Schlüsselmaterial.
+
+`macos_keychain_roundtrip_diagnostic.m` verwendet ausschließlich einen frischen
+UUID-Namespace `de.jenaplan.kompetenzmanager.keychain-diagnostic.<UUID>`
+und Account `synthetic-diagnostic`. `JKMDiagnosticReportDirectory` bindet
+nur den privaten temporären Reportpfad einer separaten Diagnose-App.
+
+`isolated_test_support.py` und eine Kopie des bestehenden Root-Prüfers liegen
+mit dem Bootstrap in der signierten Testkopie; ihr Start hängt nicht vom
+späteren Zustand des Arbeitsverzeichnisses ab.
+
+
+## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
+
+Registriert: `src/desktop_app/view_models/competency_pdf.py`, `CompetencyPdfRow`, `CompetencyPdfSubject`, `CompetencyPdfModel`, `build_competency_pdf_model`; `src/application/competency_pdf_export.py`, `CompetencyPdfExportError`, `render_competency_pdf`, `export_competency_pdf`; `StudentDesktopAdapter.competency_pdf_for_student`; `StudentProfileScreen.competency_pdf_requested`, `competency_pdf_button`; `AppShell.export_competency_overview_pdf`; `assets/competency_plants/stage_1.jpeg` bis `stage_4.jpeg`. Die Bilder stammen unverändert aus dem vom PO bereitgestellten Entwicklungsbuch Stand 06.01.2026; sie sind statische Präsentationsressourcen, keine fachliche Quelle.

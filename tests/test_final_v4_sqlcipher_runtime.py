@@ -494,6 +494,12 @@ def test_exact_417_first_run_restart_application_stack_and_ciphertext(
     assert first.runtime is not None and first.runtime.first_run is True
     database = first.runtime.database
 
+    from src.core.sqlite_store import SQLiteCompetencyRepository
+    from src.desktop_app.adapters.curriculum_desktop_adapter import CurriculumDesktopAdapter
+    SQLiteCompetencyRepository(database).ensure_catalog_defaults(
+        CurriculumDesktopAdapter().list_entries()
+    )
+
     created_at = datetime(2026, 8, 1, 8, tzinfo=UTC)
     with database.connect() as connection:
         with connection:
@@ -517,7 +523,7 @@ def test_exact_417_first_run_restart_application_stack_and_ciphertext(
     group = master.add_group("Cipher Stammgruppe")
     course = master.add_course("Cipher Kurs", year_level=1)
     created = adapter.save_new_student(
-        first_name="Ada",
+        first_name="AdaCipherFirstNameProbe",
         last_name="Cipherkind",
         group_id=group.item_id,
         course_id=course.item_id,
@@ -528,7 +534,7 @@ def test_exact_417_first_run_restart_application_stack_and_ciphertext(
     observation = adapter.save_observation(
         ObservationDraftViewModel(
             student_id=student_id,
-            student_name="Ada Cipherkind",
+            student_name="AdaCipherFirstNameProbe Cipherkind",
             date_text="2026-08-03",
             subject_id="deutsch",
             subject_display_name="Deutsch",
@@ -566,11 +572,23 @@ def test_exact_417_first_run_restart_application_stack_and_ciphertext(
         restarted.runtime.database
     ).list_observations_for_student(student_id)
     assert restarted_profile is not None
-    assert restarted_profile.display_name == "Ada Cipherkind"
+    assert restarted_profile.display_name == "AdaCipherFirstNameProbe Cipherkind"
     assert [item.observation_id for item in restarted_observations] == [
         observation_id
     ]
     assert restarted_observations[0].note == "Cipher Beobachtung"
+
+    # Exercise the new read projection on the exact encrypted product provider.
+    from src.application.competency_pdf_export import export_competency_pdf
+    from pypdf import PdfReader
+
+    export_target = tmp_path / "competencies.pdf"
+    export_competency_pdf(
+        restarted_adapter.competency_pdf_for_student(student_id),
+        export_target, runtime_root=root,
+    )
+    assert len(PdfReader(export_target).pages) > 1
+    assert not tuple(root.rglob("*.pdf"))
 
     database_path = restarted.runtime.database.path
     content = database_path.read_bytes()
@@ -580,7 +598,7 @@ def test_exact_417_first_run_restart_application_stack_and_ciphertext(
         "Cipher Stammgruppe",
         "Cipher Kurs",
         student_id,
-        "Ada",
+        "AdaCipherFirstNameProbe",
         "Cipherkind",
         observation_id,
         "Cipher Kontext",

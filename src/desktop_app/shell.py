@@ -559,6 +559,9 @@ class AppShell(QMainWindow):
         self.student_profile_screen.documentation_subjects_save_requested.connect(
             self.save_student_documentation_subjects
         )
+        self.student_profile_screen.competency_pdf_requested.connect(
+            self.export_competency_overview_pdf
+        )
         self.student_profile_screen.report_requested.connect(
             self.open_learning_report_dialog
         )
@@ -2616,6 +2619,46 @@ class AppShell(QMainWindow):
         if app is not None:
             app.aboutToQuit.connect(viewer.close)
         viewer.open()
+
+    def export_competency_overview_pdf(self, student_id: str, subject_id: str = "") -> None:
+        """Choose an explicit external cleartext export; keep domain work outside Qt."""
+        confirmation = QMessageBox.question(
+            self,
+            "Kompetenzen als PDF exportieren",
+            "Das PDF enthält den Namen und die bestätigten Entwicklungsstände des Kindes. "
+            "Es wird außerhalb der App unverschlüsselt gespeichert. Möchtest du es exportieren?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if confirmation != QMessageBox.StandardButton.Yes:
+            return
+        target, _filter = QFileDialog.getSaveFileName(
+            self, "Kompetenzübersicht als PDF speichern",
+            str(Path.home() / "Downloads" / "Kompetenzuebersicht.pdf"),
+            "PDF-Datei (*.pdf)", options=QFileDialog.Option.DontUseNativeDialog,
+        )
+        if not target:
+            return
+        if not Path(target).suffix:
+            target += ".pdf"
+        try:
+            from src.application.competency_pdf_export import export_competency_pdf
+
+            with self.maintenance_gate.begin_writer():
+                model = self.adapter.competency_pdf_for_student(student_id, subject_id)
+                exported = export_competency_pdf(
+                    model, Path(target), runtime_root=self.runtime_paths.root,
+                )
+        except FileExistsError:
+            QMessageBox.warning(self, "PDF nicht exportiert",
+                                "Die Datei existiert bereits. Bitte einen neuen Dateinamen wählen.")
+            return
+        except Exception:
+            QMessageBox.warning(self, "PDF nicht exportiert",
+                                "Der Export konnte nicht sicher abgeschlossen werden. "
+                                "Bitte Fachauswahl und Zielordner prüfen.")
+            return
+        self.status_label.setText(f"Kompetenzübersicht exportiert: {exported.name}")
 
     def export_learning_report_pdf(
         self,

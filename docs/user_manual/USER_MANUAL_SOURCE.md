@@ -642,3 +642,10 @@ Qt-Oberfläche mit synthetischen, datenschutzneutralen Daten. Sie enthalten
 keine echten Schülerdaten, Entwicklerpfade, Testroots, Secrets oder
 historische HTML-Oberflächen. Screenshots sind Bedienhilfen; maßgeblich bleiben
 die beschriebenen Produktverträge.
+
+
+## Kompetenzübersicht als PDF exportieren
+
+Im Schülerprofil unter Kompetenzen wählst du ein Fach oder Alle Kompetenzen und klickst auf Kompetenzen als PDF exportieren. Das PDF enthält alle aktuellen Kompetenzen der Auswahl; Suche und eingeklappte Themen begrenzen die Ausgabe nicht. Nach der Bestätigung wählst du außerhalb der App-Daten einen neuen Dateinamen. Eine vorhandene Datei wird nicht überschrieben.
+
+Die vier Pflanzen zeigen den bestätigten Entwicklungsstand von ersten Erfahrungen bis sicherer eigenständiger Anwendung. Jeder Balken nennt seine Bestätigung; neuere Beobachtungen bleiben erkennbar. Ohne sichere Bestätigung bleibt der Balken leer. Das Schuljahr beschreibt die aktuelle Fachauswahl; Bestätigungen können aus früheren Jahren stammen. Die Ausgabe enthält Name und Entwicklungsstände und ist außerhalb der App unverschlüsselt. Bewahre sie entsprechend geschützt auf. Sie ist eine aktuelle Übersicht und keine finalisierte Bericht- oder LEG-Revision.

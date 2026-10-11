@@ -3701,3 +3701,28 @@ dem Mount des frischen DMG-Arbeitsvolumes auf dessen sichtbare Gestaltung.
 Erst eine neu angelegte reguläre `dmg-layout.ready` und vorhandene Finder-
 Layoutmetadaten erlauben die bestehende Konvertierung; Timeout oder Symlink
 bricht ab. Das verändert keine Produktdaten, Sicherheits- oder Releasegates.
+
+## Automatischer Neustart der gebundenen Testkopie
+
+Frisches privates System-Temporärverzeichnis erzeugen, vorhandenes App-Bundle
+kopieren, eigene Bundle-ID und festen Launcher eintragen, vorhandene
+`synthetic_test`-Autorität publizieren, Testkopie ad-hoc signieren. Jeder Start
+– auch ohne Argumente oder vererbte Umgebung – läuft zuerst durch den Launcher.
+Fehlende/verschobene/falsche Rootautorität und nicht erlaubte Startargumente
+beenden den Prozess vor Produktcode. Der Launcher schreibt nur den fest
+gebundenen Override in die Kindprozessumgebung; keine normale Pfadwahl.
+Die native Diagnose nutzt nur `SecKeychainCopyDefault`, `SecKeychainGetStatus`,
+`SecTrustedApplicationCreateFromPath` und `SecAccessCreate` mit anschließendem
+Freigeben der Handles. Kein Item-Lesen, -Anlegen, -Löschen oder Entsperren.
+
+Nach erfolgreicher read-only Vorprüfung darf die separate native Roundtrip-
+Diagnose mit identischen ACL-Aufrufen genau einen neu benannten Testeintrag
+anlegen, lesen und bei erfolgreichem Create wieder löschen. Fremde Services
+und Accounts sind nicht wählbar; keine ACL-Änderung, kein Entsperren oder
+Keychain-/Suchlistenwechsel. Ein einmaliger Report wird ausschließlich in
+einem eigentümergeprüften privaten System-Temporärroot neu angelegt.
+
+
+## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
+
+Ablauf: bewusster Klick `Kompetenzen als PDF exportieren` -> Adapter liest frisches Profil-Bundle -> registrierter Builder erzeugt Memory-Modell -> Nutzer bestätigt unverschlüsselten externen Export und wählt neue PDF-Datei -> Memory-Renderer -> exklusives descriptorgebundenes Staging mit 0600 im externen Zielordner, fsync und atomare No-Clobber-Publikation. Vorhandene Dateien, Symlinks und Runtime-Ziele werden abgewiesen; Fehler entfernen ausschließlich die eigene unvollständige Ausgabe. Abbruch schreibt nichts. Kein automatisches Öffnen, kein Klartext im Runtime-Root, keine fachliche Persistenz, kein RPA/LCA, kein Backupinhalt. Der Export zeigt aktuellen Bestätigungsstand; Schuljahr bezeichnet die Fachauswahl und filtert nicht rückwirkend Beobachtungen.

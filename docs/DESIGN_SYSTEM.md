@@ -734,8 +734,9 @@ Standardprofil verwendet unverändert `++ sicher erreicht`, `+ erreicht`,
 `- in Entwicklung`, `-- Unterstützungsbedarf`. Ausschließlich Selbst- und
 Sozialkompetenz zeigt `Kaum vorhanden`, `Teilweise`, `Gut`, `Ausgeprägt`;
 ausschließlich Sport zeigt `Erste Übungen`, `Übt noch`, `Meist`, `Sicher`.
-Pflanzenbilder, Pflanzenstufen und Schulbesuchsjahr-Farben sind kein Teil des
-digitalen Designsystems.
+Pflanzenbilder und Pflanzenstufen sind ausschließlich für den unten
+freigegebenen Kompetenz-PDF-Export vorgesehen. Schulbesuchsjahr-Farben
+und Pflanzen in der allgemeinen App-Oberfläche bleiben ausgeschlossen.
 
 Disclosure setzt Sichtbarkeit und Datenzustand sofort und verwendet nur eine zentrale Opacity-Bestaetigung von maximal `MOTION_FAST_MS`. Keine Hoehenanimation langer Listen, keine verschachtelten Animationen und kein Layoutflackern. Reduced Motion zeigt den Endzustand unmittelbar. Die Arbeitsbereiche werden fuer 1400 x 900, 1280 x 800 und 1180 x 760 geprueft; Pflichtaktionen bleiben sichtbar, der Dialog besitzt getrennte vertikale Scrollbereiche und keinen horizontalen Katalog- oder Gesamtscroll.
 
@@ -1264,3 +1265,8 @@ Die Kontextspalte im Beobachtungsdialog reserviert auch ohne Fokus auf der
 Fachauswahl ausreichend Platz für vollständige Fachnamen, Marker und Pfeil.
 Der Initialfokus in der Suche darf die Lesbarkeit bei 1180 × 760, 1280 × 800
 und 1400 × 900 nicht verschlechtern; die vorhandenen drei Bereiche bleiben.
+
+
+## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
+
+Freigegebene Ausnahme ausschließlich im Kompetenz-PDF: vier Originalpflanzen in schwarz/weiß statt sichtbarer Ratingtokens, mit Originalerklärungen für Standardfächer. Für soziale/Sport-Profile bleiben deren kanonische Texte in der Legende erhalten. Marineblau #123F67, Petrol #087F83 und weiche neutrale Tabellenflächen folgen der App. Balken hat vier diskrete Segmente, benannte Quelle/Bestätigungsdatum und Marker; keine Prozentzahl. A4, Fach beginnt auf neuer Seite, umbrochene Texte, wiederholte Spaltenköpfe und Seitenzählung. Fehlender Stand ist kein niedrigster Wert. Pflanzen gelten ausschließlich für diesen freigegebenen Export, nicht als neues App-Ratingprofil.

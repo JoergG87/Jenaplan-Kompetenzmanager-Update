@@ -2,7 +2,21 @@
 
 ## Unreleased
 
-- Lokalen Paketkandidaten 0.4.1 / Build 401 aus `ad4bd32` gebaut und geprüft:
+- Kompetenzübersicht als PDF mit Originalpflanzen umgesetzt: vollständige aktuelle Kompetenzen je Fach, bestätigte Stände mit Quelle/Datum, neutrale leere unbestätigte Stände, wiederholte Tabellenköpfe und expliziter unverschlüsselter externer Export. Keine Schemaänderung.
+- Testlauncher verweigert interne Symlinks/Hardlinks/Sonderdateien, entfernt Runtime-/Bridge-/Loader-Umgebungsvariablen und unterbindet Bytecode im signierten Bundle. Native Diagnose journalisiert vor Schlüsselerzeugung die genaue synthetische Identität; Rückgabecode und Fenster berücksichtigen Inhalt und Aufräumen.
+- Quellprüfung des neuen Exports: 2.457 Tests / 100 Untertests, finale fokussierte Suite 53 Tests, separat 94 exakte Cipher-Tests und sechs reale synthetische Keychain-Prozesstests bestanden. Alle 331 Texte und 31 PDF-Seiten geprüft.
+- Neuer Updatekandidat: 0.4.2 / Build 402. Build 401 bleibt unverändert. Die erneute Originalpaketprüfung vom 11.10.2026 bestand alle elf Gates und den Restore-Worker-Smoke; der historische Keychainfehler ist derzeit nicht reproduziert. Vollständiger Datenaustausch und reale PO-Bedienabnahme sind davon getrennt.
+
+- Historischer Diagnosestand vom 08.09.2026: Automatische Test-App-Neustarts abgesichert: separate temporäre Kopie mit
+  eigener Identität, versiegeltem Launcher und festem synthetischem Datenroot.
+  55 gezielte Tests bestanden; normaler Start ohne Testargumente per
+  Computer-Use als leere Ersteinrichtung geprüft und ohne Eingabe geschlossen.
+  Native Schlüsselbunddiagnose grenzt den Paketfehler auf `SecItemAdd=-25293`
+  ein, auch nach manuellem Entsperren und in einer eigenständigen Diagnose-App.
+  Vertrauensreferenz und ACL-Erzeugung liefern jeweils Erfolg. Die weitere
+  Ursache blieb offen; Build 401 war zu diesem Prüfzeitpunkt NO-GO, Produktcode unverändert.
+
+- Historischer Paketstand vom 08.09.2026: 0.4.1 / Build 401 aus `ad4bd32` gebaut und geprüft:
   2.419 Quelltests / 100 Untertests plus 94 exakte Cipher-Tests bestanden.
   Zehn von elf Paketgates bestanden; sichtbarer Erststart per Computer-Use
   bestätigt `data_master_key_access_denied`. Paket bleibt NO-GO, nichts
