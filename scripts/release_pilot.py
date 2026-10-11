@@ -1537,13 +1537,13 @@ class ReleasePilot:
             raise ReleaseError("Öffentlicher GitHub-Release ist kein Pre-Release.")
         if self._resolve_remote_tag_commit(tag) != manifest.data["source_commit"]:
             raise ReleaseError("Öffentlicher Tag zeigt nicht auf den Manifest-Commit.")
-        latest = self._gh_json(
+        latest = self._gh_optional_json(
             [
                 "api",
                 f"repos/{self.config['github_repository']}/releases/latest",
             ]
         )
-        if latest.get("tag_name") == tag:
+        if latest is not None and latest.get("tag_name") == tag:
             raise ReleaseError("Pilot-Pre-Release wurde unerwartet als Latest markiert.")
         self._verify_remote_assets(manifest, release)
         feed_payload = fetch_bytes(str(self.config["pilot_feed_url"]))

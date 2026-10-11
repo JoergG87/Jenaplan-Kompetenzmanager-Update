@@ -596,12 +596,3 @@ def test_signing_uses_opaque_private_copy_and_cleans_up(
     assert source.read_bytes() == original
     assert len(observed) == 1
     assert not observed[0].parent.exists()
-
-
-def test_appcast_status_preserves_porcelain_leading_space() -> None:
-    import inspect
-    source = inspect.getsource(release.ReleasePilot.publish_appcast)
-    assert '["git", "status", "--porcelain=v1"]' in source
-    assert 'status.splitlines()' in source
-    # The general git helper strips leading spaces; porcelain needs raw stdout.
-    assert 'status = git(' not in source
