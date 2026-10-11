@@ -1429,7 +1429,9 @@ class ReleasePilot:
             } if (checkout / "stable").exists() else {}
             if stable_after != stable_before:
                 raise ReleaseError("Stable-Dateien wurden verändert.")
-            status = git(self.runner, "status", "--porcelain=v1", cwd=checkout)
+            status = self.runner.run(
+                ["git", "status", "--porcelain=v1"], cwd=checkout
+            ).stdout
             expected_status = {
                 f" M {self.config['pilot_appcast_path']}",
                 f"?? {appcast.parent.relative_to(checkout).as_posix()}/{notes_name}",

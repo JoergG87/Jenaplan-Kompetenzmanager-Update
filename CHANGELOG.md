@@ -1,5 +1,7 @@
 # CHANGELOG
 
+Release-Automation bewahrt beim gezielten Appcast-Dateiabgleich die führenden Statuszeichen von Git-Porcelain; erlaubte Dateien bleiben unverändert eng begrenzt.
+
 Release-Automation: XML und HTML werden als unveränderte Bytes über eine geschützte temporäre Binärkopie signiert, damit Sparkle 2.9.4 die Dateien nicht formatabhängig verändert. Länge, Inhalt und Aufräumen werden geprüft. Das bereits geprüfte Paket 0.4.3 / 403 bleibt unverändert.
 
 Release-Notes-Publikation bindet nun Version und Build aus dem Manifest statt öffentliche Platzhalter auszugeben; Quellvorlagen bleiben unverändert.
