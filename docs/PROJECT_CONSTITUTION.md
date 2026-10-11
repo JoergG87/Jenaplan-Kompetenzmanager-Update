@@ -1,5 +1,8 @@
 # Project Constitution
 
+Releasepräzisierung 11.10.2026: Öffentliche Release-Notes erhalten Version und Build ausschließlich aus der geprüften Manifestidentität; Quellvorlagen behalten ihre Platzhalter. Keine Produktdaten, Datenmodell- oder UI-Änderung.
+
+
 PO-Ergänzung 11.10.2026: Vier neu erzeugte PNG-Pflanzen mit echtem Alphakanal ersetzen die weißen JPEG-Flächen im Elternexport. Als separat nutzbare Dateien und ZIP bereitgestellt; Präsentationsressourcen ohne Änderung fachlicher Stufen oder Daten.
 
 ## Elternausgabe und vollständige Kompetenzauswahl – aktueller PO-Stand 11.10.2026

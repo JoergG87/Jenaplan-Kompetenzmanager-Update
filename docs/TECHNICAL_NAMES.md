@@ -1,5 +1,8 @@
 # Technical Naming Registry
 
+Releasepräzisierung 11.10.2026: Öffentliche Release-Notes erhalten Version und Build ausschließlich aus der geprüften Manifestidentität; Quellvorlagen behalten ihre Platzhalter. Keine Produktdaten, Datenmodell- oder UI-Änderung.
+
+
 ## Elternexport und Vollständigkeitsprüfung – aktueller PO-Stand 11.10.2026
 
 Registriert: `CompetencyPdfRow.competency_id`; `pending_competency_pdf_rows`, `validate_competency_pdf_ready`, `validate_competency_pdf_completion` in `src/application/competency_pdf_completion.py`; `StudentDesktopAdapter.complete_competency_pdf`; `SQLiteStudentCompetencyConfirmationRepository.upsert_confirmations` und `_upsert_confirmation_on_connection`; `CompetencyPdfCompletionDialog` in `src/desktop_app/dialogs/competency_pdf_completion_dialog.py`, `rating_inputs`, `remaining_label`, `save_button`, `selections`. Bestehender Shell-Toast erhält eine native fontmetrische Mindesthöhe, keine neue View.

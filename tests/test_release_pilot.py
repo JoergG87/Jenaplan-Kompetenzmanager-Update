@@ -546,3 +546,16 @@ def test_public_manifest_removes_local_asset_paths() -> None:
         }
     )
     assert payload["assets"][0]["local_path"] == "<local-path-redacted>"
+
+
+def test_public_release_notes_bind_identity_and_escape_content(tmp_path: Path) -> None:
+    source = tmp_path / "notes.md"
+    source.write_text("Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}\n<script>example</script>", encoding="utf-8")
+    html = release.ReleasePilot._release_notes_html(source, version="0.4.3", build=403)
+    assert "Version 0.4.3 / Build 403" in html
+    assert "{{PILOT_" not in html
+    assert "&lt;script&gt;example&lt;/script&gt;" in html
+    assert "{{PILOT_VERSION}}" in source.read_text(encoding="utf-8")
+    source.write_text("Version 0.4.3 / Build 403", encoding="utf-8")
+    rendered = release.ReleasePilot._release_notes_html(source, version="0.4.3", build=403)
+    assert "Version 0.4.3 / Build 403" in rendered

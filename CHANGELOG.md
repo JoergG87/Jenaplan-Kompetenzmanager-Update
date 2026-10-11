@@ -1,5 +1,7 @@
 # CHANGELOG
 
+Release-Notes-Publikation bindet nun Version und Build aus dem Manifest statt öffentliche Platzhalter auszugeben; Quellvorlagen bleiben unverändert.
+
 ## Releasevorbereitung 0.4.3 / Build 403 – 11.10.2026
 
 PO-Auftrag: alle notwendigen Arbeiten bis zur Veröffentlichung im bestehenden Pilotkanal durchführen. Quellbasis ist die geprüfte Elternexport-Umsetzung `5736ce1`; neue monotone Paketidentität 0.4.3 / Build 403. Build 402 bleibt unverändert und wird nicht veröffentlicht. Saubere separate Release-Kopie erhält die im Arbeitsordner bewusst verschobene Pflanzen-ZIP aus dem geprüften Commit; der Arbeitsordner bleibt an dieser Stelle unverändert. Versionsgebundene Tests auf 0.4.3 / Build 403 aktualisiert. Gesamtsuite am finalen Versionscommit, elf Originalpaketgates und paketierter Restore-Worker-Smoke sind vor Publikation erforderlich. Keine produktive App starten, keine Produktdaten oder bestehenden Produktschlüssel ändern. Veröffentlichung erfolgt als GitHub-Pre-Release und Pilot-Appcast; Stable bleibt deaktiviert. Paketprüfung und öffentliche Endverifikation stehen noch aus.

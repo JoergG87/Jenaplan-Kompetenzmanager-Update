@@ -729,7 +729,12 @@ class ReleasePilot:
                 for pdf in sorted(dist_root.glob("*.pdf")):
                     archive.write(pdf, arcname=pdf.name)
             release_notes = artifacts_root / "GITHUB_RELEASE_NOTES.md"
-            shutil.copy2(workspace / self.config["release_notes_source"], release_notes)
+            release_notes.write_text(
+                (workspace / self.config["release_notes_source"]).read_text(encoding="utf-8")
+                .replace("{{PILOT_VERSION}}", str(version))
+                .replace("{{PILOT_BUILD}}", str(build)),
+                encoding="utf-8",
+            )
             asset_paths = [
                 artifacts_root / dmg_name,
                 artifacts_root / documentation_name,
@@ -1240,7 +1245,9 @@ class ReleasePilot:
 
     @staticmethod
     def _release_notes_html(source: Path, *, version: str, build: int) -> str:
-        markdown = source.read_text(encoding="utf-8")
+        markdown = (source.read_text(encoding="utf-8")
+                    .replace("{{PILOT_VERSION}}", version)
+                    .replace("{{PILOT_BUILD}}", str(build)))
         return (
             "<!doctype html>\n<html lang=\"de\"><head><meta charset=\"utf-8\">"
             f"<title>Version {html.escape(version)} Build {build}</title></head>"
