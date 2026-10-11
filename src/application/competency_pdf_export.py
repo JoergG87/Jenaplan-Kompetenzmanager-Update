@@ -68,6 +68,8 @@ class _StageBar(Flowable):
 
 def render_competency_pdf(model: object) -> bytes:
     """Render the registered immutable display model without using runtime paths."""
+    from src.application.competency_pdf_completion import validate_competency_pdf_ready
+    validate_competency_pdf_ready(model)
     resource_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
     plants = resource_root / "assets/competency_plants"
     font, bold = "Helvetica", "Helvetica-Bold"
@@ -86,10 +88,10 @@ def render_competency_pdf(model: object) -> bytes:
     def p(text, style=body):
         return Paragraph(escape(str(text)).replace("\n", "<br/>"), style)
     def image(stage, width=26, height=34):
-        path = plants / f"stage_{stage}.jpeg"
+        path = plants / f"stage_{stage}.png"
         if not path.is_file():
             raise CompetencyPdfExportError("Die Pflanzenbilder fehlen. Bitte die App neu installieren.")
-        return Image(str(path), width=width, height=height, kind="proportional")
+        return Image(str(path), width=width, height=height, kind="proportional", mask="auto")
     story = []
     for index, subject in enumerate(model.subjects):
         if index:
@@ -114,11 +116,11 @@ def render_competency_pdf(model: object) -> bytes:
         plant_header.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"),
                                          ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                          ("RIGHTPADDING", (0, 0), (-1, -1), 0)]))
-        data = [[p("Kompetenz · " + subject.name, header), [p("Bestätigter Entwicklungsstand", header), plant_header]]]
+        data = [[p("Kompetenz · " + subject.name, header), [p("Entwicklungsstand", header), plant_header]]]
         for row in subject.rows:
             data.append([
                 [p(row.text), Spacer(1, 3), p(row.context, small)],
-                [_StageBar(row.rating), Spacer(1, 4), p(row.source, small)],
+                [_StageBar(row.rating)],
             ])
         table = Table(data, colWidths=[307, 204], repeatRows=1, hAlign="LEFT")
         table.setStyle(TableStyle([
@@ -131,9 +133,7 @@ def render_competency_pdf(model: object) -> bytes:
             ("TOPPADDING", (0, 0), (-1, -1), 7),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
         ]))
-        story.extend([table, Spacer(1, 8), p(
-            "Nur bestätigte Stände füllen den Balken. Fehlende Dokumentation ist kein niedriger Entwicklungsstand. "
-            "Die Fachauswahl gehört zum genannten Schuljahr; der bestätigte Stand kann aus früheren Jahren stammen.", small)])
+        story.append(table)
     stream = BytesIO()
     def footer(c, doc):
         c.setFont(font, 8)

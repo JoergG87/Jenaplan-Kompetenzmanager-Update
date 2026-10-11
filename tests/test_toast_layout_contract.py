@@ -45,3 +45,22 @@ def test_nested_layout_toast_is_managed_and_reserves_wrapped_height() -> None:
     assert toast.geometry().bottom() <= root.contentsRect().bottom()
 
     root.close()
+
+
+def test_styled_success_toast_keeps_both_lines_inside_label():
+    from PySide6.QtCore import QRect, Qt
+    from src.desktop_app.theme import APP_STYLESHEET
+    app=QApplication.instance() or QApplication([])
+    root=QWidget(); root.resize(1000,750); root.setStyleSheet(APP_STYLESHEET)
+    outer=QHBoxLayout(root); inner=QVBoxLayout(); outer.addLayout(inner)
+    content=QWidget(); inner.addWidget(content,1)
+    toast=Toast(); inner.addWidget(toast,0,Qt.AlignmentFlag.AlignLeft)
+    root.show(); app.processEvents()
+    toast.show_message('PDF gespeichert: Jonas_Elternexport_Transparente_Pflanzen_Toast_Test_2.pdf',tone='success',duration_ms=10000)
+    app.processEvents()
+    label=toast.label
+    needed=label.fontMetrics().boundingRect(QRect(0,0,label.contentsRect().width(),100000),
+        Qt.TextFlag.TextWordWrap,label.text()).height()
+    assert label.contentsRect().height()>=needed
+    assert toast.geometry().bottom()<=root.contentsRect().bottom()
+    root.close()

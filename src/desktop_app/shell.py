@@ -2622,10 +2622,28 @@ class AppShell(QMainWindow):
 
     def export_competency_overview_pdf(self, student_id: str) -> None:
         """Choose an explicit external cleartext export; keep domain work outside Qt."""
+        from src.application.competency_pdf_completion import pending_competency_pdf_rows
+        from src.desktop_app.dialogs.competency_pdf_completion_dialog import CompetencyPdfCompletionDialog
+        try:
+            model = self.adapter.competency_pdf_for_student(student_id)
+            if pending_competency_pdf_rows(model):
+                dialog = CompetencyPdfCompletionDialog(model, self)
+                if dialog.exec() != QDialog.DialogCode.Accepted:
+                    return
+                self.adapter.complete_competency_pdf(student_id, model, dialog.selections())
+                tab = self.student_profile_screen.profile_tabs.currentIndex()
+                self.show_student_profile(student_id)
+                self.student_profile_screen.profile_tabs.setCurrentIndex(tab)
+        except ValueError as error:
+            QMessageBox.warning(self, "Entwicklungsstände prüfen", str(error))
+            return
+        except Exception:
+            QMessageBox.warning(self, "Export nicht vorbereitet", "Die Entwicklungsstände konnten nicht sicher vorbereitet werden.")
+            return
         confirmation = QMessageBox.question(
             self,
             "Kompetenzen als PDF exportieren",
-            "Das PDF enthält den Namen und die bestätigten Entwicklungsstände des Kindes. "
+            "Das PDF enthält den Namen und die Entwicklungsstände des Kindes. "
             "Es wird außerhalb der App unverschlüsselt gespeichert. Möchtest du es exportieren?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
             QMessageBox.StandardButton.Cancel,
@@ -2646,6 +2664,10 @@ class AppShell(QMainWindow):
 
             with self.maintenance_gate.begin_writer():
                 model = self.adapter.competency_pdf_for_student(student_id)
+                if pending_competency_pdf_rows(model):
+                    QMessageBox.warning(self, "Entwicklungsstände prüfen",
+                        "Der Kompetenzstand wurde geändert. Bitte den Export erneut öffnen und alle offenen Stände auswählen.")
+                    return
                 exported = export_competency_pdf(
                     model, Path(target), runtime_root=self.runtime_paths.root,
                 )

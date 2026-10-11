@@ -772,6 +772,7 @@ class Toast(QFrame):
 
     def heightForWidth(self, width: int) -> int:  # noqa: N802 - Qt API
         """Return the complete toast height for one available outer width."""
+        self.label.ensurePolished()
         layout = self.layout()
         margins = layout.contentsMargins()
         frame_extent = self.frameWidth() * 2
@@ -793,9 +794,13 @@ class Toast(QFrame):
             + sum(widget.sizeHint().width() for widget in non_label_widgets)
         )
         label_width = max(1, width - fixed_width)
+        measured_text_height = self.label.fontMetrics().boundingRect(
+            QRect(0, 0, label_width, 100000), Qt.TextFlag.TextWordWrap, self.label.text(),
+        ).height()
         content_height = max(
             (
                 self.label.heightForWidth(label_width),
+                measured_text_height + 8,
                 *(widget.sizeHint().height() for widget in non_label_widgets),
             ),
             default=0,
@@ -804,6 +809,7 @@ class Toast(QFrame):
 
     def sizeHint(self) -> QSize:  # noqa: N802 - Qt API
         """Prefer compact short feedback and grow only up to the shared cap."""
+        self.label.ensurePolished()
         layout = self.layout()
         margins = layout.contentsMargins()
         text_width = max(
@@ -867,6 +873,10 @@ class Toast(QFrame):
         if self.parentWidget() is None or self._is_parent_overlay():
             return
         required_height = self.heightForWidth(max(1, self.width()))
+        margins = self.layout().contentsMargins()
+        label_height = required_height - margins.top() - margins.bottom() - self.frameWidth() * 2
+        if self.label.minimumHeight() != label_height:
+            self.label.setMinimumHeight(label_height)
         if self.minimumHeight() != required_height:
             self.setMinimumHeight(required_height)
             self.updateGeometry()

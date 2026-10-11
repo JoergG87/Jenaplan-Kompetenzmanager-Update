@@ -1,5 +1,12 @@
 # Design-System
 
+PO-Ergänzung 11.10.2026: Vier neu erzeugte PNG-Pflanzen mit echtem Alphakanal ersetzen die weißen JPEG-Flächen im Elternexport. Als separat nutzbare Dateien und ZIP bereitgestellt; Präsentationsressourcen ohne Änderung fachlicher Stufen oder Daten.
+
+## Elternexport und Toast-Layoutkorrektur – aktueller PO-Stand 11.10.2026
+
+UX-Präzisierung 11.10.2026: ruhiger Dialog mit horizontal scrollbar vollständig lesbaren Fachreitern und umbrochenen Kompetenztexten, expliziten vier Stufen und neutralem Platzhalter. Kein voreingestellter Entwicklungsstand; bewusste Speicherung vor Dateiauswahl. Eltern-PDF ohne interne Bestätigungsterminologie und Quellenhinweise, bestehende Pflanzen-/App-Farben bleiben. Globaler Shell-Toast misst umbrochenen Text zusätzlich mit tatsächlichen Schriftmetriken und reserviert Innenraum und die erforderliche Mindesthöhe auch am Textlabel selbst; nativer Speicherdialog bleibt nur beim Kompetenzexport umgestellt.
+
+
 ## Cipher-Produktmodus
 
 Die Aktivierung verwendet ausschließlich vorhandene Oberflächen. Nach der
@@ -1271,4 +1278,4 @@ und 1400 × 900 nicht verschlechtern; die vorhandenen drei Bereiche bleiben.
 
 Die Kompetenz-PDF-Zielauswahl verwendet den nativen macOS-Speicherdialog. Erfolg nutzt den vorhandenen umbrochenen Shell-Toast mit explizitem Erfolgston, knapper Beschriftung und sieben Sekunden Lesezeit.
 
-Freigegebene Ausnahme ausschließlich im Kompetenz-PDF: vier Originalpflanzen in schwarz/weiß statt sichtbarer Ratingtokens, mit Originalerklärungen für Standardfächer. Für soziale/Sport-Profile bleiben deren kanonische Texte in der Legende erhalten. Marineblau #123F67, Petrol #087F83 und weiche neutrale Tabellenflächen folgen der App. Balken hat vier diskrete Segmente, benannte Quelle/Bestätigungsdatum und Marker; keine Prozentzahl. A4, Fach beginnt auf neuer Seite, umbrochene Texte, wiederholte Spaltenköpfe und Seitenzählung. Fehlender Stand ist kein niedrigster Wert. Pflanzen gelten ausschließlich für diesen freigegebenen Export, nicht als neues App-Ratingprofil. Die Exportaktion benötigt keine Fachauswahl; ihr Tooltip bezeichnet alle Fächer.
+Freigegebene Ausnahme ausschließlich im Kompetenz-PDF: vier neu erzeugte transparente PNG-Pflanzen in schwarz/weiß statt sichtbarer Ratingtokens, mit Originalerklärungen für Standardfächer. Für soziale/Sport-Profile bleiben deren kanonische Texte in der Legende erhalten. Marineblau #123F67, Petrol #087F83 und weiche neutrale Tabellenflächen folgen der App. Balken hat vier diskrete Segmente, Marker ohne Quellen-/Bestätigungsdatum; keine Prozentzahl. A4, Fach beginnt auf neuer Seite, umbrochene Texte, wiederholte Spaltenköpfe und Seitenzählung. Fehlender Stand ist kein niedrigster Wert und sperrt den Export bis zur ausdrücklichen Ergänzung. Pflanzen gelten ausschließlich für diesen freigegebenen Export, nicht als neues App-Ratingprofil. Die Exportaktion benötigt keine Fachauswahl; ihr Tooltip bezeichnet alle Fächer.

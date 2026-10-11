@@ -1,5 +1,12 @@
 # UI Data Mapping
 
+PO-Ergänzung 11.10.2026: Vier neu erzeugte PNG-Pflanzen mit echtem Alphakanal ersetzen die weißen JPEG-Flächen im Elternexport. Als separat nutzbare Dateien und ZIP bereitgestellt; Präsentationsressourcen ohne Änderung fachlicher Stufen oder Daten.
+
+## Elternexport: offene Kompetenzen auswählen – aktueller PO-Stand 11.10.2026
+
+Dialog „Entwicklungsstände ergänzen“: Fachreiter aus `CompetencyPdfSubject.name`; Zeilentext/Kontext/ID aus `CompetencyPdfRow`; Auswahlfelder mit „Bitte auswählen“ (leer) und vier kanonischen profilgerechten Stufen. Keine Sammelvorbelegung. „Auswahl speichern und weiter“ erst nach sämtlichen Eingaben; Restanzahl ist lokaler Dialogzustand. Abbrechen speichert nichts. Elternblatt zeigt „Entwicklungsstand“, vier Pflanzen und Balken; keine Bestätigungs-/Datums-/Frischetexte. Katalogänderungen werden als „Stand geändert – Export erneut öffnen“ gemeldet.
+
+
 ## Cipher-Produktstart und vorhandene Sicherheitsaktionen
 
 Der normale Pilotstart zeigt nach erfolgreicher Authentifizierung die
@@ -1037,4 +1044,4 @@ Delete-Statuscodes des neu erzeugten Testschlüssels; keine Produktfelder.
 
 Zielauswahl erfolgt im nativen Speicherdialog. Erfolgstext `PDF gespeichert: <Dateiname>` verwendet ausschließlich `exported.name` und bleibt sieben Sekunden lesbar; kein voller Datenpfad.
 
-Aktion im Profilreiter `Kompetenzen`: `Kompetenzen als PDF exportieren`. Die Aktion exportiert immer alle aktuellen Bereiche, unabhängig von Fach-, Such- oder Dokumentationsfilter. Jede PDF-Zeile nutzt `competency_text`, Lernbereich und Thema aus Cockpit; Balken und Quellenbeschriftung aus `confirmed_rating`, `confirmed_at`, `documentation_state`. Namen und Schuljahr kommen aus demselben frischen Profil-Bundle. Unbestätigte Beobachtungen heißen `Beobachtet, noch nicht bestätigt`; undokumentierte `Noch nicht dokumentiert`; unklare `Bestätigungsstand unklar`. Keine implizite Vorschlagsübernahme.
+Aktion im Profilreiter `Kompetenzen`: `Kompetenzen als PDF exportieren`. Die Aktion exportiert immer alle aktuellen Bereiche, unabhängig von Fach-, Such- oder Dokumentationsfilter. Jede PDF-Zeile nutzt `competency_text`, Lernbereich und Thema aus Cockpit; Balken aus gültigem `confirmed_rating` und sicherem `documentation_state`; keine gedruckte Quelle oder Bestätigungsdaten. Namen und Schuljahr kommen aus demselben frischen Profil-Bundle. Unbestätigte, undokumentierte und unklare Kompetenzen werden vor der Ausgabe im Ergänzungsdialog ausdrücklich gewählt. Keine implizite Vorschlagsübernahme.

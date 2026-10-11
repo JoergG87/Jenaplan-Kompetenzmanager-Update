@@ -71,7 +71,9 @@ def test_pdf_repeats_header_and_preserves_all_long_texts():
     assert len(reader.pages)>1
     for page in reader.pages:
         text=page.extract_text()
-        assert "Bestätigter Entwicklungsstand" in text
+        assert "Entwicklungsstand" in text
+        assert "Bestätigter" not in text
+        assert "Bestätigt am" not in text
         assert "Jenaplan-Kompetenzmanager" in text
     text="\n".join(p.extract_text() for p in reader.pages)
     for i in range(67):assert f"Eindeutige Kompetenz {i:03d}" in text
@@ -118,6 +120,10 @@ def test_adapter_ui_export_and_cancellation(tmp_path):
     fixture=ReportRevisionProductTest(methodName='test_status_without_and_with_current_revision');fixture.setUp()
     shell=None
     try:
+        from src.application.competency_pdf_completion import pending_competency_pdf_rows
+        prepared=fixture.adapter.competency_pdf_for_student(fixture.student.student_id)
+        fixture.adapter.complete_competency_pdf(fixture.student.student_id, prepared,
+            {row.competency_id: "+" for _,row in pending_competency_pdf_rows(prepared)})
         shell=AppShell(fixture.database_path,paths=runtime_paths(tmp_path/'runtime'))
         shell.show_student_profile(fixture.student.student_id)
         screen=shell.student_profile_screen
@@ -143,3 +149,14 @@ def test_adapter_ui_export_and_cancellation(tmp_path):
     finally:
         if shell:shell.close();shell.deleteLater();app.processEvents()
         fixture.tearDown()
+
+
+def test_all_four_plants_keep_transparency_in_actual_pdf():
+    reader = PdfReader(BytesIO(render_competency_pdf(model(status()))))
+    images = [item.get_object() for item in reader.pages[0]['/Resources']['/XObject'].values()
+              if item.get_object().get('/Subtype') == '/Image']
+    assert len(images) == 4
+    for image in images:
+        alpha = image['/SMask'].get_object().get_data()
+        assert min(alpha) == 0
+        assert max(alpha) == 255

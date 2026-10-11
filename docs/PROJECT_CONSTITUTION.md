@@ -1,5 +1,12 @@
 # Project Constitution
 
+PO-Ergänzung 11.10.2026: Vier neu erzeugte PNG-Pflanzen mit echtem Alphakanal ersetzen die weißen JPEG-Flächen im Elternexport. Als separat nutzbare Dateien und ZIP bereitgestellt; Präsentationsressourcen ohne Änderung fachlicher Stufen oder Daten.
+
+## Elternausgabe und vollständige Kompetenzauswahl – aktueller PO-Stand 11.10.2026
+
+PO-Präzisierung 11.10.2026: Eltern-PDF ohne „Bestätigter Entwicklungsstand“, Bestätigungsdatum, Frische-/Quellenhinweise oder technische Bestätigungsregeln. Export enthält immer alle aktuellen effektiven Fächer und überfachlichen Bereiche. Jede aktuelle Kompetenz benötigt einen gültigen kanonischen Entwicklungsstand. Fehlende/unklare Stände werden im vorgelagerten Dialog ausdrücklich gewählt und bewusst als bestehende Kompetenzbestätigungen gespeichert; keine automatische Vorschlagsübernahme. Kein Schema-/Ratingmodellwechsel. Der aktuelle Katalog wird bei Vorbereitung, Speicherung und Ausgabe erneut gelesen; geänderte Kataloge/Schuljahre/Statuswerte verwerfen einen veralteten Dialogstand.
+
+
 ## Pilot-Produktionsroot ist ab Initialisierung geschützt
 
 Jeder neue Pilot-/Produktdatenroot erhält vor Security Store, DMK, Envelope,
@@ -1501,4 +1508,4 @@ Nicht erlaubt sind:
 
 Der externe Kompetenzexport verwendet den nativen macOS-Speicherdialog für frei wählbaren Dateinamen und Ordner. Vorhandene Dateien werden weiterhin abgewiesen.
 
-Der PO gibt einen bewussten PDF-Export aus dem Kompetenz-Cockpit frei. Präzisierung: Der Export umfasst immer alle aktuell relevanten Fächer und überfachlichen Bereiche, unabhängig von Ansichtsfiltern. Ausschließlich diese Exportprojektion verwendet die vier Originalpflanzen des Entwicklungsbuchs in der Reihenfolge Samen, Keimling, Knospe, Blüte. Gespeicherte Ratings, Widgetdarstellung und Schulbesuchsjahr-Farben bleiben unverändert. Der Balken zeigt ausschließlich den kanonischen bestätigten Wert, keine Vorschläge, Scores oder pädagogischen Ableitungen. Unbestätigte, undokumentierte und unklare Stände bleiben ausdrücklich gekennzeichnet ohne Balken. Der Export ist eine bewusst gewählte unverschlüsselte externe Datei und keine finale RPA-/LCA-Ausgabe.
+Der PO gibt einen bewussten PDF-Export aus dem Kompetenz-Cockpit frei. Präzisierung: Der Export umfasst immer alle aktuell relevanten Fächer und überfachlichen Bereiche, unabhängig von Ansichtsfiltern. Ausschließlich diese Exportprojektion verwendet vier transparente Pflanzenzeichnungen mit den Entwicklungsstufen des Entwicklungsbuchs in der Reihenfolge Samen, Keimling, Knospe, Blüte. Gespeicherte Ratings, Widgetdarstellung und Schulbesuchsjahr-Farben bleiben unverändert. Der Balken zeigt ausschließlich den kanonischen bestätigten Wert, keine Vorschläge, Scores oder pädagogischen Ableitungen. Unbestätigte, undokumentierte und unklare Stände sperren die Ausgabe bis zur ausdrücklichen Auswahl sämtlicher offener Kompetenzen im vorgelagerten Dialog. Der Export ist eine bewusst gewählte unverschlüsselte externe Datei und keine finale RPA-/LCA-Ausgabe.

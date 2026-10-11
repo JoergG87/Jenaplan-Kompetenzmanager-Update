@@ -1,5 +1,12 @@
 # View Data Ownership
 
+PO-Ergänzung 11.10.2026: Vier neu erzeugte PNG-Pflanzen mit echtem Alphakanal ersetzen die weißen JPEG-Flächen im Elternexport. Als separat nutzbare Dateien und ZIP bereitgestellt; Präsentationsressourcen ohne Änderung fachlicher Stufen oder Daten.
+
+## Vorgelagerter Auswahl-Dialog – aktueller PO-Stand 11.10.2026
+
+`CompetencyPdfCompletionDialog` projiziert ausschließlich die vom Application Layer gelieferten offenen Kompetenzzeilen, je Fach gruppiert. Qt sammelt Auswahl und zeigt Restanzahl; fachliche Vollständigkeit, Frische, Persistenz und Exportfreigabe liegen außerhalb der Widgets in Service/Adapter/Repository. Shell koordiniert Dialog, bewussten Speicherschritt, Profilrefresh und nativen Zieldialog. Renderer erhält nur vollständig bewertete Modelle.
+
+
 ## Ownership der Cipher-Produktkomposition
 
 `CipherProductRuntimeCoordinator` besitzt die Qt-freie Startup-Komposition

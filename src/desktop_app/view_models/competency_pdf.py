@@ -12,6 +12,7 @@ class CompetencyPdfRow:
     context: str
     rating: str
     source: str
+    competency_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -58,7 +59,7 @@ def build_competency_pdf_model(
                     rows.append(CompetencyPdfRow(
                         status.competency_text or status.competency_label,
                         " / ".join(dict.fromkeys((area.learning_area, topic.competency_group))),
-                        rating, source,
+                        rating, source, status.competency_id,
                     ))
         if rows:
             subjects.append(CompetencyPdfSubject(

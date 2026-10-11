@@ -1827,10 +1827,24 @@ class SQLiteStudentCompetencyConfirmationRepository:
         return self._confirmation_from_row(row)
 
     def upsert_confirmation(
-        self,
-        confirmation: StudentCompetencyConfirmationRecord,
-        *,
-        operation_token: str = "",
+        self, confirmation: StudentCompetencyConfirmationRecord, *, operation_token: str = "",
+    ) -> StudentCompetencyConfirmationRecord:
+        with closing(self.database.connect()) as connection:
+            with connection:
+                return self._upsert_confirmation_on_connection(connection, confirmation, operation_token=operation_token)
+
+    def upsert_confirmations(self, confirmations, *, preflight=None):
+        """One atomic batch using the existing confirmation/event contract."""
+        with closing(self.database.connect()) as connection:
+            with connection:
+                connection.execute("BEGIN IMMEDIATE")
+                if preflight is not None:
+                    preflight()
+                return tuple(self._upsert_confirmation_on_connection(connection, item)
+                             for item in confirmations)
+
+    def _upsert_confirmation_on_connection(
+        self, connection, confirmation: StudentCompetencyConfirmationRecord, *, operation_token: str = "",
     ) -> StudentCompetencyConfirmationRecord:
         self._validate_confirmation(confirmation)
         operation_token = operation_token or uuid.uuid4().hex
@@ -1846,79 +1860,77 @@ class SQLiteStudentCompetencyConfirmationRepository:
         technical_timestamp = _required_event_timestamp(
             confirmation.confirmed_at
         )
-        with closing(self.database.connect()) as connection:
-            with connection:
-                existing_events = connection.execute(
-                    """
-                    SELECT
-                        operation_index,
-                        operation_payload_hash,
-                        event_kind,
-                        student_id,
-                        competency_id,
-                        observation_id,
-                        technical_timestamp,
-                        ordering_state
-                    FROM persistence_events
-                    WHERE operation_token = ?
-                    ORDER BY operation_index
-                    """,
-                    (operation_token,),
-                ).fetchall()
-                if existing_events:
-                    expected = (
-                        0,
-                        payload_hash,
-                        PersistenceEventKind.CONFIRMATION_UPSERTED.value,
-                        confirmation.student_id,
-                        confirmation.competency_id,
-                        None,
-                        technical_timestamp,
-                        PersistenceOrderingState.ORDERED.value,
-                    )
-                    if len(existing_events) != 1 or tuple(existing_events[0]) != expected:
-                        raise ValueError(
-                            "operation_token ist an eine andere Bestaetigung gebunden."
-                        )
-                    return confirmation
-                connection.execute(
-                    """
-                    INSERT INTO student_competency_confirmations (
-                        student_id,
-                        competency_id,
-                        confirmed_rating,
-                        confirmed_at,
-                        note
-                    )
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(student_id, competency_id) DO UPDATE SET
-                        confirmed_rating = excluded.confirmed_rating,
-                        confirmed_at = excluded.confirmed_at,
-                        note = excluded.note
-                    """,
-                    (
-                        confirmation.student_id,
-                        confirmation.competency_id,
-                        confirmation.confirmed_rating,
-                        confirmation.confirmed_at,
-                        confirmation.note,
-                    ),
+        existing_events = connection.execute(
+            """
+            SELECT
+                operation_index,
+                operation_payload_hash,
+                event_kind,
+                student_id,
+                competency_id,
+                observation_id,
+                technical_timestamp,
+                ordering_state
+            FROM persistence_events
+            WHERE operation_token = ?
+            ORDER BY operation_index
+            """,
+            (operation_token,),
+        ).fetchall()
+        if existing_events:
+            expected = (
+                0,
+                payload_hash,
+                PersistenceEventKind.CONFIRMATION_UPSERTED.value,
+                confirmation.student_id,
+                confirmation.competency_id,
+                None,
+                technical_timestamp,
+                PersistenceOrderingState.ORDERED.value,
+            )
+            if len(existing_events) != 1 or tuple(existing_events[0]) != expected:
+                raise ValueError(
+                    "operation_token ist an eine andere Bestaetigung gebunden."
                 )
-                SQLitePersistenceEventRepository.append(
-                    connection,
-                    PersistenceEventRecord(
-                        None,
-                        operation_token,
-                        0,
-                        payload_hash,
-                        PersistenceEventKind.CONFIRMATION_UPSERTED.value,
-                        confirmation.student_id,
-                        confirmation.competency_id,
-                        None,
-                        technical_timestamp,
-                        PersistenceOrderingState.ORDERED.value,
-                    ),
-                )
+            return confirmation
+        connection.execute(
+            """
+            INSERT INTO student_competency_confirmations (
+                student_id,
+                competency_id,
+                confirmed_rating,
+                confirmed_at,
+                note
+            )
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(student_id, competency_id) DO UPDATE SET
+                confirmed_rating = excluded.confirmed_rating,
+                confirmed_at = excluded.confirmed_at,
+                note = excluded.note
+            """,
+            (
+                confirmation.student_id,
+                confirmation.competency_id,
+                confirmation.confirmed_rating,
+                confirmation.confirmed_at,
+                confirmation.note,
+            ),
+        )
+        SQLitePersistenceEventRepository.append(
+            connection,
+            PersistenceEventRecord(
+                None,
+                operation_token,
+                0,
+                payload_hash,
+                PersistenceEventKind.CONFIRMATION_UPSERTED.value,
+                confirmation.student_id,
+                confirmation.competency_id,
+                None,
+                technical_timestamp,
+                PersistenceOrderingState.ORDERED.value,
+            ),
+        )
         return confirmation
 
     def _validate_confirmation(

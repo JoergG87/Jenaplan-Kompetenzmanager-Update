@@ -1859,6 +1859,29 @@ class StudentDesktopAdapter:
             bundle.competency_cockpit,
         )
 
+    @product_writer
+    def complete_competency_pdf(self, student_id: str, prepared, selections):
+        """Save only explicit missing selections, atomically after fresh validation."""
+        from src.application.competency_pdf_completion import (
+            validate_competency_pdf_completion, validate_competency_pdf_ready,
+        )
+        selections = dict(selections)
+        validate_competency_pdf_completion(
+            prepared, self.competency_pdf_for_student(student_id), selections,
+        )
+        stamp = datetime.now(UTC).replace(microsecond=0).isoformat()
+        records = tuple(StudentCompetencyConfirmationRecord(
+            student_id, key, rating, stamp, "Entwicklungsstand vor Elternexport ausdrücklich ausgewählt.",
+        ) for key, rating in selections.items())
+        SQLiteStudentCompetencyConfirmationRepository(self.database).upsert_confirmations(
+            records, preflight=lambda: validate_competency_pdf_completion(
+                prepared, self.competency_pdf_for_student(student_id), selections,
+            ),
+        )
+        model = self.competency_pdf_for_student(student_id)
+        validate_competency_pdf_ready(model)
+        return model
+
     def list_documentation_status_for_student(
         self,
         student_id: str,

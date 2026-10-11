@@ -583,8 +583,12 @@ def test_exact_417_first_run_restart_application_stack_and_ciphertext(
     from pypdf import PdfReader
 
     export_target = tmp_path / "competencies.pdf"
+    from src.application.competency_pdf_completion import pending_competency_pdf_rows
+    prepared = restarted_adapter.competency_pdf_for_student(student_id)
+    completed = restarted_adapter.complete_competency_pdf(student_id, prepared,
+        {row.competency_id: "+" for _, row in pending_competency_pdf_rows(prepared)})
     export_competency_pdf(
-        restarted_adapter.competency_pdf_for_student(student_id),
+        completed,
         export_target, runtime_root=root,
     )
     assert len(PdfReader(export_target).pages) > 1

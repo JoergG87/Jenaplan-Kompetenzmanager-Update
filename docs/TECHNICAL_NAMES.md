@@ -1,5 +1,10 @@
 # Technical Naming Registry
 
+## Elternexport und Vollständigkeitsprüfung – aktueller PO-Stand 11.10.2026
+
+Registriert: `CompetencyPdfRow.competency_id`; `pending_competency_pdf_rows`, `validate_competency_pdf_ready`, `validate_competency_pdf_completion` in `src/application/competency_pdf_completion.py`; `StudentDesktopAdapter.complete_competency_pdf`; `SQLiteStudentCompetencyConfirmationRepository.upsert_confirmations` und `_upsert_confirmation_on_connection`; `CompetencyPdfCompletionDialog` in `src/desktop_app/dialogs/competency_pdf_completion_dialog.py`, `rating_inputs`, `remaining_label`, `save_button`, `selections`. Bestehender Shell-Toast erhält eine native fontmetrische Mindesthöhe, keine neue View.
+
+
 ## Pilot-Produktionsroot-Schutz
 
 | Technischer Name | Bedeutung | Eigentümer |
@@ -3468,4 +3473,4 @@ späteren Zustand des Arbeitsverzeichnisses ab.
 
 `competency_pdf_requested` transportiert ausschließlich die Schüler-ID; der Export übernimmt keine Fachfilter. `require_unprotected_output_path` erlaubt den normalen Benutzerordner als Ausgabe-Container: generische Ordnernamen dort sind keine Produktevidenz. Marker und eindeutige Runtime-Artefakte bleiben geschützt; Test-/Seed-Mutationsprüfungen bleiben unverändert.
 
-Registriert: `src/desktop_app/view_models/competency_pdf.py`, `CompetencyPdfRow`, `CompetencyPdfSubject`, `CompetencyPdfModel`, `build_competency_pdf_model`; `src/application/competency_pdf_export.py`, `CompetencyPdfExportError`, `render_competency_pdf`, `export_competency_pdf`; `StudentDesktopAdapter.competency_pdf_for_student`; `StudentProfileScreen.competency_pdf_requested`, `competency_pdf_button`; `AppShell.export_competency_overview_pdf`; `assets/competency_plants/stage_1.jpeg` bis `stage_4.jpeg`. Die Bilder stammen unverändert aus dem vom PO bereitgestellten Entwicklungsbuch Stand 06.01.2026; sie sind statische Präsentationsressourcen, keine fachliche Quelle.
+Registriert: `src/desktop_app/view_models/competency_pdf.py`, `CompetencyPdfRow`, `CompetencyPdfSubject`, `CompetencyPdfModel`, `build_competency_pdf_model`; `src/application/competency_pdf_export.py`, `CompetencyPdfExportError`, `render_competency_pdf`, `export_competency_pdf`; `StudentDesktopAdapter.competency_pdf_for_student`; `StudentProfileScreen.competency_pdf_requested`, `competency_pdf_button`; `AppShell.export_competency_overview_pdf`; `assets/competency_plants/stage_1.png` bis `stage_4.png`, `assets/competency_plants/README.md` und `assets/competency_plants/Pflanzenbilder-transparent.zip`. Die vier transparenten PNGs werden auf PO-Wunsch neu generiert; Promptset und Herkunft stehen im README. Die ursprünglichen JPEG-Referenzen bleiben erhalten. Alle Bilder sind statische Präsentationsressourcen, keine fachliche Quelle.

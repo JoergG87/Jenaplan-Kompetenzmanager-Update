@@ -1,5 +1,10 @@
 # Sprintplanung
 
+## Elternexport – PO-Präzisierung 11.10.2026
+
+Eltern-PDF ohne Bestätigungsterminologie/Datum. Export erst nach vollständiger expliziter Auswahl im aktuellen Katalog; offene Kompetenzen im Dialog nachtragen und atomar als bestehende Bestätigungen speichern. Katalogänderungen vor Speicherung/Ausgabe erneut prüfen. Globalen abgeschnittenen Shell-Toast korrigieren. Kein Schemawechsel, keine automatische Bewertung; reale Testkopie und Paketfreigabe bleiben getrennt. Quellumsetzung abgeschlossen: 2.469 Tests / 100 Untertests bestanden (104 übersprungen); nach Bildintegration zusätzlich 29 gezielte Tests und der exakte SQLCipher-4.17-Anwendungsstack-Test bestanden. Vier transparente PNGs samt ZIP und Promptset liegen unter assets/competency_plants; PDF-Vorschau visuell geprüft, alle vier eingebetteten Alphamasken getestet. Gebundene Testkopie neu gebaut und separat ad-hoc signiert; Testkonto erhalten, Jonas mit ausschließlich fiktiven Ständen vollständig vorbereitet. Realer Ergänzungsdialog bei Mila mit 283 offenen Ständen und gesperrtem Weiter-Button geprüft; Abbruch ohne Ergänzung. Jonas exportiert nach Downloads: zwölf Bereiche, alle 331 Katalogtexte, 29 Seiten; keine internen Bestätigungstexte, Alphakanäle in allen eingebetteten Pflanzen erhalten. Reale Nachprüfung abgeschlossen: Fachreiter im Ergänzungsdialog vollständig lesbar und scrollbar; Erfolgsmeldung nach erneutem Downloads-Export mit langem Dateinamen in beiden Zeilen vollständig sichtbar. Neuer sauberer Paketkandidat mit eigener Buildnummer und Paketgates bleibt vor Veröffentlichung erforderlich.
+
+
 ## PO-Nachprüfung 11.10.2026 – externe Kompetenz-PDF-Ausgabe
 
 - [x] Ursache reproduziert: generische Documents-Evidenz im Benutzerordner blockierte Downloads.
