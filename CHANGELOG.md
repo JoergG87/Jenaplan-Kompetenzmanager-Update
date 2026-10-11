@@ -1,5 +1,11 @@
 # CHANGELOG
 
+Update iPad-Test: Xcode 27.0 und iOS-27-Runtime verfügbar. Offizieller Qt/PySide-6.12-ARM64-Simulatorbuild mit Python 3.15.0rc2 erfolgreich, separate Bundle-ID und tiefe strikte Ad-hoc-Signaturprüfung bestanden. Drei Quelltests plus PySide-6.12-Host-Fenster-/Persistenzprüfung bestanden. Drei Simulatorstarts hängen vor Appstart; Device Hub meldet DeviceKitError 4002 / Connection timed out. Installation, Appstart und iPad-Persistenz nicht nachgewiesen. Nächster Infrastrukturversuch: Mac-Neustart nach Xcode-Komponenteninstallation. Kein Produktbuild geändert oder veröffentlicht.
+
+## iPad-Machbarkeitsprototyp – 11.10.2026
+
+PO erlaubt vereinfachten ersten Test ohne zusätzliche Datenbankverschlüsselung. Separater synthetischer Prototyp unter prototypes/ipad, ohne Produktstartup oder Produktmodelländerung: drei feste Testkompetenzen, Auswahl, lokale Standard-SQLite-Testdatei und Wiederöffnung. Drei Tests bestehen einschließlich Offscreen-Fenster und Schutz fremder Dateien. Kein realer iPad-Nachweis: vollständiges Xcode fehlt. PDF/Teilen, iOS-Dateischutz, iOS-Build und Signierung bleiben offen. Keine Produktionsfreigabe und kein Absenken der Mac-Sicherheitsanforderungen.
+
 ## Veröffentlicht: 0.4.3 / Build 403 – 11.10.2026
 
 GitHub-Pre-Release `v0.4.3-build403` und Pilot-Appcast veröffentlicht; öffentliche Endprüfung erfolgreich. Paketquelle ist exakt `d531e11584e3cc7b7b2b79ca0ca807fc2efe3287`; nachfolgende Release-Werkzeugkorrekturen ändern keine Paketbytes. Vier öffentliche Assets wurden mit Größe und SHA256 zurückgeprüft; Ed25519-Signaturen für DMG, Release-Notes und Feed gültig. Alle elf Originalpaketgates bestanden. Restore-Worker-Smoke erreicht RESTORE_READY und bricht kontrolliert vor Datenaustausch ab; keine vollständige Restore-Abnahme. Stable bleibt deaktiviert, keine Developer-ID-/Notarisierungsfreigabe behauptet.

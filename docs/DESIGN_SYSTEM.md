@@ -1,5 +1,9 @@
 # Design-System
 
+## iPad-Machbarkeitstest
+
+iPad-Prototyp: kompakte scrollbare Einspaltenansicht mit mindestens 44 Pixel hohen Auswahlfeldern und Schaltfläche; keine feste Desktop-Mindestgröße. Kein Nachweis nativer iPad-Bedienbarkeit vor Gerätetest.
+
 Release-Signierung 11.10.2026: Sparkle signiert unveränderte Artefaktbytes über eine kurzlebige, zugriffsbeschränkte `payload.bin`-Kopie; die Kopie wird auch bei Fehlern entfernt. Keine Produktdaten oder neuen UI-Felder.
 
 Releasepräzisierung 11.10.2026: Öffentliche Release-Notes erhalten Version und Build ausschließlich aus der geprüften Manifestidentität; Quellvorlagen behalten ihre Platzhalter. Keine Produktdaten, Datenmodell- oder UI-Änderung.

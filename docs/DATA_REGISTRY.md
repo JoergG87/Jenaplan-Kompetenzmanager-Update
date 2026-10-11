@@ -1,5 +1,9 @@
 # Data Registry
 
+## iPad-Machbarkeitstest
+
+iPad-Prototyp: drei fest vorgegebene synthetische Kompetenztexte und vier bestehende Stufentokens (--,-,+,++). Separate SQLite-Testdatei demo.sqlite in eigenem Prototyp-Unterordner von Qt AppLocalDataLocation. Keine produktive Datenquelle oder Änderung des Produktmodells.
+
 Release-Signierung 11.10.2026: Sparkle signiert unveränderte Artefaktbytes über eine kurzlebige, zugriffsbeschränkte `payload.bin`-Kopie; die Kopie wird auch bei Fehlern entfernt. Keine Produktdaten oder neuen UI-Felder.
 
 Releasepräzisierung 11.10.2026: Öffentliche Release-Notes erhalten Version und Build ausschließlich aus der geprüften Manifestidentität; Quellvorlagen behalten ihre Platzhalter. Keine Produktdaten, Datenmodell- oder UI-Änderung.

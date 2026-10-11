@@ -1,5 +1,9 @@
 # UI Data Mapping
 
+## iPad-Machbarkeitstest
+
+iPad-Prototyp: je synthetischer Kompetenz eine Auswahlbox; Speichern über Repository, Statuslabel für Ergebnis. Sichtbarer Hinweis Nur erfundene Testdaten. Keine Namenseingabe, kein Import.
+
 Release-Signierung 11.10.2026: Sparkle signiert unveränderte Artefaktbytes über eine kurzlebige, zugriffsbeschränkte `payload.bin`-Kopie; die Kopie wird auch bei Fehlern entfernt. Keine Produktdaten oder neuen UI-Felder.
 
 Releasepräzisierung 11.10.2026: Öffentliche Release-Notes erhalten Version und Build ausschließlich aus der geprüften Manifestidentität; Quellvorlagen behalten ihre Platzhalter. Keine Produktdaten, Datenmodell- oder UI-Änderung.

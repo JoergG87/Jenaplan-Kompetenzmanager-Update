@@ -1,5 +1,9 @@
 # Technical Naming Registry
 
+## iPad-Machbarkeitstest
+
+Registriert: prototypes/ipad/main.py, DemoRepository, DEMO_COMPETENCIES, build_window, prototype_data_root. Eigene Bundle-Zielidentität de.jenaplan.kompetenzmanager.ipad-prototype; keine Produktidentität.
+
 Release-Signierung 11.10.2026: Sparkle signiert unveränderte Artefaktbytes über eine kurzlebige, zugriffsbeschränkte `payload.bin`-Kopie; die Kopie wird auch bei Fehlern entfernt. Keine Produktdaten oder neuen UI-Felder.
 
 Releasepräzisierung 11.10.2026: Öffentliche Release-Notes erhalten Version und Build ausschließlich aus der geprüften Manifestidentität; Quellvorlagen behalten ihre Platzhalter. Keine Produktdaten, Datenmodell- oder UI-Änderung.

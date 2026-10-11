@@ -1,5 +1,9 @@
 # Data Lifecycle
 
+## iPad-Machbarkeitstest
+
+iPad-Prototyp: DemoRepository erstellt ausschließlich die separate Testtabelle demo_ratings, speichert validierte explizite Stufenauswahl transaktional und liest sie nach Neuöffnung. Vorhandene fremde Datenbank ohne passende SQLite application_id wird vor Tabellenschreibzugriff abgewiesen. Keine Lösch-/Import-/Migrationsfunktion.
+
 Release-Signierung 11.10.2026: Sparkle signiert unveränderte Artefaktbytes über eine kurzlebige, zugriffsbeschränkte `payload.bin`-Kopie; die Kopie wird auch bei Fehlern entfernt. Keine Produktdaten oder neuen UI-Felder.
 
 Releasepräzisierung 11.10.2026: Öffentliche Release-Notes erhalten Version und Build ausschließlich aus der geprüften Manifestidentität; Quellvorlagen behalten ihre Platzhalter. Keine Produktdaten, Datenmodell- oder UI-Änderung.
