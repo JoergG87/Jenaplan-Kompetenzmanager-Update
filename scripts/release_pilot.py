@@ -1228,20 +1228,28 @@ class ReleasePilot:
         return signer
 
     def _sign_update(self, path: Path) -> tuple[str, int]:
-        output = self.runner.run(
-            [
-                str(self._sparkle_signer()),
-                "--account",
-                str(self.config["sparkle_keychain_account"]),
-                str(path),
-            ],
-            timeout=120,
-        ).stdout
-        signature_match = re.search(r'edSignature="([^"]+)"', output)
-        length_match = re.search(r'length="(\d+)"', output)
-        if not signature_match or not length_match:
-            raise ReleaseError("Sparkle-Signaturausgabe ist unvollständig.")
-        return signature_match.group(1), int(length_match.group(1))
+        # Sparkle treats XML/HTML specially and may modify them in place.
+        # Sign the exact bytes as an opaque archive instead.
+        with tempfile.TemporaryDirectory(prefix="jkm-sparkle-sign-") as directory:
+            payload = Path(directory) / "payload.bin"
+            shutil.copyfile(path, payload)
+            payload.chmod(0o600)
+            expected_hash = sha256_file(payload)
+            expected_length = payload.stat().st_size
+            output = self.runner.run(
+                [str(self._sparkle_signer()), "--account",
+                 str(self.config["sparkle_keychain_account"]), str(payload)],
+                timeout=120,
+            ).stdout
+            signature_match = re.search(r'edSignature="([^"]+)"', output)
+            length_match = re.search(r'length="(\d+)"', output)
+            if not signature_match or not length_match:
+                raise ReleaseError("Sparkle-Signaturausgabe ist unvollständig.")
+            if (int(length_match.group(1)) != expected_length
+                    or sha256_file(payload) != expected_hash
+                    or sha256_file(path) != expected_hash):
+                raise ReleaseError("Sparkle-Signaturdaten wurden verändert.")
+            return signature_match.group(1), expected_length
 
     @staticmethod
     def _release_notes_html(source: Path, *, version: str, build: int) -> str:

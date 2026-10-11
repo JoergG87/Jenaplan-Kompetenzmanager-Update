@@ -559,3 +559,40 @@ def test_public_release_notes_bind_identity_and_escape_content(tmp_path: Path) -
     source.write_text("Version 0.4.3 / Build 403", encoding="utf-8")
     rendered = release.ReleasePilot._release_notes_html(source, version="0.4.3", build=403)
     assert "Version 0.4.3 / Build 403" in rendered
+
+@pytest.mark.parametrize("suffix", [".xml", ".html", ".dmg"])
+@pytest.mark.parametrize("fault", [None, "length", "mutation", "runner"])
+def test_signing_uses_opaque_private_copy_and_cleans_up(
+    tmp_path: Path, config: release.ReleaseConfig,
+    monkeypatch: pytest.MonkeyPatch, suffix: str, fault: str | None,
+) -> None:
+    source = tmp_path / ("source" + suffix)
+    original = b"<rss>synthetic signing evidence</rss>"
+    source.write_bytes(original)
+    observed: list[Path] = []
+
+    class FakeRunner:
+        def run(self, command, **kwargs):
+            target = Path(command[-1])
+            observed.append(target)
+            assert target != source and target.suffix == ".bin"
+            assert target.read_bytes() == original
+            assert target.stat().st_mode & 0o777 == 0o600
+            assert target.parent.stat().st_mode & 0o777 == 0o700
+            if fault == "runner":
+                raise release.ReleaseError("synthetic runner failure")
+            if fault == "mutation":
+                target.write_bytes(b"modified")
+            length = len(original) + (1 if fault == "length" else 0)
+            return subprocess.CompletedProcess(command, 0, f'sparkle:edSignature="synthetic" length="{length}"', "")
+
+    automation = release.ReleasePilot(config, FakeRunner())
+    monkeypatch.setattr(automation, "_sparkle_signer", lambda: Path("synthetic-signer"))
+    if fault:
+        with pytest.raises(release.ReleaseError):
+            automation._sign_update(source)
+    else:
+        assert automation._sign_update(source) == ("synthetic", len(original))
+    assert source.read_bytes() == original
+    assert len(observed) == 1
+    assert not observed[0].parent.exists()
