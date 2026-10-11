@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Neuer lokaler Updatekandidat 0.4.2 / Build 402 aus `2ac4e28` erstellt: alle elf Paketgates und der Restore-Worker-Smoke bestanden; PDF-Code und Pflanzenressourcen im Bundle geprüft. Nicht installiert oder veröffentlicht.
+
 - Kompetenzübersicht als PDF mit Originalpflanzen umgesetzt: vollständige aktuelle Kompetenzen je Fach, bestätigte Stände mit Quelle/Datum, neutrale leere unbestätigte Stände, wiederholte Tabellenköpfe und expliziter unverschlüsselter externer Export. Keine Schemaänderung.
 - Testlauncher verweigert interne Symlinks/Hardlinks/Sonderdateien, entfernt Runtime-/Bridge-/Loader-Umgebungsvariablen und unterbindet Bytecode im signierten Bundle. Native Diagnose journalisiert vor Schlüsselerzeugung die genaue synthetische Identität; Rückgabecode und Fenster berücksichtigen Inhalt und Aufräumen.
 - Quellprüfung des neuen Exports: 2.457 Tests / 100 Untertests, finale fokussierte Suite 53 Tests, separat 94 exakte Cipher-Tests und sechs reale synthetische Keychain-Prozesstests bestanden. Alle 331 Texte und 31 PDF-Seiten geprüft.

@@ -1,5 +1,9 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Technisch geprüfter Updatekandidat 0.4.2 / Build 402
+
+Das neue lokale Paket aus `2ac4e28ca5ea1545445922f228ac941bd944e190` ist erstellt. Alle elf Paketgates und der paketierte Restore-Worker-Smoke bestehen. Quellprüfung: 2.457 Tests / 100 Untertests; separat 94 exakte Cipher-Tests plus sechs reale synthetische Keychain-Prozesstests. Das offizielle Kompetenz-PDF mit Pflanzen ist enthalten. Manifest und genaue Abnahmegrenzen stehen in SPRINTS.md. Veröffentlichung und letzte reale PO-Bedienabnahme bleiben offen; Build 400 bleibt veröffentlicht, 401 unverändert lokal.
+
 ## Aktueller Updateauftrag – 11.10.2026
 
 PO-freigegeben ist der PDF-Export der Kompetenzübersicht mit den Originalpflanzen. Die neue Quellidentität ist 0.4.2 / Build 402; das unveränderte Paket 401 wird nicht ersetzt. Der Export nutzt bestätigte kanonische Stände und keine automatisch übernommenen Vorschläge, bleibt schemafrei und speichert ausschließlich eine bewusst gewählte externe unverschlüsselte PDF-Datei. Für Paket 401 bestand die Wiederholungsprüfung vom 11.10. alle elf Gates plus Restore-Worker-Smoke (Abbruch vor Datenaustausch). Die darunterstehenden NO-GO-Befunde sind der historische Stand vom 08.09.; die damalige Fehlerursache ist nicht bewiesen. Neue Paketfreigabe und Veröffentlichung werden ausschließlich an den neuen sauberen Quellcommit gebunden.

@@ -14,7 +14,9 @@
 - [x] Native Diagnose außerhalb Sandbox: Journal vor SecItemAdd, Add/Read/Delete jeweils 0, Inhaltsgleichheit true, success true, Exit 0. Sandboxvergleich liefert -50/Exit 1 und keine irreführende Erfolgsmeldung.
 - [x] Exakter Cipher-Lauf: 94 Tests bestanden; sechs separat gegatete reale Keychain-Prozesstests zunächst übersprungen. Der Export wurde zusätzlich über denselben keyed Produktprovider geprüft.
 - [x] Sechs reale macOS-Keychain-Prozesstests zusätzlich bestanden: fünf Crashgrenzen und erneutes Öffnen im neuen Prozess; eigene Testschlüssel vollständig aufgeräumt. Der erste Versuch ohne gebaute native Bridge wurde als fehlende Testvoraussetzung abgewiesen, der vollständige Wiederholungslauf mit explizitem synthetischem Bridgepfad bestand.
-- [ ] Neuer Paketnachweis und sichtbare Bedienabnahme des neuen Builds.
+- [x] Neuer exakter Paketnachweis: elf Gates und Restore-Worker-Smoke bestanden.
+- [x] Synthetische Qt-Bedien-/Renderprüfung des Exports; Lieferung des paketierten Renderers und der Originalressourcen geprüft.
+- [ ] Letzte reale PO-Bedienabnahme und ausdrückliche Veröffentlichungsfreigabe.
 - [ ] Veröffentlichung nach Prüfung des neuen Builds.
 
 Build 401: Wiederholungsprüfung 11.10.2026 im getrennten Systemtemp-Root `jkm-build401-requalification-l9rz22ai`: alle elf Paketgates plus Restore-Smoke bestanden. DMG unverändert (SHA-256 `dcb36c521e5e6bd784bfd4df8eb301ee290371bad92b2771c7a638e23079d60e`). Der Worker erreichte RESTORE_READY und worker_started, endete bewusst vor Austausch. Eigenständige native Diagnose erreichte Anlegen/Lesen/Inhaltsgleichheit/Löschen erfolgreich. Dies erklärt die frühere Ursache nicht und ersetzt keine Prüfung von Build 402. Die folgenden NO-GO-Einträge bleiben historische Befunde.
@@ -2510,3 +2512,17 @@ Dialog Framework, Schuelerverwaltung und Dokumentenarchitektur
 Die vollständige Quellsuite lief in ihrer historischen SQLCipher-0.6.2-Umgebung; Produktprüfungen verwenden separat das exakt reproduzierte 4.17-Wheel mit SHA-256 `60e337f882ed8d283529019c7799be09b8f68773fa277f6b7bc86e3722f52fdb`. Der erste exakte Lauf zeigte einen zufälligen `Ada`-Dreibyte-Treffer im Ciphertext. Der Test verwendet jetzt einen langen eindeutigen Testvornamen, prüft dessen Abwesenheit weiter und ergänzt echten PDF-Export über denselben keyed Provider. Ein zunächst unvollständiges Exportfixture besaß keinen Katalog; das Fixture legt den offiziellen Katalog ausschließlich in seinem bestehenden synthetischen Root an. Produktcode erhielt weder Fallback noch Defaultkatalog bei Export.
 
 Nachweise des neuen Quell-/Werkzeuglaufs liegen lokal unter `/private/tmp/jkm-plants-reference/`: full-suite.log, targeted-final.log, cipher-tests-qualified.log, guarded-launcher-checks.json. Native erfolgreiche Diagnose: `jkm-keychain-roundtrip-rlgcb0of` im Systemtemp mit getrenntem report.json/result.json. Die fehlgeschlagene Sandboxprobe ist getrennte Evidenz und kein macOS-Produktfehlernachweis.
+
+
+## Paketnachweis 0.4.2 / Build 402 – 11.10.2026
+
+Implementierung und Version sind lokal committed (`bfe7c5b`, danach Versionscommit `2ac4e28ca5ea1545445922f228ac941bd944e190`). Der Build entstand ausschließlich aus diesem sauberen Versionscommit im detached Release-Worktree. Die spätere Dokumentation verändert weder diesen Quellcommit noch Paketbytes. Keine Installation, kein Push, kein Tag und keine Veröffentlichung.
+
+- Elf von elf Paketgates bestanden: DMG-Verifikation, Metadaten, arm64, tiefe strikte Signatur, native Bibliotheken, Sparkle-Version, Erststart/Restart, verbotene Inhalte, Entwicklerpfade, Pilotfeed und deaktivierter Stable-Kanal.
+- Paketierter Restore-Worker-Smoke bestanden. Dieser kontrollierte Nachweis erreicht RESTORE_READY und Workerstart und bricht vor dem Datenaustausch ab; er ersetzt keine vollständige reale Restore-/PO-Abnahme.
+- Paketierter Export-Bytecode aus PYZ und unveränderte Originalpflanzen am tatsächlichen Frameworks-/Resources-Pfad erfolgreich in Memory gerendert. Dies prüft Code-/Ressourcenlieferung, keine zusätzliche Anmeldung oder Bedienabnahme der installierten App.
+- Qt-Exportaktion mit ausschließlich synthetischen Daten bei 1180×760, 1280×800 und 1400×900 sichtbar/aktiv; End-to-End-Interaktion inklusive Abbruch und Schreiben in der fokussierten Testsuite geprüft. Alle 31 Seiten des 331-Kompetenzen-Beispiels visuell und textlich vollständig geprüft.
+- DMG: `Jenaplan-Kompetenzmanager-0.4.2-macOS-arm64.dmg`, 205.050.568 Bytes, SHA-256 `481f982711305e7ccb58da2d094f4b167f24562e0e7685450b8a7a427152a37d`.
+- Alle vier Releaseartefakte erneut gegen Manifestgröße und SHA-256 geprüft. Lokales Manifest: `release/output/0.4.2-build402-2ac4e28ca5ea/release-manifest.json`, Phase `package_verified`, kein Fehler, Restore `passed`.
+
+Technische Quell- und Paketvorbereitung ist abgeschlossen. Offen bleiben die letzte reale PO-Bedienabnahme und die getrennte bewusste Veröffentlichung im Pilotkanal. Vollständiger Restore, Developer ID, Notarisierung, Stable- und schulische Betriebsfreigabe werden durch diese technischen Prüfungen nicht erteilt. Der frühere Fehler von Build 401 trat weder in den erneuten Originalpaketprüfungen noch in der aktuellen nativen Prüfung außerhalb der Sandbox auf; seine ursprüngliche Ursache bleibt ungeklärt.

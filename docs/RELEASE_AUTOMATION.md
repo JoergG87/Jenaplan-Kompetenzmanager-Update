@@ -269,3 +269,17 @@ Am 08.09.2026 wurde der Fehler auch nach manuellem Entsperren und im separat
 per Computer-Use geprüften Diagnosefenster reproduziert: Vertrauensreferenz
 und ACL-Erzeugung Status 0, `SecItemAdd=-25293`. Lesen/Löschen nicht erreicht.
 Die verbleibende Ursache ist offen; diese Diagnose ist keine Paketfreigabe.
+
+
+## Paketnachweis 0.4.2 / Build 402 – 11.10.2026
+
+Implementierung und Version sind lokal committed (`bfe7c5b`, danach Versionscommit `2ac4e28ca5ea1545445922f228ac941bd944e190`). Der Build entstand ausschließlich aus diesem sauberen Versionscommit im detached Release-Worktree. Die spätere Dokumentation verändert weder diesen Quellcommit noch Paketbytes. Keine Installation, kein Push, kein Tag und keine Veröffentlichung.
+
+- Elf von elf Paketgates bestanden: DMG-Verifikation, Metadaten, arm64, tiefe strikte Signatur, native Bibliotheken, Sparkle-Version, Erststart/Restart, verbotene Inhalte, Entwicklerpfade, Pilotfeed und deaktivierter Stable-Kanal.
+- Paketierter Restore-Worker-Smoke bestanden. Dieser kontrollierte Nachweis erreicht RESTORE_READY und Workerstart und bricht vor dem Datenaustausch ab; er ersetzt keine vollständige reale Restore-/PO-Abnahme.
+- Paketierter Export-Bytecode aus PYZ und unveränderte Originalpflanzen am tatsächlichen Frameworks-/Resources-Pfad erfolgreich in Memory gerendert. Dies prüft Code-/Ressourcenlieferung, keine zusätzliche Anmeldung oder Bedienabnahme der installierten App.
+- Qt-Exportaktion mit ausschließlich synthetischen Daten bei 1180×760, 1280×800 und 1400×900 sichtbar/aktiv; End-to-End-Interaktion inklusive Abbruch und Schreiben in der fokussierten Testsuite geprüft. Alle 31 Seiten des 331-Kompetenzen-Beispiels visuell und textlich vollständig geprüft.
+- DMG: `Jenaplan-Kompetenzmanager-0.4.2-macOS-arm64.dmg`, 205.050.568 Bytes, SHA-256 `481f982711305e7ccb58da2d094f4b167f24562e0e7685450b8a7a427152a37d`.
+- Alle vier Releaseartefakte erneut gegen Manifestgröße und SHA-256 geprüft. Lokales Manifest: `release/output/0.4.2-build402-2ac4e28ca5ea/release-manifest.json`, Phase `package_verified`, kein Fehler, Restore `passed`.
+
+Technische Quell- und Paketvorbereitung ist abgeschlossen. Offen bleiben die letzte reale PO-Bedienabnahme und die getrennte bewusste Veröffentlichung im Pilotkanal. Vollständiger Restore, Developer ID, Notarisierung, Stable- und schulische Betriebsfreigabe werden durch diese technischen Prüfungen nicht erteilt. Der frühere Fehler von Build 401 trat weder in den erneuten Originalpaketprüfungen noch in der aktuellen nativen Prüfung außerhalb der Sandbox auf; seine ursprüngliche Ursache bleibt ungeklärt.
