@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Kompetenzexport: nativer macOS-Speicherdialog für Dateiname/Ordner und kürzere, ausdrücklich als Erfolg gekennzeichnete Rückmeldung mit sieben Sekunden Lesezeit.
+
+- PO-Abnahme: Export umfasst immer alle aktuellen Fächer unabhängig vom Ansichtsfilter. Downloads-Blockade behoben: generische Ordnernamen im macOS-Benutzerordner gelten bei externen Ausgaben nicht als App-Root. Echte Runtime-Evidenz bleibt gesperrt. Der originale Build 402 bleibt NO-GO. Die getrennte korrigierte Testkopie exportiert real nach Downloads: zwölf Bereiche, 331 Texte, 31 Seiten geprüft; 86 gezielte Tests bestanden. Neuer sauberer Paketkandidat vor Veröffentlichung erforderlich.
+
 - Neuer lokaler Updatekandidat 0.4.2 / Build 402 aus `2ac4e28` erstellt: alle elf Paketgates und der Restore-Worker-Smoke bestanden; PDF-Code und Pflanzenressourcen im Bundle geprüft. Nicht installiert oder veröffentlicht.
 
 - Kompetenzübersicht als PDF mit Originalpflanzen umgesetzt: vollständige aktuelle Kompetenzen je Fach, bestätigte Stände mit Quelle/Datum, neutrale leere unbestätigte Stände, wiederholte Tabellenköpfe und expliziter unverschlüsselter externer Export. Keine Schemaänderung.

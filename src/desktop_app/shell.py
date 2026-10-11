@@ -2620,7 +2620,7 @@ class AppShell(QMainWindow):
             app.aboutToQuit.connect(viewer.close)
         viewer.open()
 
-    def export_competency_overview_pdf(self, student_id: str, subject_id: str = "") -> None:
+    def export_competency_overview_pdf(self, student_id: str) -> None:
         """Choose an explicit external cleartext export; keep domain work outside Qt."""
         confirmation = QMessageBox.question(
             self,
@@ -2635,7 +2635,7 @@ class AppShell(QMainWindow):
         target, _filter = QFileDialog.getSaveFileName(
             self, "Kompetenzübersicht als PDF speichern",
             str(Path.home() / "Downloads" / "Kompetenzuebersicht.pdf"),
-            "PDF-Datei (*.pdf)", options=QFileDialog.Option.DontUseNativeDialog,
+            "PDF-Datei (*.pdf)", options=QFileDialog.Option.DontConfirmOverwrite,
         )
         if not target:
             return
@@ -2645,7 +2645,7 @@ class AppShell(QMainWindow):
             from src.application.competency_pdf_export import export_competency_pdf
 
             with self.maintenance_gate.begin_writer():
-                model = self.adapter.competency_pdf_for_student(student_id, subject_id)
+                model = self.adapter.competency_pdf_for_student(student_id)
                 exported = export_competency_pdf(
                     model, Path(target), runtime_root=self.runtime_paths.root,
                 )
@@ -2656,9 +2656,11 @@ class AppShell(QMainWindow):
         except Exception:
             QMessageBox.warning(self, "PDF nicht exportiert",
                                 "Der Export konnte nicht sicher abgeschlossen werden. "
-                                "Bitte Fachauswahl und Zielordner prüfen.")
+                                "Bitte einen neuen Dateinamen in einem beschreibbaren Ordner außerhalb der App-Daten wählen.")
             return
-        self.status_label.setText(f"Kompetenzübersicht exportiert: {exported.name}")
+        self.status_label.show_message(
+            f"PDF gespeichert: {exported.name}", tone="success", duration_ms=7000,
+        )
 
     def export_learning_report_pdf(
         self,

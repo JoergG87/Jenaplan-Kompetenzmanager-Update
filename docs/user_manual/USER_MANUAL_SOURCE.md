@@ -646,6 +646,6 @@ die beschriebenen Produktverträge.
 
 ## Kompetenzübersicht als PDF exportieren
 
-Im Schülerprofil unter Kompetenzen wählst du ein Fach oder Alle Kompetenzen und klickst auf Kompetenzen als PDF exportieren. Das PDF enthält alle aktuellen Kompetenzen der Auswahl; Suche und eingeklappte Themen begrenzen die Ausgabe nicht. Nach der Bestätigung wählst du außerhalb der App-Daten einen neuen Dateinamen. Eine vorhandene Datei wird nicht überschrieben.
+Im Schülerprofil unter Kompetenzen klickst du auf Kompetenzen als PDF exportieren. Das PDF enthält immer alle aktuellen Fächer und überfachlichen Bereiche. Fachfilter, Suche und eingeklappte Themen begrenzen die Ausgabe nicht. Nach der Bestätigung kannst du im normalen macOS-Speicherdialog Dateiname und Zielordner frei wählen. Nach erfolgreicher Speicherung erscheint sieben Sekunden lang die grüne Rückmeldung „PDF gespeichert: …“. Eine vorhandene Datei wird nicht überschrieben.
 
 Die vier Pflanzen zeigen den bestätigten Entwicklungsstand von ersten Erfahrungen bis sicherer eigenständiger Anwendung. Jeder Balken nennt seine Bestätigung; neuere Beobachtungen bleiben erkennbar. Ohne sichere Bestätigung bleibt der Balken leer. Das Schuljahr beschreibt die aktuelle Fachauswahl; Bestätigungen können aus früheren Jahren stammen. Die Ausgabe enthält Name und Entwicklungsstände und ist außerhalb der App unverschlüsselt. Bewahre sie entsprechend geschützt auf. Sie ist eine aktuelle Übersicht und keine finalisierte Bericht- oder LEG-Revision.

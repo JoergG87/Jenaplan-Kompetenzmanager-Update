@@ -342,7 +342,7 @@ def require_unprotected_output_path(path: Path) -> None:
     candidate = Path(path).expanduser()
     if not candidate.is_absolute():
         candidate = (Path.cwd() / candidate).resolve(strict=False)
-    _require_no_product_ancestor(candidate)
+    _require_no_product_ancestor(candidate, output_container=True)
 
 
 def _publish(
@@ -424,13 +424,14 @@ def _contains_product_evidence(root: Path) -> bool:
     return any(_exists_or_symlink(root / name) for name in _PRODUCT_EVIDENCE_NAMES)
 
 
-def _require_no_product_ancestor(path: Path) -> None:
+def _require_no_product_ancestor(path: Path, *, output_container: bool = False) -> None:
     current = Path(path).resolve(strict=False)
     evidence_boundaries = {
         Path(tempfile.gettempdir()).resolve(strict=True),
         Path("/private/tmp").resolve(strict=True),
     }
     inspect_unmarked_evidence = True
+    home = Path.home().resolve(strict=True)
     while True:
         protection = inspect_runtime_root(current)
         if protection is not None:
@@ -439,7 +440,12 @@ def _require_no_product_ancestor(path: Path) -> None:
         if (
             inspect_unmarked_evidence
             and protection is None
-            and _contains_product_evidence(current)
+            and (
+                any(_exists_or_symlink(current / name) for name in
+                    _PRODUCT_EVIDENCE_NAMES - {"documents", "backups", "exports", "logs"})
+                if output_container and current == home
+                else _contains_product_evidence(current)
+            )
         ):
             raise RuntimeRootProtectionError("pilot_product_root_evidence_unclassified")
         if current in evidence_boundaries:

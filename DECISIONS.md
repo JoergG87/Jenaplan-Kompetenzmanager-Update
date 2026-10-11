@@ -1,5 +1,9 @@
 # Architekturentscheidungen
 
+## PO-Präzisierung 11.10.2026 – immer vollständiger Kompetenzexport
+
+Der Export ignoriert sämtliche Ansichtsfilter und enthält immer alle aktuellen effektiven Fächer sowie überfachlichen Bereiche. Die bestehende Fachrelevanzprojektion bleibt kanonisch. Externe Ausgaben dürfen den Benutzerordner als normalen Container verwenden: generische Documents/Backups/Exports/Logs unmittelbar dort sind allein keine Runtime-Evidenz. Eindeutige Runtime-Artefakte und explizite Marker bleiben gesperrt. Diese Ausnahme gilt ausschließlich für Ausgabeziele, nicht für Seed-, Reset- oder Runtime-Klassifikation. Keine Modelländerung.
+
 ## PO-Entscheidung 11.10.2026 – Kompetenz-PDF mit Pflanzen
 
 Die vom PO gelieferte Entwicklungsbuchdatei bestätigt vier aufsteigende Pflanzenbilder. Der PO hat den visuellen Entwurf und die Implementierung freigegeben. Export verwendet diese statischen Bilder ausschließlich als Darstellung stabiler Ratingtokens und verändert weder Schema noch Ratingprofile. Bestätigungen bleiben Quelle der Balken; unbestätigte und unklare Stände bleiben explizit leer. Ausgabe ist eine bewusst bestätigte unverschlüsselte externe Datei; keine RPA/LCA-Revision und kein Managed-Document-Fallback. App-Farben und Fachhierarchie bleiben konsistent. Neuer Kandidat 0.4.2/402; 0.4.1/401 und veröffentlichte 0.4.0/400 bleiben unveränderliche Referenzen.

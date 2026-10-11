@@ -1035,4 +1035,6 @@ Delete-Statuscodes des neu erzeugten Testschlüssels; keine Produktfelder.
 
 ## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
 
-Aktion im Profilreiter `Kompetenzen`: `Kompetenzen als PDF exportieren`. Fachauswahl aus bestehendem Fachfilter; `Alle Kompetenzen` exportiert alle aktuellen Bereiche. Jede PDF-Zeile nutzt `competency_text`, Lernbereich und Thema aus Cockpit; Balken und Quellenbeschriftung aus `confirmed_rating`, `confirmed_at`, `documentation_state`. Namen und Schuljahr kommen aus demselben frischen Profil-Bundle. Unbestätigte Beobachtungen heißen `Beobachtet, noch nicht bestätigt`; undokumentierte `Noch nicht dokumentiert`; unklare `Bestätigungsstand unklar`. Keine implizite Vorschlagsübernahme.
+Zielauswahl erfolgt im nativen Speicherdialog. Erfolgstext `PDF gespeichert: <Dateiname>` verwendet ausschließlich `exported.name` und bleibt sieben Sekunden lesbar; kein voller Datenpfad.
+
+Aktion im Profilreiter `Kompetenzen`: `Kompetenzen als PDF exportieren`. Die Aktion exportiert immer alle aktuellen Bereiche, unabhängig von Fach-, Such- oder Dokumentationsfilter. Jede PDF-Zeile nutzt `competency_text`, Lernbereich und Thema aus Cockpit; Balken und Quellenbeschriftung aus `confirmed_rating`, `confirmed_at`, `documentation_state`. Namen und Schuljahr kommen aus demselben frischen Profil-Bundle. Unbestätigte Beobachtungen heißen `Beobachtet, noch nicht bestätigt`; undokumentierte `Noch nicht dokumentiert`; unklare `Bestätigungsstand unklar`. Keine implizite Vorschlagsübernahme.

@@ -3464,4 +3464,8 @@ späteren Zustand des Arbeitsverzeichnisses ab.
 
 ## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
 
+`AppShell.export_competency_overview_pdf` verwendet den Plattform-Speicherdialog und `Toast.show_message` mit explizitem Erfolgston; keine neuen technischen Namen.
+
+`competency_pdf_requested` transportiert ausschließlich die Schüler-ID; der Export übernimmt keine Fachfilter. `require_unprotected_output_path` erlaubt den normalen Benutzerordner als Ausgabe-Container: generische Ordnernamen dort sind keine Produktevidenz. Marker und eindeutige Runtime-Artefakte bleiben geschützt; Test-/Seed-Mutationsprüfungen bleiben unverändert.
+
 Registriert: `src/desktop_app/view_models/competency_pdf.py`, `CompetencyPdfRow`, `CompetencyPdfSubject`, `CompetencyPdfModel`, `build_competency_pdf_model`; `src/application/competency_pdf_export.py`, `CompetencyPdfExportError`, `render_competency_pdf`, `export_competency_pdf`; `StudentDesktopAdapter.competency_pdf_for_student`; `StudentProfileScreen.competency_pdf_requested`, `competency_pdf_button`; `AppShell.export_competency_overview_pdf`; `assets/competency_plants/stage_1.jpeg` bis `stage_4.jpeg`. Die Bilder stammen unverändert aus dem vom PO bereitgestellten Entwicklungsbuch Stand 06.01.2026; sie sind statische Präsentationsressourcen, keine fachliche Quelle.

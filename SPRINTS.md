@@ -1,5 +1,17 @@
 # Sprintplanung
 
+## PO-Nachprüfung 11.10.2026 – externe Kompetenz-PDF-Ausgabe
+
+- [x] Ursache reproduziert: generische Documents-Evidenz im Benutzerordner blockierte Downloads.
+- [x] Ausgabe-Container-Ausnahme nur für generische Home-Ordner; eindeutige Runtime-Evidenz, Marker und Seed-/Runtime-Schutz unverändert.
+- [x] Export immer vollständig über alle aktuellen Bereiche, unabhängig vom Fachfilter.
+- [x] 67 Export-/Rootschutz-/Launcher-Tests und 19 Berichts-UI-Tests bestanden.
+- [x] Korrigierte isolierte Testkopie erneut separat signiert, an denselben synthetischen Root gebunden und real geöffnet. Erfolgreicher UI-Export nach Downloads; zwölf Bereiche / 331 Texte / 31 Seiten geprüft.
+- [x] Nativem Speicherdialog die Zielauswahl übergeben; Erfolgston und sieben Sekunden Lesezeit. 64 gezielte Export-/Rootschutz-/Toast-/Berichts-UI-Tests bestanden.
+- [ ] Reale Bedienabnahme der finalen Dialogfassung nach Entsperren der Testkopie.
+- [ ] Neuer sauberer Paketkandidat mit eigener Buildnummer und erneuten Paketgates; bisheriger originaler Build 402 bleibt NO-GO.
+- [ ] Abschließende PO-Abnahme und Veröffentlichung.
+
 ## Update 0.4.2 / Build 402 – Auftrag 11.10.2026
 
 - [x] Vision/Discovery: vollständige fachweise Kompetenz-PDF-Tabelle mit Pflanzenstufen; visueller Entwurf vom PO freigegeben.

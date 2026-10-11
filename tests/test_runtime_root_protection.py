@@ -32,7 +32,35 @@ from src.core.runtime_root_protection import (
     publish_synthetic_test_root,
     require_disposable_tree,
     require_product_runtime_root,
+    require_unprotected_output_path,
+    require_mutable_test_root,
 )
+
+
+def test_external_downloads_allows_generic_home_folders_only(monkeypatch, tmp_path):
+    home = tmp_path / 'home'
+    home.mkdir()
+    for name in ('documents', 'backups', 'exports', 'logs', 'Downloads'):
+        (home / name).mkdir()
+    monkeypatch.setattr(Path, 'home', classmethod(lambda cls: home))
+    require_unprotected_output_path(home / 'Downloads' / 'overview.pdf')
+    # This exception is exclusive to output-container inspection.
+    with pytest.raises(RuntimeRootProtectionError):
+        require_mutable_test_root(home)
+    (home / 'security-key-runtime-v1').mkdir()
+    with pytest.raises(RuntimeRootProtectionError):
+        require_unprotected_output_path(home / 'Downloads' / 'overview.pdf')
+
+
+def test_external_downloads_still_rejects_nested_unmarked_evidence(monkeypatch, tmp_path):
+    home = tmp_path / 'home'
+    home.mkdir()
+    downloads = home / 'Downloads'
+    downloads.mkdir()
+    (downloads / 'documents').mkdir()
+    monkeypatch.setattr(Path, 'home', classmethod(lambda cls: home))
+    with pytest.raises(RuntimeRootProtectionError):
+        require_unprotected_output_path(downloads / 'overview.pdf')
 from src.desktop_app.main import (
     _preflight_desktop_runtime_root,
     _require_existing_product_security,

@@ -1515,4 +1515,6 @@ Sie besitzt weder Produktfenster noch Zugriff auf App-Datenordner.
 
 ## Kompetenzübersicht als PDF – PO-Freigabe 11.10.2026
 
-Owner der neuen Ausgabe ist die Kompetenz-PDF-Projektion. Der Adapter liest ausschließlich das bestehende Schülerprofil-Bundle. Export enthält alle aktuellen Kompetenzen je effektivem Fach sowie die beiden überfachlichen Bereiche, optional ein bewusst ausgewähltes Fach. Such-/Dokumentationsfilter und eingeklappte Themen verkürzen den Export nicht. Renderer kennt weder Repository noch SQLite, Widgets enthalten ausschließlich Interaktions-/Dialoglogik.
+Der vorhandene Shell-Toast besitzt die Export-Rückmeldung; der native Plattformdialog besitzt ausschließlich Zielauswahl. Kein neuer View-State.
+
+Owner der neuen Ausgabe ist die Kompetenz-PDF-Projektion. Der Adapter liest ausschließlich das bestehende Schülerprofil-Bundle. Export enthält alle aktuellen Kompetenzen je effektivem Fach sowie die beiden überfachlichen Bereiche; ein Fachfilter verkürzt die Ausgabe niemals. Such-/Dokumentationsfilter und eingeklappte Themen verkürzen den Export nicht. Renderer kennt weder Repository noch SQLite, Widgets enthalten ausschließlich Interaktions-/Dialoglogik.

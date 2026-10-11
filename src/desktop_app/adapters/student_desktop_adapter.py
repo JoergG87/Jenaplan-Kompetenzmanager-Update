@@ -1846,7 +1846,7 @@ class StudentDesktopAdapter:
             tuple(subject_ids),
         )
 
-    def competency_pdf_for_student(self, student_id: str, subject_id: str = ""):
+    def competency_pdf_for_student(self, student_id: str):
         """Build a fresh export from the same single-snapshot profile projection."""
         from src.desktop_app.view_models.competency_pdf import build_competency_pdf_model
 
@@ -1857,7 +1857,6 @@ class StudentDesktopAdapter:
             bundle.student.display_name,
             bundle.documentation_subjects.school_year_label,
             bundle.competency_cockpit,
-            subject_id,
         )
 
     def list_documentation_status_for_student(

@@ -122,12 +122,20 @@ def test_adapter_ui_export_and_cancellation(tmp_path):
         shell.show_student_profile(fixture.student.student_id)
         screen=shell.student_profile_screen
         assert screen.competency_pdf_button.isEnabled()
+        screen.competency_subject_filter.setCurrentIndex(1)
         screen.competency_search_input.setText('filter-with-no-matches')
         target=tmp_path/'all.pdf'
-        with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Yes), patch('src.desktop_app.shell.QFileDialog.getSaveFileName',return_value=(str(target),'')):
+        with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Yes), patch('src.desktop_app.shell.QFileDialog.getSaveFileName',return_value=(str(target),'')) as choose:
             screen.competency_pdf_button.click()
+            from PySide6.QtWidgets import QFileDialog
+            assert not choose.call_args.kwargs['options'] & QFileDialog.Option.DontUseNativeDialog
         assert target.is_file()
+        assert shell.status_label.label.text() == 'PDF gespeichert: all.pdf'
+        assert shell.status_label.property('toastTone') == 'success'
         assert len(PdfReader(target).pages)>1
+        exported_text=' '.join(page.extract_text() for page in PdfReader(target).pages)
+        for subject in fixture.adapter.competency_pdf_for_student(fixture.student.student_id).subjects:
+            assert subject.name in exported_text
         with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Cancel), patch('src.desktop_app.shell.QFileDialog.getSaveFileName') as choose:
             screen.competency_pdf_button.click()
             choose.assert_not_called()

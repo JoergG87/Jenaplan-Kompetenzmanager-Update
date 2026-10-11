@@ -231,7 +231,7 @@ class StudentProfileScreen(QWidget):
     document_remove_requested = Signal(str, str)
     competency_confirmation_requested = Signal(str, str, str, str)
     documentation_subjects_save_requested = Signal(str, str, str, tuple)
-    competency_pdf_requested = Signal(str, str)
+    competency_pdf_requested = Signal(str)
     report_requested = Signal(str)
     learning_conference_requested = Signal(str)
     report_draft_requested = Signal(str, str, str, str)
@@ -1066,7 +1066,7 @@ class StudentProfileScreen(QWidget):
         self.competency_pdf_button.setObjectName("CompetencyPdfExportButton")
         self.competency_pdf_button.setAccessibleName("Kompetenzen als PDF exportieren")
         self.competency_pdf_button.setToolTip(
-            "Exportiert alle Kompetenzen des gewählten Fachs; Such- und Dokumentationsfilter gelten nicht."
+            "Exportiert alle aktuellen Fächer und überfachlichen Bereiche; Ansichtsfilter gelten nicht."
         )
         configure_button(self.competency_pdf_button, "secondary")
         self.competency_pdf_button.setEnabled(False)
@@ -2198,7 +2198,6 @@ class StudentProfileScreen(QWidget):
         if self.current_student is not None:
             self.competency_pdf_requested.emit(
                 self.current_student.student_id,
-                self.competency_subject_filter.currentData() or "",
             )
 
     def _populate_competency_subject_filter(
