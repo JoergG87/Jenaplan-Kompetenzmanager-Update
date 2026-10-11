@@ -1,5 +1,14 @@
 # Pilot-Releaseautomation
 
+## Veröffentlicht: 0.4.3 / Build 403 – 11.10.2026
+
+GitHub-Pre-Release `v0.4.3-build403` und Pilot-Appcast veröffentlicht; öffentliche Endprüfung erfolgreich. Paketquelle ist exakt `d531e11584e3cc7b7b2b79ca0ca807fc2efe3287`; nachfolgende Release-Werkzeugkorrekturen ändern keine Paketbytes. Vier öffentliche Assets wurden mit Größe und SHA256 zurückgeprüft; Ed25519-Signaturen für DMG, Release-Notes und Feed gültig. Alle elf Originalpaketgates bestanden. Restore-Worker-Smoke erreicht RESTORE_READY und bricht kontrolliert vor Datenaustausch ab; keine vollständige Restore-Abnahme. Stable bleibt deaktiviert, keine Developer-ID-/Notarisierungsfreigabe behauptet.
+
+Nachweise: Gesamtsuite 2.472 Tests und 100 Untertests bestanden, 104 übersprungen; ein Test setzte einen Arbeitsordner außerhalb des Systemtemps voraus und scheiterte im temporären Release-Checkout. Alle 29 Runtime-Root-Tests mit identischem Quellstand im regulären Projektordner bestanden. Zusätzlich 94 Tests im exakten SQLCipher-4.17-Stack und sechs reale synthetische Keychain-Prozesstests bestanden. Release-Werkzeugkorrekturen: 43 gezielte Tests bestanden. Historische SQLCipher-4.12-Infrastrukturtests sind keine Tests des 4.17-Profils. Paketierter Elternexport unabhängig geprüft: zwölf Bereiche, 331 Kompetenzen, 29 Seiten, vier Alphamasken; unvollständiger Stand blockiert. Alle 35 Seiten der fünf Begleit-PDFs visuell geprüft. Finder-Installationsfenster mit drei lesbaren Zielen geprüft, keine App gestartet oder installiert.
+
+Manifest und unveränderte Artefakte lokal unter `release/output/0.4.3-build403-d531e11584e3/`; DMG-SHA256 `c49aa8b227a8ec13abb9e5ae492089bf5f9f7f9d47aa3977c23d280327cf1bc5`. Öffentlicher Release: https://github.com/JoergG87/Jenaplan-Kompetenzmanager-Update/releases/tag/v0.4.3-build403. Die vom Nutzer verschobene Pflanzen-ZIP bleibt im Arbeitsordner unangetastet. Frühere Kandidaten 401/402 bleiben historisch und unverändert.
+
+
 ## Historischer Kandidat 402 – 11.10.2026
 
 Die neue Implementierung wird als 0.4.2 / Build 402 vorbereitet. Das vorhandene Paket 401 bleibt unverändert; seine erneute isolierte Prüfung bestand elf Gates plus Restore-Worker-Smoke. Der Abbruch vor Datenaustausch ist keine vollständige Restore-Abnahme. Die Testkopie ist weiterhin kein Originalpaketnachweis. Der überarbeitete Launcher lehnt interne Links/Sonderdateien ab, übernimmt ausschließlich minimale OS-Umgebung und startet Python mit -I -B. Native Roundtripdiagnose schreibt `report.json` mit synthetischer Service-/Accountautorität vor SecItemAdd und `result.json` mit vollständigem Status danach; Cleanupfehler oder Inhaltsabweichung ergeben Exitcode 1. Vorhandene Reportziele werden nie überschrieben.

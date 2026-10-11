@@ -1,5 +1,14 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Veröffentlicht: 0.4.3 / Build 403 – 11.10.2026
+
+GitHub-Pre-Release `v0.4.3-build403` und Pilot-Appcast veröffentlicht; öffentliche Endprüfung erfolgreich. Paketquelle ist exakt `d531e11584e3cc7b7b2b79ca0ca807fc2efe3287`; nachfolgende Release-Werkzeugkorrekturen ändern keine Paketbytes. Vier öffentliche Assets wurden mit Größe und SHA256 zurückgeprüft; Ed25519-Signaturen für DMG, Release-Notes und Feed gültig. Alle elf Originalpaketgates bestanden. Restore-Worker-Smoke erreicht RESTORE_READY und bricht kontrolliert vor Datenaustausch ab; keine vollständige Restore-Abnahme. Stable bleibt deaktiviert, keine Developer-ID-/Notarisierungsfreigabe behauptet.
+
+Nachweise: Gesamtsuite 2.472 Tests und 100 Untertests bestanden, 104 übersprungen; ein Test setzte einen Arbeitsordner außerhalb des Systemtemps voraus und scheiterte im temporären Release-Checkout. Alle 29 Runtime-Root-Tests mit identischem Quellstand im regulären Projektordner bestanden. Zusätzlich 94 Tests im exakten SQLCipher-4.17-Stack und sechs reale synthetische Keychain-Prozesstests bestanden. Release-Werkzeugkorrekturen: 43 gezielte Tests bestanden. Historische SQLCipher-4.12-Infrastrukturtests sind keine Tests des 4.17-Profils. Paketierter Elternexport unabhängig geprüft: zwölf Bereiche, 331 Kompetenzen, 29 Seiten, vier Alphamasken; unvollständiger Stand blockiert. Alle 35 Seiten der fünf Begleit-PDFs visuell geprüft. Finder-Installationsfenster mit drei lesbaren Zielen geprüft, keine App gestartet oder installiert.
+
+Manifest und unveränderte Artefakte lokal unter `release/output/0.4.3-build403-d531e11584e3/`; DMG-SHA256 `c49aa8b227a8ec13abb9e5ae492089bf5f9f7f9d47aa3977c23d280327cf1bc5`. Öffentlicher Release: https://github.com/JoergG87/Jenaplan-Kompetenzmanager-Update/releases/tag/v0.4.3-build403. Die vom Nutzer verschobene Pflanzen-ZIP bleibt im Arbeitsordner unangetastet. Frühere Kandidaten 401/402 bleiben historisch und unverändert.
+
+
 ## Releasevorbereitung 0.4.3 / Build 403 – 11.10.2026
 
 PO-Auftrag: alle notwendigen Arbeiten bis zur Veröffentlichung im bestehenden Pilotkanal durchführen. Quellbasis ist die geprüfte Elternexport-Umsetzung `5736ce1`; neue monotone Paketidentität 0.4.3 / Build 403. Build 402 bleibt unverändert und wird nicht veröffentlicht. Saubere separate Release-Kopie erhält die im Arbeitsordner bewusst verschobene Pflanzen-ZIP aus dem geprüften Commit; der Arbeitsordner bleibt an dieser Stelle unverändert. Gesamtsuite am finalen Versionscommit, elf Originalpaketgates und paketierter Restore-Worker-Smoke sind vor Publikation erforderlich. Keine produktive App starten, keine Produktdaten oder bestehenden Produktschlüssel ändern. Veröffentlichung erfolgt als GitHub-Pre-Release und Pilot-Appcast; Stable bleibt deaktiviert. Paketprüfung und öffentliche Endverifikation stehen noch aus.
