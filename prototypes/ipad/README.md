@@ -7,22 +7,30 @@ Die Testtabelle verändert das Produktdatenmodell nicht.
 
 ## Aktueller Nachweis
 
-Repository-Tests bestehen auf macOS: Speicherung und Wiederöffnung,
+ARM64-Simulatorbuild mit Qt/PySide 6.12.0 und Python 3.15.0rc2 unter
+Xcode 27.0 erfolgreich, tiefe strikte Ad-hoc-Signaturprüfung bestanden.
+Nach Mac-Neustart im eigenen iPadOS-27.0-Simulator installiert und gestartet.
+Drei Auswahlen über die Oberfläche gespeichert: `--`, `+`, `++`.
+Die SQLite-Datei im eigenen App-Container enthält genau diese drei Zeilen.
+Nach vollständigem Beenden und Neustart werden alle drei Auswahlen wieder
+angezeigt. Hoch- und Querformat visuell lesbar; Auswahl und Speichern bedienbar.
+
+Drei Repository-Tests bestanden auf macOS: Speicherung und Wiederöffnung,
 ungültige Auswahl ohne Änderung, Abweisung fremder Datenbanken und Symlinks.
 Ein Offscreen-Test prüft Auswahl und Speicherung über das Fenster.
-Dies beweist weder iPad-Packaging noch iPad-Bedienung oder Dateischutz.
+Keine Prüfung auf physischem iPad und keine Sicherheitsfreigabe.
 
 ## Nächster Gerätetest
 
 1. Erledigt: Xcode 27.0 und iOS-/iPadOS-27-Simulatorruntime installiert.
-2. Separate Qt/PySide-6.12-iOS-Umgebung mit passenden PySide-/Shiboken-Wheels
+2. Erledigt: Separate Qt/PySide-6.12-iOS-Umgebung mit passenden PySide-/Shiboken-Wheels
    und Python.xcframework bereitstellen; produktive Mac-Buildumgebung nicht ändern.
-3. Mit pyside6-ios-deploy main.py als eigenes Xcode-Projekt generieren.
+3. Erledigt: Mit pyside6-ios-deploy main.py als eigenes Xcode-Projekt generieren.
    Eigene Bundle-ID: de.jenaplan.kompetenzmanager.ipad-prototype.
-4. Zunächst Simulator, anschließend signiertes Build auf echtem iPad:
+4. Simulator bestanden; noch offen: signiertes Build auf echtem iPad:
    alle drei Auswahlen speichern, App schließen und erneut öffnen;
    Zustand muss erhalten bleiben. Hochformat, Querformat und Touch prüfen.
-5. Python-sqlite3-Verfügbarkeit und Dateien im eigenen App-Container nachweisen.
+5. Python-sqlite3 und eigene Containerdatei im Simulator nachgewiesen.
    Apples Dateischutzattribute und Sperrverhalten sind noch nicht implementiert
    oder geprüft; der Prototyp ist keine Sicherheitsfreigabe.
 6. Danach Pflanzen-PDF und natives Teilen ergänzen. ReportLab/Pillow sind in
@@ -34,7 +42,7 @@ Keine automatische Installation von Xcode oder Änderung der globalen Toolchain.
 Offizielle Voraussetzungen:
 https://doc.qt.io/qtforpython-6/deployment/deployment-pyside6-ios-deploy.html
 
-## Buildnachweis 11.10.2026
+## Historie: erster Build vor Mac-Neustart 11.10.2026
 
 Offizielle Qt-6.12.0 ARM64-Simulator-Wheels und die vom Qt-Tool hashgeprüfte
 Python-3.15.0rc2-iOS-XCframework-Runtime. Getrennte Hostumgebung unter
@@ -57,3 +65,18 @@ endet bei kontrolliertem Shutdown mit Mach error -308. Kein App-Code-Fehler
 bewiesen. Nach Installation der neuen Xcode-Komponenten ist ein Mac-Neustart
 der nächste sinnvolle Infrastrukturversuch; noch kein iPad-Lauffähigkeitsnachweis.
 Kompaktbelege und erfolgreicher Buildlog unter output/ipad-prototype/.
+
+## Fortsetzung nach Mac-Neustart
+
+Das System-Temporärverzeichnis wurde beim Neustart entfernt. Der reproduzierte
+Buildarbeitsordner liegt jetzt dauerhaft unter output/ipad-prototype/build/,
+das separate Host-Venv unter output/ipad-prototype/venv/. Download-Wheels sind
+gegen die vor dem Neustart gespeicherten SHA256 geprüft; Quellkopie unverändert.
+Neues Buildlog: output/ipad-prototype/xcodebuild-after-reboot.log.
+Der eigene Simulator zeigt nach dem Neustart den iPadOS-Startbildschirm.
+Erneutes Packaging, Installation und Start erfolgreich. Oberflächenauswahl,
+SQLite-Speicherung und Wiederöffnung sowie beide Ausrichtungen bestanden.
+Lokale Belege: build-inputs.json, build-evidence.json und
+simulator-persistence.json unter output/ipad-prototype/.
+Die Buildquelle ist bytegleich mit main.py aus Commit f48ee76; keine Codeänderung
+für diesen Wiederholungsversuch. Der Prototyp bleibt im eigenen Simulator offen.

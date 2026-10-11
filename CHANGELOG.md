@@ -1,10 +1,12 @@
 # CHANGELOG
 
-Update iPad-Test: Xcode 27.0 und iOS-27-Runtime verfügbar. Offizieller Qt/PySide-6.12-ARM64-Simulatorbuild mit Python 3.15.0rc2 erfolgreich, separate Bundle-ID und tiefe strikte Ad-hoc-Signaturprüfung bestanden. Drei Quelltests plus PySide-6.12-Host-Fenster-/Persistenzprüfung bestanden. Drei Simulatorstarts hängen vor Appstart; Device Hub meldet DeviceKitError 4002 / Connection timed out. Installation, Appstart und iPad-Persistenz nicht nachgewiesen. Nächster Infrastrukturversuch: Mac-Neustart nach Xcode-Komponenteninstallation. Kein Produktbuild geändert oder veröffentlicht.
+## iPad-Simulatortest bestanden – 11.10.2026
 
-## iPad-Machbarkeitsprototyp – 11.10.2026
+Nach dem Mac-Neustart ist der separate Qt/PySide-6.12.0-Prototyp unter iPadOS 27.0 installiert und gestartet. Drei synthetische Auswahlen über die Simulatoroberfläche gespeichert; separate SQLite-Datei im eigenen App-Container enthält exakt die gewählten Werte. Nach vollständigem Beenden und erneutem Start zeigt die Oberfläche dieselben Werte. Hoch- und Querformat visuell lesbar. ARM64-Build und tiefe strikte Ad-hoc-Signaturprüfung bestanden; drei Quelltests und Host-Fensterprüfung waren bereits bestanden. Dauerhafte lokale Buildbelege unter output/ipad-prototype/; Details in prototypes/ipad/README.md.
 
-PO erlaubt vereinfachten ersten Test ohne zusätzliche Datenbankverschlüsselung. Separater synthetischer Prototyp unter prototypes/ipad, ohne Produktstartup oder Produktmodelländerung: drei feste Testkompetenzen, Auswahl, lokale Standard-SQLite-Testdatei und Wiederöffnung. Drei Tests bestehen einschließlich Offscreen-Fenster und Schutz fremder Dateien. Kein realer iPad-Nachweis: vollständiges Xcode fehlt. PDF/Teilen, iOS-Dateischutz, iOS-Build und Signierung bleiben offen. Keine Produktionsfreigabe und kein Absenken der Mac-Sicherheitsanforderungen.
+Dies belegt PySide-/SQLite-Grundfunktionen im Simulator, keine vollständige Produktportierung. Echte Hardware, Pflanzen-PDF und natives Teilen, Dateischutzattribute/Sperrverhalten und Gerätesignierung bleiben offen. Nur erfundene Daten, keine zusätzliche App-Verschlüsselung im ausdrücklich freigegebenen Test; kein Produktmodell geändert, keine Mac-Sicherheitsanforderungen abgesenkt und kein Produktbuild veröffentlicht.
+
+Historie: Der erste erfolgreiche Build konnte vor dem Mac-Neustart wegen Device-Hub-/Simulator-Timeouts nicht installiert werden. Diese Infrastrukturblockade ist jetzt überwunden; der ursprünglich fehlende Xcode-Stand ist erledigt.
 
 ## Veröffentlicht: 0.4.3 / Build 403 – 11.10.2026
 
