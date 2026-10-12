@@ -1,5 +1,11 @@
 # Project Constitution
 
+PO-Fehlerauftrag 12.10.2026: Wischen darf beim Anhalten keine Karten-/Buttonaktion auslösen. Schutz ausschließlich im Tablet-Präsentationspfad; echte Antipp- und Tastaturaktionen sowie bestehende Fach-/Speichersignale bleiben erhalten.
+
+PO-Fehlerauftrag 12.10.2026: Schwarze Leerflächen, abgeschnittene Scrollinhalte und Absturz beim unteren Heute-Bereich im installierten synthetischen iPad-Test prüfen und korrigieren. Tablet-Präsentation und Widget-Lifecycle dürfen angepasst werden; Quellen, Final-V4, Fach-/Speicherverträge unverändert. Absturzursache erst nach Diagnose als bestätigt ausweisen.
+
+PO-Auftrag 12.10.2026: Die getrennte iPad-Test-App auf dem angeschlossenen eigenen iPad installieren und starten. Ausschließlich synthetische Daten im eigenen App-Container; bestehende Final-V4-Fachlogik unverändert. Apple-Development-Signierung des eigenen Personal Teams ist Geräte-Testprovisionierung, keine Veröffentlichung oder Produktionsfreigabe. Synchronisierung wurde nur besprochen und ist nicht implementiert oder freigegeben.
+
 PO-Auftrag 12.10.2026: Simulator-App vollständig auf bedienbare Tablet-Präsentation verfeinern. Bestehende fachliche Entscheidungen, Final-V4 und lokale Testautorität bleiben unverändert; kein Geräte-/Produktrelease.
 
 PO-Präzisierung 12.10.2026: Bedienhilfen dürfen für den ersten iPad-Test zurückgestellt werden. Der nachgewiesen abstürzende Qt-iOS-Accessibility-Pfad bleibt ausschließlich im getrennten Testbuild deaktiviert; Touch, Layout und Fachabläufe haben zunächst Priorität. Das ist keine Accessibility- oder Produktionsfreigabe.

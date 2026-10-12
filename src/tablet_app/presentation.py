@@ -1,10 +1,100 @@
 """Tablet layout helpers; all values and actions remain owned by the original UI."""
 import sys
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import QEvent, QObject, Qt, QSize
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
-    QAbstractButton, QBoxLayout, QComboBox, QDateTimeEdit, QGridLayout,
-    QLabel, QLineEdit, QSizePolicy, QWidget, QStyledItemDelegate, QScrollArea, QScroller,
+    QApplication, QAbstractButton, QBoxLayout, QComboBox, QDateTimeEdit, QGridLayout,
+    QLabel, QLineEdit, QSizePolicy, QWidget, QStyledItemDelegate, QScrollArea, QScroller, QScrollerProperties,
 )
+from src.desktop_app.theme import COLOR_BACKGROUND, COLOR_TEXT
+from src.desktop_app.components import AppCard
+
+
+class TabletTapGuard(QObject):
+    """Discard drag/cancel releases before custom cards can treat them as taps."""
+    def __init__(self, widget):
+        super().__init__(widget)
+        self._press = None
+        self._dragged = False
+
+    def eventFilter(self, widget, event):
+        kind = event.type()
+        if kind == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+            self._press = event.globalPosition().toPoint()
+            self._dragged = False
+        elif kind == QEvent.Type.MouseMove and self._press is not None:
+            if (event.globalPosition().toPoint() - self._press).manhattanLength() > QApplication.startDragDistance():
+                self._dragged = True
+        elif kind == QEvent.Type.MouseButtonRelease and event.button() == Qt.MouseButton.LeftButton:
+            tap = (self._press is not None and not self._dragged
+                   and widget.rect().contains(event.position().toPoint())
+                   and (event.globalPosition().toPoint() - self._press).manhattanLength() <= QApplication.startDragDistance())
+            self._press = None
+            self._dragged = False
+            if not tap:
+                if isinstance(widget, AppCard):
+                    widget.set_pressed(False)
+                elif isinstance(widget, QAbstractButton):
+                    widget.setDown(False)
+                return True
+        return False
+
+
+def apply_tablet_theme(app):
+    """Keep uncovered native surfaces light even with a dark system palette."""
+    palette = app.palette()
+    for role in (QPalette.ColorRole.Window, QPalette.ColorRole.Base):
+        palette.setColor(role, QColor(COLOR_BACKGROUND))
+    for role in (QPalette.ColorRole.WindowText, QPalette.ColorRole.Text):
+        palette.setColor(role, QColor(COLOR_TEXT))
+    app.setPalette(palette)
+    app.setStyleSheet(app.styleSheet() + '\nQWidget[tabletBackground="true"] { '
+                      f'background-color: {COLOR_BACKGROUND}; border: none; }}')
+
+
+def configure_tablet_scroll_area(scroll):
+    """Paint empty viewports and keep swipes inside their content bounds."""
+    for surface in (scroll, scroll.viewport()):
+        surface.setProperty('tabletBackground', True)
+        surface.setBackgroundRole(QPalette.ColorRole.Window)
+        surface.setAutoFillBackground(True)
+        surface.style().unpolish(surface)
+        surface.style().polish(surface)
+    if not scroll.property('tabletScrollGesture'):
+        simulator = sys.platform != 'ios'
+        if sys.platform == 'ios':
+            from jkm_ios_share import is_simulator
+            simulator = is_simulator()
+        gesture = QScroller.ScrollerGestureType.LeftMouseButtonGesture if simulator else QScroller.ScrollerGestureType.TouchGesture
+        QScroller.grabGesture(scroll.viewport(), gesture)
+        scroll.setProperty('tabletScrollGesture', True)
+    scroller = QScroller.scroller(scroll.viewport())
+    properties = scroller.scrollerProperties()
+    for metric in (QScrollerProperties.ScrollMetric.HorizontalOvershootPolicy,
+                   QScrollerProperties.ScrollMetric.VerticalOvershootPolicy):
+        properties.setScrollMetric(metric, QScrollerProperties.OvershootPolicy.OvershootAlwaysOff)
+    scroller.setScrollerProperties(properties)
+
+
+def stop_tablet_scrollers(root):
+    for scroll in root.findChildren(QScrollArea):
+        if QScroller.hasScroller(scroll.viewport()):
+            QScroller.scroller(scroll.viewport()).stop()
+
+
+def clear_tablet_layout(layout):
+    """Avoid creating temporary native iOS windows when rebuilding a projection."""
+    while layout.count():
+        item = layout.takeAt(0)
+        widget = item.widget()
+        if widget is not None:
+            stop_tablet_scrollers(widget)
+            if isinstance(widget, QScrollArea) and QScroller.hasScroller(widget.viewport()):
+                QScroller.scroller(widget.viewport()).stop()
+            widget.hide()
+            widget.deleteLater()
+        elif item.layout() is not None:
+            clear_tablet_layout(item.layout())
 
 
 class TabletChoiceDelegate(QStyledItemDelegate):
@@ -15,14 +105,13 @@ class TabletChoiceDelegate(QStyledItemDelegate):
 
 def touch_targets(root):
     for widget in root.findChildren(QWidget):
-        if isinstance(widget, QScrollArea) and not widget.property('tabletScrollGesture'):
-            simulator = sys.platform != 'ios'
-            if sys.platform == 'ios':
-                from jkm_ios_share import is_simulator
-                simulator = is_simulator()
-            gesture = QScroller.ScrollerGestureType.LeftMouseButtonGesture if simulator else QScroller.ScrollerGestureType.TouchGesture
-            QScroller.grabGesture(widget.viewport(), gesture)
-            widget.setProperty('tabletScrollGesture', True)
+        if (isinstance(widget, QAbstractButton)
+                or isinstance(widget, AppCard) and widget.property('interactive')):
+            if not hasattr(widget, 'tablet_tap_guard'):
+                widget.tablet_tap_guard = TabletTapGuard(widget)
+                widget.installEventFilter(widget.tablet_tap_guard)
+        if isinstance(widget, QScrollArea):
+            configure_tablet_scroll_area(widget)
         if isinstance(widget, (QAbstractButton, QComboBox, QLineEdit, QDateTimeEdit)):
             widget.setMaximumHeight(max(44, widget.maximumHeight()))
             widget.setMinimumHeight(max(44, widget.minimumHeight()))

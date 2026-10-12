@@ -209,3 +209,109 @@ def test_tablet_message_choice_and_nested_page_restore(tmp_path):
     finally:
         for key,value in originals.items():setattr(QMessageBox,key,value)
         page.reject();shell.close()
+
+
+def test_empty_tablet_scroll_surface_renders_light_with_dark_system_palette():
+    from PySide6.QtGui import QColor, QPalette
+    from PySide6.QtWidgets import QApplication, QScrollArea, QWidget
+    from src.desktop_app.theme import COLOR_BACKGROUND, apply_app_theme
+    from src.tablet_app.presentation import apply_tablet_theme, configure_tablet_scroll_area
+    app = QApplication.instance() or QApplication([])
+    original_palette, original_style = app.palette(), app.styleSheet()
+    scroll = None
+    try:
+        dark = QPalette()
+        dark.setColor(QPalette.ColorRole.Window, QColor('black'))
+        dark.setColor(QPalette.ColorRole.Base, QColor('black'))
+        app.setPalette(dark)
+        apply_app_theme(app)
+        apply_tablet_theme(app)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(QWidget())
+        configure_tablet_scroll_area(scroll)
+        scroll.resize(320, 240)
+        scroll.show()
+        app.processEvents()
+        image = scroll.viewport().grab().toImage()
+        assert image.pixelColor(image.width() // 2, image.height() // 2) == QColor(COLOR_BACKGROUND)
+    finally:
+        if scroll is not None:
+            scroll.close()
+        app.setStyleSheet(original_style)
+        app.setPalette(original_palette)
+
+
+def test_projection_cleanup_stops_active_swipe_without_detaching_native_window():
+    from PySide6.QtCore import QPointF
+    from PySide6.QtWidgets import QApplication, QScrollArea, QScroller, QVBoxLayout, QWidget
+    from src.tablet_app.presentation import clear_tablet_layout, configure_tablet_scroll_area
+    app = QApplication.instance() or QApplication([])
+    parent = QWidget()
+    layout = QVBoxLayout(parent)
+    scroll = QScrollArea(parent)
+    content = QWidget()
+    content.setMinimumHeight(2000)
+    scroll.setWidget(content)
+    layout.addWidget(scroll)
+    configure_tablet_scroll_area(scroll)
+    parent.resize(320, 240)
+    parent.show()
+    app.processEvents()
+    scroller = QScroller.scroller(scroll.viewport())
+    scroller.scrollTo(QPointF(0, 1000), 500)
+    assert scroller.state() != QScroller.State.Inactive
+    clear_tablet_layout(layout)
+    assert scroll.parentWidget() is parent
+    assert scroll.isHidden()
+    assert scroller.state() == QScroller.State.Inactive
+    app.processEvents()
+    parent.close()
+
+
+@pytest.mark.parametrize('kind', ['card', 'button'])
+def test_tablet_swipe_and_scroller_cancel_do_not_activate_but_taps_do(kind):
+    from PySide6.QtCore import QEvent, QPointF, Qt
+    from PySide6.QtGui import QMouseEvent
+    from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout, QWidget
+    from src.desktop_app.screens.overview_screen import DashboardMatchingStudentAction
+    from src.desktop_app.view_models.student_view_model import DashboardSuggestedStudentViewModel
+    from src.tablet_app.presentation import touch_targets
+    app = QApplication.instance() or QApplication([])
+    parent = QWidget()
+    layout = QVBoxLayout(parent)
+    activations = []
+    if kind == 'card':
+        target = DashboardMatchingStudentAction(
+            DashboardSuggestedStudentViewModel('STU-TEST', 'Testkind', 'Nur Testdaten'),
+            lambda: activations.append('open'))
+    else:
+        target = QPushButton('Testaktion')
+        target.clicked.connect(lambda: activations.append('open'))
+    layout.addWidget(target)
+    touch_targets(parent)
+    parent.resize(320, 160)
+    parent.show()
+    app.processEvents()
+
+    def pointer(kind, x, y):
+        point = QPointF(x, y)
+        button = Qt.MouseButton.NoButton if kind == QEvent.Type.MouseMove else Qt.MouseButton.LeftButton
+        buttons = Qt.MouseButton.NoButton if kind == QEvent.Type.MouseButtonRelease else Qt.MouseButton.LeftButton
+        event = QMouseEvent(kind, point, point, button, buttons, Qt.KeyboardModifier.NoModifier)
+        app.sendEvent(target, event)
+
+    # A drag returning to its starting point must still remain a drag.
+    pointer(QEvent.Type.MouseButtonPress, 20, 20)
+    pointer(QEvent.Type.MouseMove, 100, 20)
+    pointer(QEvent.Type.MouseButtonRelease, 20, 20)
+    assert not activations
+    # QScroller sends a synthetic cancellation at INT_MIN, INT_MIN.
+    pointer(QEvent.Type.MouseButtonPress, 20, 20)
+    pointer(QEvent.Type.MouseButtonRelease, -2147483648, -2147483648)
+    pointer(QEvent.Type.MouseButtonRelease, 20, 20)
+    assert not activations
+    pointer(QEvent.Type.MouseButtonPress, 20, 20)
+    pointer(QEvent.Type.MouseButtonRelease, 20, 20)
+    assert activations == ['open']
+    parent.close()

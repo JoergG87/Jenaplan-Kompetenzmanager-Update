@@ -79,11 +79,8 @@ class TabletStudentProfileScreen(StudentProfileScreen):
     def _clear_layout(self, layout):
         # Don't detach widgets into temporary iOS windows or force an immediate
         # native event-loop flush while a profile projection is being rebuilt.
-        while layout.count():
-            item = layout.takeAt(0)
-            if item.widget() is not None:
-                item.widget().hide()
-                item.widget().deleteLater()
+        from src.tablet_app.presentation import clear_tablet_layout
+        clear_tablet_layout(layout)
 
 
 from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
@@ -100,6 +97,26 @@ class TabletNewObservationDialog(NewObservationDialog):
 
 class TabletOverviewScreen(OverviewScreen):
     """Keep the visual day schedule beside the current lesson on iPad."""
+    @staticmethod
+    def _clear_layout(layout):
+        from src.tablet_app.presentation import clear_tablet_layout
+        clear_tablet_layout(layout)
+
+    def set_dashboard(self, *args, **kwargs):
+        from src.tablet_app.presentation import stop_tablet_scrollers, touch_targets
+        stop_tablet_scrollers(self)
+        super().set_dashboard(*args, **kwargs)
+        touch_targets(self)
+
+    def _render_heatmap(self, *args, **kwargs):
+        super()._render_heatmap(*args, **kwargs)
+        item = self.heatmap_layout.itemAt(self.heatmap_layout.count() - 1)
+        scroll = item.widget() if item is not None else None
+        if isinstance(scroll, QScrollArea):
+            scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            height = scroll.widget().minimumSizeHint().height() + scroll.horizontalScrollBar().sizeHint().height() + 4
+            scroll.setMinimumHeight(min(280, height))
+
     def _hero_visual(self, *args, **kwargs):
         visual = super()._hero_visual(*args, **kwargs)
         visual.setMaximumWidth(280 if self.width() < 1050 else 16777215)

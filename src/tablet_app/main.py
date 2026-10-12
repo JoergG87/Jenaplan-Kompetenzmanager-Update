@@ -28,6 +28,8 @@ def main():
     from src.desktop_app.motion import set_reduced_motion
     set_reduced_motion(True)
     apply_app_theme(app)
+    from src.tablet_app.presentation import apply_tablet_theme
+    apply_tablet_theme(app)
     try:
         manifest = json.loads(resource_path('tablet-template', 'manifest.json').read_text())
         runtime = TabletRuntime(tablet_data_root(), resource_path('tablet-template', 'kompetenzmanager.sqlite'), manifest['sha256'])

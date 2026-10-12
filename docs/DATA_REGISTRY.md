@@ -1,5 +1,9 @@
 # Data Registry
 
+Tablet-Antippschutz: Pointerposition und erkannte Wischbewegung sind ausschließlich flüchtiger Eingabezustand; keine zusätzliche Datenquelle oder persistierte Auswahl.
+
+Tablet-Fehlerkorrektur 12.10.2026: Hintergrundpalette und Scroll-/Widget-Lifecycle sind flüchtige Präsentation; keine neue Datenquelle. Geräteberichte ausschließlich Diagnose des eigenen synthetischen Testbundles.
+
 Simulator-Verfeinerung: Bereichsauswahl liest ausschließlich vorhandene NavigationButtons und deren Auswahlzustände. Keine zusätzliche fachliche Quelle; Export liest weiterhin frische kanonische Modelle.
 
 Tablet-PDF-Port 12.10.2026: PDF-Teilen verwendet ausschließlich aus kanonischen ViewModels erzeugte PDF-Bytes; temporäre Ausgabe im eigenen NS-Temp-Unterordner jkm-tablet-share. Keine neue fachliche Quelle oder persistierte Bewertung.

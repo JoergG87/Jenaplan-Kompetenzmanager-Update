@@ -1,5 +1,9 @@
 # UI Data Mapping
 
+Tablet-Antippschutz: Karten/Buttons aktivieren nur nach eigenem linken Press, ohne überschrittene native Drag-Schwelle, bei Release innerhalb des ursprünglichen Elements. QScroller-Abbruchrelease und Release ohne Press werden verworfen; keine neuen sichtbaren Felder.
+
+Tablet-Fehlerkorrektur 12.10.2026: Leere Scroll-/Tabellenbereiche verwenden App-Hintergrundfarbe. Klassen-/Kompetenzmatrix wird bei Überbreite/-höhe scrollbar; sämtliche ursprünglichen Zeilen/Spalten bleiben erhalten. Keine neuen Eingabefelder.
+
 Simulator-Verfeinerung: Bericht-Bereichsauswahl entspricht vorhandenem Gesamttext/Fachbutton; LEG-Bereichsauswahl entspricht vorhandenen sechs Gesprächsankern. Keine Vorauswahl fachlicher Werte. Profil-Suche erhält eine volle Zeile, vorhandene Filter eine zweite Zeile. Tastatur darf Abschlussaktionen nicht verdecken.
 
 Tablet-Dialogseiten 12.10.2026: AppShell._exec_dialog / _exec_workspace / _open_dialog / _open_workspace sind Präsentationsports mit identischen Desktopdefaults. TabletAppShell zeigt vorhandene Qt-Dialoginhalte als fokussierte Seite im eigenen Stack; fachliche Accept-/Reject-/Finished-Verträge bleiben erhalten. Navigation ist während der Eingabe gesperrt, Zurück verwendet den vorhandenen Abbruch-/Entwurfschutz. Keine zweite Validierung oder Persistenz.

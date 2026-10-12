@@ -1,5 +1,9 @@
 # Data Lifecycle
 
+Tablet-Antippschutz verwirft Wisch-/Abbruch-Releases vor vorhandenen Karten-/Buttonaktionen. Bewusste Antipp- und Tastaturaktionen verwenden unveränderte bestehende Commands/Writer.
+
+Tablet-Fehlerkorrektur 12.10.2026: Vor erneutem Aufbau von Heute-Inhalten laufende kinetische Scrollbewegungen beenden; verworfene Widgets verborgen zur verzögerten Löschung geben, ohne setParent(None). Kein zusätzlicher fachlicher Writer oder Datenreset bei Geräteupdate.
+
 Synthetische Exportprüfung 12.10.2026: 329 von 331 Ständen für Mila Hartmann ausschließlich im eigenen Simulatorcontainer über den bestehenden Bestätigungsadapter vorbereitet; zwei Mathematikstände ausdrücklich im UI gewählt und gespeichert. Abbruch vor der Auswahl ließ beide offen. Kein Schemawechsel und keine Produktdaten.
 
 Simulator-Verfeinerung: Neue Tablet-Bereichsauswahl aktiviert dieselben vorhandenen Buttons/Commands. Entwurfschutz, Accept/Reject, Validierung und Speicherung unverändert. Qt-Hinweise/Bestätigungen erhalten einen eigenen Tablet-Präsentationsport; keine automatisch bestätigten Entscheidungen.

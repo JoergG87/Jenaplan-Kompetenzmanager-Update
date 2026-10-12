@@ -1,5 +1,9 @@
 # View Data Ownership
 
+TabletTapGuard besitzt nur die Unterscheidung Antippen/Wischen. Vorhandene Karten und Schaltflächen behalten ihre fachliche Action-/Signalownership; Desktop unverändert.
+
+Tablet-Fehlerkorrektur 12.10.2026: Heute-Klassen-/Kompetenzmatrix bleibt bestehende kanonische Projektion, erhält bei Überhöhe vertikalen Zugriff. Tablet-Hintergrund/Lifecycle sind Präsentationsownership; keine Fachänderung.
+
 Simulator-Verfeinerung: Einspaltige Bericht-/LEG-Seiten verwenden vorhandene Projektionen. Tablet-Auswahlfelder projizieren NavigationButtons; Suche/Filter werden lediglich neu angeordnet. Abschlussaktionen bleiben außerhalb des scrollbaren Inhalts. Keine persistierten Layoutzustände.
 
 Tablet-Dialogseiten 12.10.2026: AppShell._exec_dialog / _exec_workspace / _open_dialog / _open_workspace sind Präsentationsports mit identischen Desktopdefaults. TabletAppShell zeigt vorhandene Qt-Dialoginhalte als fokussierte Seite im eigenen Stack; fachliche Accept-/Reject-/Finished-Verträge bleiben erhalten. Navigation ist während der Eingabe gesperrt, Zurück verwendet den vorhandenen Abbruch-/Entwurfschutz. Keine zweite Validierung oder Persistenz.

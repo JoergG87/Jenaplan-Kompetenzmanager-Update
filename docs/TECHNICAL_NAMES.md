@@ -1,5 +1,9 @@
 # Technical Naming Registry
 
+Registriert: TabletTapGuard in src/tablet_app/presentation.py. Instanzgebundener Eventfilter an bereits konstruierten interaktiven AppCards und QAbstractButtons; flüchtiger Press-/Bewegungszustand (_press, _dragged), Haltereferenz tablet_tap_guard. Kein globaler QApplication-Eventfilter.
+
+Tablet-Darstellungsports registriert: apply_tablet_theme, configure_tablet_scroll_area, stop_tablet_scrollers, clear_tablet_layout in src/tablet_app/presentation.py. Einheitliche native Palette/opaque Scrollhintergründe, begrenzte Scrollgesten und Widget-Lifecycle ohne temporäre Top-Level-Fenster; keine fachlichen Felder.
+
 Native Tablet-Port jkm_ios_share.is_simulator: kompiliertes TARGET_OS_SIMULATOR-Merkmal für reine Eingabeprojektion; keine Umgebungs-/Datenautorität.
 
 Registriert: src/tablet_app/presentation.py (TabletChoiceDelegate, touch_targets, reflow_filter_bar, reflow_actions, NavigationPicker), src/tablet_app/dialogs.py (TabletLearningReportDialog, TabletLearningConferenceDialog, install_tablet_message_port). Alle sind reine Präsentationsports. Keine zweite Fach-/Speicherlogik.

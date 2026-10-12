@@ -1,5 +1,9 @@
 # Design-System
 
+Tablet-Bedienung: Scrollen/Wischen ist keine Auswahl. Auch nach Rückbewegung zum Start bleibt eine begonnene Wischbewegung von Antippen getrennt. Native Drag-Schwelle statt Zeitheuristik; Tastatur-/Commandaktivierung unverändert.
+
+Tablet-Fehlerkorrektur 12.10.2026: Native Window-/Base-Palette verwendet COLOR_BACKGROUND, auch im dunklen iPad-Systemmodus. Scrollrahmen/Viewports erhalten deckende App-Hintergründe; kinetisches Überschwingen ist ausgeschaltet, damit Inhalte keine unbemalten Flächen freilegen. Klassenmatrix muss alle Zeilen erreichbar halten.
+
 Verschachtelte Tablet-Scrollflächen erhalten eine Wischgeste: Simulator mit linker Maus als Fingereingabe, Gerätebuild mit TouchGesture. Erkennung ausschließlich über Apples kompiliertes TARGET_OS_SIMULATOR. Keine Geste auf Texteingabe-Viewports.
 
 Simulator-Verfeinerung 12.10.2026: Ruhige einspaltige Arbeitsseiten. Seitliche Bericht-/LEG-Navigation durch 44-Pixel-Bereichsauswahl einschließlich Popup-Zeilen ersetzen; vorhandene Texte/Werte erhalten. Suchzeile vor Filtern, umbrochene Inhalte, Dokumentvorschau innerhalb der verfügbaren Breite. Abschlussleiste dauerhaft erreichbar, bei schmaler Breite mehrzeilig. Hauptnavigation während fokussierter Eingabe vollständig ausblenden. Fachgrafik im Heute-Hero bleibt sichtbar.
