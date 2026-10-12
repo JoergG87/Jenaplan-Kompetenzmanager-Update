@@ -1,5 +1,19 @@
 # Pilot-Releaseautomation
 
+## Mac-Pilot 0.4.4 / Build 404 veröffentlicht – 13.10.2026
+
+Veröffentlicht aus 79d59591344397fdc462f40e1c0335c75066463e im bestehenden Pilotkanal. GitHub-Pre-Release v0.4.4-build404 und signierter Pilot-Appcast öffentlich verifiziert; Feed-Commit 942087e0325b4b417738ba70b55a2148e011091b. Kein Stable-Wechsel, keine Developer-ID-/Notarisierungsbehauptung. Die installierte produktive Mac-App wurde weder gestartet noch aktualisiert; vorhandene Produktdaten und Produktschlüssel blieben unberührt.
+
+Enthält bereichsgerechte Pflanzenbezeichnungen in App und Eltern-PDF, feste 32-Pixel-Bewertungsbuttons, an QObject-Owner gebundene verzögerte UI-Aktionen und begrenzte Wiederholung vorübergehender WAL-Initialisierungssperren. Native Tablet-Meldungsgrids behalten ihre Standardantworten und die bestehende Zurück-Aktion. Keine Datenmodelländerung oder Neubewertung.
+
+Abnahme: vollständige Testsuite mit 2539 bestandenen Tests, 104 erwarteten umgebungs-/Gate-Skips und 100 bestandenen Unterprüfungen, Prozessende 0. Alle elf Paketgates und paketierter Restore-Worker-Smoke bestanden. Qualifizierte SQLCipher-4.17-/SDK-27-Basis zuvor mit 50 zusätzlichen exakten Runtimeprüfungen, darunter reale synthetische Keychain-/Crash-Grenzen, bestanden. Alle vier veröffentlichten Asset-Hashes, Ed25519-Signaturen und neuester Feed-Build 404 verifiziert. DMG-SHA256 d55c21c35509a034b3b249450478dc82514f7f296ab5e494799dae0fd93f311e.
+
+Nachweise und Release-Manifeste: release/output/0.4.4-build404-79d595913443/. Exaktes qualifiziertes Wheel dauerhaft lokal unter build/macos-inputs/sqlcipher-4.17-sdk27/ gesichert, SHA256 9ce432941a45f28af3877192149ab2583ae22f466e3b22c2a7323c5a84c577f9. Lokale release_state.json zeigt auf das endgültige Manifest. Verschobene Pflanzen-ZIP bleibt unangetastet.
+
+Release: https://github.com/JoergG87/Jenaplan-Kompetenzmanager-Update/releases/tag/v0.4.4-build404
+Updatefeed: https://joergg87.github.io/Jenaplan-Kompetenzmanager-Update/pilot/appcast.xml
+
+
 ## Veröffentlicht: 0.4.3 / Build 403 – 11.10.2026
 
 GitHub-Pre-Release `v0.4.3-build403` und Pilot-Appcast veröffentlicht; öffentliche Endprüfung erfolgreich. Paketquelle ist exakt `d531e11584e3cc7b7b2b79ca0ca807fc2efe3287`; nachfolgende Release-Werkzeugkorrekturen ändern keine Paketbytes. Vier öffentliche Assets wurden mit Größe und SHA256 zurückgeprüft; Ed25519-Signaturen für DMG, Release-Notes und Feed gültig. Alle elf Originalpaketgates bestanden. Restore-Worker-Smoke erreicht RESTORE_READY und bricht kontrolliert vor Datenaustausch ab; keine vollständige Restore-Abnahme. Stable bleibt deaktiviert, keine Developer-ID-/Notarisierungsfreigabe behauptet.

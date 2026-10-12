@@ -1,5 +1,19 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Mac-Pilot 0.4.4 / Build 404 veröffentlicht – 13.10.2026
+
+Veröffentlicht aus 79d59591344397fdc462f40e1c0335c75066463e im bestehenden Pilotkanal. GitHub-Pre-Release v0.4.4-build404 und signierter Pilot-Appcast öffentlich verifiziert; Feed-Commit 942087e0325b4b417738ba70b55a2148e011091b. Kein Stable-Wechsel, keine Developer-ID-/Notarisierungsbehauptung. Die installierte produktive Mac-App wurde weder gestartet noch aktualisiert; vorhandene Produktdaten und Produktschlüssel blieben unberührt.
+
+Enthält bereichsgerechte Pflanzenbezeichnungen in App und Eltern-PDF, feste 32-Pixel-Bewertungsbuttons, an QObject-Owner gebundene verzögerte UI-Aktionen und begrenzte Wiederholung vorübergehender WAL-Initialisierungssperren. Native Tablet-Meldungsgrids behalten ihre Standardantworten und die bestehende Zurück-Aktion. Keine Datenmodelländerung oder Neubewertung.
+
+Abnahme: vollständige Testsuite mit 2539 bestandenen Tests, 104 erwarteten umgebungs-/Gate-Skips und 100 bestandenen Unterprüfungen, Prozessende 0. Alle elf Paketgates und paketierter Restore-Worker-Smoke bestanden. Qualifizierte SQLCipher-4.17-/SDK-27-Basis zuvor mit 50 zusätzlichen exakten Runtimeprüfungen, darunter reale synthetische Keychain-/Crash-Grenzen, bestanden. Alle vier veröffentlichten Asset-Hashes, Ed25519-Signaturen und neuester Feed-Build 404 verifiziert. DMG-SHA256 d55c21c35509a034b3b249450478dc82514f7f296ab5e494799dae0fd93f311e.
+
+Nachweise und Release-Manifeste: release/output/0.4.4-build404-79d595913443/. Exaktes qualifiziertes Wheel dauerhaft lokal unter build/macos-inputs/sqlcipher-4.17-sdk27/ gesichert, SHA256 9ce432941a45f28af3877192149ab2583ae22f466e3b22c2a7323c5a84c577f9. Lokale release_state.json zeigt auf das endgültige Manifest. Verschobene Pflanzen-ZIP bleibt unangetastet.
+
+Release: https://github.com/JoergG87/Jenaplan-Kompetenzmanager-Update/releases/tag/v0.4.4-build404
+Updatefeed: https://joergg87.github.io/Jenaplan-Kompetenzmanager-Update/pilot/appcast.xml
+
+
 Release-404-Endabnahme ergänzt: Qt-Testfenster werden nach jeder Prüfung geordnet entsorgt; bestehende Dialogports in Testdoubles aktualisiert. Verzögerter Berichts-Fokus ist an den lebenden Dialog gebunden. Reproduzierte WAL-Initialisierungskollision im Sicherheitsrepository begrenzt auf fünf Sekunden abwarten, andere Fehler unverändert. 36 Recoveryprüfungen inklusive 20 gleichzeitiger Doppelverwendungen und Fehler-/Timeoutfällen bestanden; genau ein Gewinner. Kein Datenmodellwechsel. Finale Gesamtsuite und Neubau aus diesem Stand vor Veröffentlichung.
 
 
@@ -7,7 +21,7 @@ Release 404: SDK-27-Neuqualifizierung abgeschlossen. Zwei unabhängige Builds by
 
 ## Mac-Update 0.4.4 / Build 404 vorbereiten – 12.10.2026
 
-PO autorisiert neuen Mac-Build und Veröffentlichung im bestehenden GitHub-Pilotkanal. Build 403 bleibt unverändert. Neues Paket übernimmt bereichsgerechte Entwicklungsbuch-Bezeichnungen in App und PDF sowie feste 32-Pixel-Bewertungsbuttons. Gemeinsame Quelle dcc7c46; keine Migration, kein Produktdaten-/Keyzugriff. Versionscommit, saubere Release-Kopie, Gesamtsuite, elf Paketgates und paketierter Restore-Worker-Smoke vor Veröffentlichung. Verschobene Pflanzen-ZIP im Arbeitsordner bleibt unangetastet. Veröffentlichung und Paketabnahme noch offen.
+PO autorisiert neuen Mac-Build und Veröffentlichung im bestehenden GitHub-Pilotkanal. Build 403 bleibt unverändert. Neues Paket übernimmt bereichsgerechte Entwicklungsbuch-Bezeichnungen in App und PDF sowie feste 32-Pixel-Bewertungsbuttons. Gemeinsame Quelle dcc7c46; keine Migration, kein Produktdaten-/Keyzugriff. Versionscommit, saubere Release-Kopie, Gesamtsuite, elf Paketgates und paketierter Restore-Worker-Smoke vor Veröffentlichung. Verschobene Pflanzen-ZIP im Arbeitsordner bleibt unangetastet. Vorbereitung historisch; Veröffentlichung und Paketabnahme sind im Abschluss vom 13.10.2026 dokumentiert.
 
 ## Bereichsgerechte Entwicklungsbuch-Bezeichnungen – 12.10.2026
 
