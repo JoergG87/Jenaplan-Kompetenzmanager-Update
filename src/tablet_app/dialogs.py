@@ -5,6 +5,26 @@ from src.desktop_app.components import DialogHeader
 from src.desktop_app.dialogs.learning_report_dialog import LearningReportDialog
 from src.desktop_app.dialogs.learning_conference_dialog import LearningConferenceDialog
 from src.tablet_app.presentation import NavigationPicker, reflow_actions, touch_targets
+from src.desktop_app.dialogs.competency_pdf_completion_dialog import CompetencyPdfCompletionDialog
+
+
+class TabletCompetencyPdfCompletionDialog(CompetencyPdfCompletionDialog):
+    """Choose every pending subject directly without native tab-scroll arrows."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.subject_picker = QComboBox(self)
+        self.subject_picker.setAccessibleName('Fach für Entwicklungsstände wählen')
+        self.subject_picker.setMinimumHeight(44)
+        for index in range(self.subject_tabs.count()):
+            self.subject_picker.addItem(self.subject_tabs.tabText(index), index)
+        self.subject_tabs.tabBar().hide()
+        self.subject_tabs.setMinimumSize(0, 0)
+        self.subject_tabs.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        self.layout().insertWidget(self.layout().indexOf(self.subject_tabs), self.subject_picker)
+        self.layout().setStretch(self.layout().indexOf(self.subject_tabs), 1)
+        self.subject_picker.currentIndexChanged.connect(self.subject_tabs.setCurrentIndex)
+        self.subject_tabs.currentChanged.connect(self.subject_picker.setCurrentIndex)
+        _relax_content(self)
 
 
 def _replace_sidebar(screen, buttons, title):

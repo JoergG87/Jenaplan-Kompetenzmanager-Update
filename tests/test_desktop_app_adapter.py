@@ -1441,7 +1441,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         epu_status = group_by_subject["EPU"].competencies[0]
 
         self.assertEqual(deutsch_status.rating, "+")
-        self.assertEqual(deutsch_status.rating_label, "+ erreicht")
+        self.assertEqual(deutsch_status.rating_label, "Kenntnisse meist anwenden")
         self.assertEqual(deutsch_status.rating_history, ("-", "+"))
         self.assertEqual(deutsch_status.rating_history_label, "- → +")
         self.assertEqual(deutsch_status.observation_count, 2)
@@ -1914,7 +1914,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             deutsch_section.current_statuses[0].display_label,
             "Wahrnehmen und Unterscheiden von Lauten · "
-            "Aktueller Stand: + erreicht · von Laura bestätigt",
+            "Aktueller Stand: Kenntnisse meist anwenden · von Laura bestätigt",
         )
         self.assertEqual(deutsch_section.development, ())
         self.assertEqual(deutsch_section.example_observations, ())
@@ -1971,7 +1971,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             deutsch_section.current_statuses[0].display_label,
             "Wahrnehmen und Unterscheiden von Lauten · "
-            "Aktueller Stand: + erreicht · von Laura bestätigt",
+            "Aktueller Stand: Kenntnisse meist anwenden · von Laura bestätigt",
         )
         self.assertEqual(deutsch_section.development, ())
         self.assertEqual(deutsch_section.example_observations, ())
@@ -2012,7 +2012,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             deutsch_section.current_statuses[0].display_label,
             "Wahrnehmen und Unterscheiden von Lauten · "
-            "Aktueller Stand: + erreicht · von Laura bestätigt",
+            "Aktueller Stand: Kenntnisse meist anwenden · von Laura bestätigt",
         )
         self.assertEqual(
             deutsch_section.development[0].development_label,
@@ -2048,7 +2048,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             deutsch_section.current_statuses[0].display_label,
             "Wahrnehmen und Unterscheiden von Lauten · "
-            "Aktueller Stand: + erreicht · von Laura bestätigt",
+            "Aktueller Stand: Kenntnisse meist anwenden · von Laura bestätigt",
         )
         self.assertEqual(deutsch_section.current_statuses[0].rating, "+")
         self.assertEqual(
@@ -2080,7 +2080,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             deutsch_section.current_statuses[0].display_label,
             "Wahrnehmen und Unterscheiden von Lauten · "
-            "Aktueller Stand: + erreicht · aus Beobachtungen abgeleitet",
+            "Aktueller Stand: Kenntnisse meist anwenden · aus Beobachtungen abgeleitet",
         )
         self.assertEqual(deutsch_section.current_statuses[0].rating, "+")
         self.assertEqual(
@@ -2112,7 +2112,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             deutsch_section.current_statuses[0].display_label,
             "Wahrnehmen und Unterscheiden von Lauten · "
-            "Aktueller Stand: - in Entwicklung · aus Beobachtungen abgeleitet",
+            "Aktueller Stand: Mit Unterstützung · aus Beobachtungen abgeleitet",
         )
         self.assertEqual(
             deutsch_section.development[0].development_label,
@@ -2316,7 +2316,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Aktueller Stand", report_text)
         self.assertIn(
             "- Mit Texten und Medien umgehen · "
-            "Aktueller Stand: + erreicht · von Laura bestätigt",
+            "Aktueller Stand: Kenntnisse meist anwenden · von Laura bestätigt",
             report_text,
         )
         self.assertIn(
@@ -3765,7 +3765,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("master_data_payload = {", source)
         self.assertIn("result = self.adapter.save_existing_student(", source)
         self.assertIn("layout.addWidget(self._membership_card())", source)
-        self.assertIn("NewStudentDialog(self.adapter, self.master_data_adapter)", shell_source)
+        self.assertIn("self._create_dialog(NewStudentDialog, self.adapter, self.master_data_adapter)", shell_source)
 
     def test_new_student_dialog_uses_required_dropdown_placeholders(self) -> None:
         source = inspect.getsource(new_student_dialog)
@@ -3936,10 +3936,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             OBSERVATION_RATING_OPTIONS,
             (
-                "++ sicher erreicht",
-                "+ erreicht",
-                "- in Entwicklung",
-                "-- Unterstützungsbedarf",
+                "Eigenständig und sicher",
+                "Kenntnisse meist anwenden",
+                "Mit Unterstützung",
+                "Erste Erfahrungen",
             ),
         )
 
@@ -4640,7 +4640,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                     button.text().removeprefix("✓ ")
                     for button in selector.buttons.values()
                 )
-                if width == 1400:
+                if selector.width() >= selector.FULL_LABEL_MINIMUM_WIDTH:
                     self.assertEqual(visible_labels, full_labels)
                     self.assertTrue(
                         all(
@@ -4655,7 +4655,8 @@ class DesktopAppAdapterTest(unittest.TestCase):
                         )
                     )
                 elif width == 1180:
-                    self.assertEqual(visible_labels, rating_tokens)
+                    from src.application.competency_development_levels import DEVELOPMENT_LEVEL_COMPACT_LABELS
+                    self.assertEqual(visible_labels, tuple(DEVELOPMENT_LEVEL_COMPACT_LABELS[token] for token in rating_tokens))
                     self.assertTrue(
                         all(
                             button.property("compact")
@@ -5399,10 +5400,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self._select_observation_subject(dialog, "mathematik")
         dialog.competency_catalog_tiles[self.math_time_competency_id]._activate()
         selector = dialog.competency_rating_widgets[self.math_time_competency_id]
-        expected_labels = {
-            option.split(" ", 1)[0]: option
-            for option in OBSERVATION_RATING_OPTIONS
-        }
+        expected_labels = dict(zip(("++", "+", "-", "--"), OBSERVATION_RATING_OPTIONS, strict=True))
 
         self.assertEqual(tuple(selector.buttons), ("++", "+", "-", "--"))
         for rating, button in selector.buttons.items():
@@ -5673,7 +5671,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         source = inspect.getsource(shell.AppShell.open_new_observation_dialog)
         profile_source = inspect.getsource(shell.AppShell.show_student_profile)
 
-        self.assertIn("NewObservationDialog(", source)
+        self.assertIn("self._create_dialog(NewObservationDialog,", source)
         self.assertIn("list_observation_subject_options(", source)
         self.assertIn("list_observation_competency_subject_groups(", source)
         self.assertIn("student.student_id", source)
@@ -5694,7 +5692,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("self.students_screen.observation_requested.connect", shell_source)
         self.assertIn("self.open_quick_observation_dialog", shell_source)
         self.assertIn("self.adapter.get_student_profile(student_id)", quick_source)
-        self.assertIn("NewObservationDialog(", quick_source)
+        self.assertIn("self._create_dialog(NewObservationDialog,", quick_source)
         self.assertIn("list_observation_subject_options(", quick_source)
         self.assertIn("list_observation_competency_subject_groups(", quick_source)
         self.assertIn("student.student_id", quick_source)
@@ -5904,7 +5902,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Kompetenzen", label_texts)
         self.assertIn("Notiz: Liest einen bekannten Text.", label_texts)
         self.assertTrue(any(
-            text.startswith("+ erreicht  Mit Texten und Medien umgehen")
+            text.startswith("Kenntnisse meist anwenden  Mit Texten und Medien umgehen")
             for text in label_texts
         ))
         self.assertIsNotNone(app)
@@ -6403,7 +6401,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                                 "Mit Texten und Medien umgehen",
                                 "+",
                                 "von Laura bestätigt",
-                                "+ erreicht",
+                                "Kenntnisse meist anwenden",
                             ),
                         ),
                         (
@@ -6412,7 +6410,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                                 "Mit Texten und Medien umgehen",
                                 "+",
                                 "von Laura bestätigt",
-                                "+ erreicht",
+                                "Kenntnisse meist anwenden",
                             ),
                         ),
                         (
@@ -6595,13 +6593,13 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("Lernentwicklung", label_texts)
         self.assertIn("Texte sinnentnehmend lesen", label_texts)
         self.assertIn("Ausgangslage", label_texts)
-        self.assertIn("- in Entwicklung", label_texts)
+        self.assertIn("Mit Unterstützung", label_texts)
         self.assertIn("Aktueller dokumentierter Stand", label_texts)
-        self.assertIn("+ erreicht", label_texts)
+        self.assertIn("Kenntnisse meist anwenden", label_texts)
         self.assertIn("05.07.2026", label_texts)
         self.assertIn("Beobachtung", label_texts)
         self.assertIn("„Präsentation“", label_texts)
-        self.assertNotIn("- in Entwicklung → + erreicht", label_texts)
+        self.assertNotIn("Mit Unterstützung → Kenntnisse meist anwenden", label_texts)
         self.assertNotIn("01.03.2026 – 05.07.2026", label_texts)
         self.assertIn(
             "2026-07-06 · Mathematik · Projektarbeit · Neueste Beobachtung.",
@@ -6634,23 +6632,23 @@ class DesktopAppAdapterTest(unittest.TestCase):
         changes = (
             StudentProfileOrientationChangeViewModel(
                 "CMP-TEST-1", "Kommunikation", "Deutsch", "Gespräche führen",
-                "--", "-- Unterstützungsbedarf", "-", "- in Entwicklung",
+                "--", "Erste Erfahrungen", "-", "Mit Unterstützung",
                 "01.02.2026 – 01.03.2026", date(2026, 3, 1),
                 StudentProfileOrientationEventViewModel(
-                    date(2026, 3, 1), "-", "- in Entwicklung", "observation",
+                    date(2026, 3, 1), "-", "Mit Unterstützung", "observation",
                     "Beobachtung", "OBS-TEST-1",
-                    "Beobachtung vom 01.03.2026: - in Entwicklung · Gesprächskreis",
+                    "Beobachtung vom 01.03.2026: Mit Unterstützung · Gesprächskreis",
                 ),
                 1,
             ),
             StudentProfileOrientationChangeViewModel(
                 "CMP-TEST-2", "Zeit", "Mathematik", "Uhrzeit",
-                "+", "+ erreicht", "++", "++ sicher erreicht",
+                "+", "Kenntnisse meist anwenden", "++", "Eigenständig und sicher",
                 "01.04.2026 – 01.05.2026", date(2026, 5, 1),
                 StudentProfileOrientationEventViewModel(
-                    date(2026, 5, 1), "++", "++ sicher erreicht", "confirmation",
+                    date(2026, 5, 1), "++", "Eigenständig und sicher", "confirmation",
                     "Kompetenz bestätigt", "",
-                    "Kompetenz bestätigt am 01.05.2026: ++ sicher erreicht",
+                    "Kompetenz bestätigt am 01.05.2026: Eigenständig und sicher",
                 ),
                 2,
             ),
@@ -6671,10 +6669,10 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertEqual(
             tuple(badge.text() for badge in badges),
             (
-                "-- Unterstützungsbedarf",
-                "- in Entwicklung",
-                "+ erreicht",
-                "++ sicher erreicht",
+                "Erste Erfahrungen",
+                "Mit Unterstützung",
+                "Kenntnisse meist anwenden",
+                "Eigenständig und sicher",
             ),
         )
         self.assertIsNotNone(app)
@@ -7174,7 +7172,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
         self.assertIn("## Deutsch", clipboard_text)
         self.assertIn(
             "Mit Texten und Medien umgehen · "
-            "Aktueller Stand: + erreicht · von Laura bestätigt",
+            "Aktueller Stand: Kenntnisse meist anwenden · von Laura bestätigt",
             clipboard_text,
         )
         self.assertEqual(screen.report_feedback_label.text(), "Bericht wurde kopiert.")
@@ -8946,7 +8944,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                             "Mit Texten und Medien umgehen",
                             "+",
                             "von Laura bestätigt",
-                            "+ erreicht",
+                            "Kenntnisse meist anwenden",
                         ),
                     ),
                     (
@@ -8955,7 +8953,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                             "Mit Texten und Medien umgehen",
                             "+",
                             "von Laura bestätigt",
-                            "+ erreicht",
+                            "Kenntnisse meist anwenden",
                         ),
                     ),
                     (

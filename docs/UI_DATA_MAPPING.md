@@ -1,5 +1,7 @@
 # UI Data Mapping
 
+Vier Tokens --/-/+/++ entsprechen Erste Erfahrungen/Mit Unterstützung/Kenntnisse meist anwenden/Eigenständig und sicher. Gilt für alle Kompetenzprofile; PDF verwendet zugehörige volle Entwicklungsbuchsätze. Kompakte Chips umbrechen dieselben Wörter statt nur Tokens anzuzeigen. iPad-Fachauswahl projiziert bestehende Fachnamen samt offener Anzahl.
+
 Schritt 2: vorhandener Kompetenzkatalog mindestens 420 Pixel hoch; vorhandene ausgewählte Bewertungen bei belegter Auswahl mindestens 260 Pixel hoch. Leerer Bewertungsbereich bleibt kompakt. Keine neuen Felder.
 
 iPadOS-AppIcon verweist auf den kompilierten AppIcon-Assetkatalog aus assets/app_icon.png. Kein Eingabefeld oder fachlicher Wert.

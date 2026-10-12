@@ -24,6 +24,8 @@ class TabletDialogPolicy(QObject):
                 splitter = obj.findChild(QSplitter, 'ObservationThreeZoneWorkspace')
                 if splitter is not None:
                     self._observation_steps(obj, splitter)
+                elif hasattr(obj, 'subject_picker'):
+                    pass  # Existing subject pages own scrolling and fixed actions.
                 elif hasattr(obj, 'mode_stack') or hasattr(obj, 'phase_stack'):
                     stack = getattr(obj, 'mode_stack', None) or obj.phase_stack
                     stack.setMinimumSize(0, 0)
@@ -195,10 +197,14 @@ class TabletAppShell(AppShell):
         from src.desktop_app.dialogs.learning_report_dialog import LearningReportDialog
         from src.desktop_app.dialogs.learning_conference_dialog import LearningConferenceDialog
         from src.tablet_app.dialogs import TabletLearningReportDialog, TabletLearningConferenceDialog
+        from src.desktop_app.dialogs.competency_pdf_completion_dialog import CompetencyPdfCompletionDialog
+        from src.tablet_app.dialogs import TabletCompetencyPdfCompletionDialog
         if dialog_type is LearningReportDialog:
             dialog_type = TabletLearningReportDialog
         elif dialog_type is LearningConferenceDialog:
             dialog_type = TabletLearningConferenceDialog
+        elif dialog_type is CompetencyPdfCompletionDialog:
+            dialog_type = TabletCompetencyPdfCompletionDialog
         dialog = super()._create_dialog(dialog_type, *args, **kwargs)
         if hasattr(self, 'tablet_dialog_policy'):
             self.tablet_dialog_policy.adapt(dialog)

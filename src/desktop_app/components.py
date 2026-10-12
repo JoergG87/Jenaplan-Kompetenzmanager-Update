@@ -561,7 +561,9 @@ class RatingBadgeButton(QPushButton):
         self._sync_selection_state(self.isChecked())
 
     def _sync_selection_state(self, selected: bool) -> None:
-        visible_text = self._rating_token if self._compact else self._rating_text
+        from src.application.competency_development_levels import DEVELOPMENT_LEVEL_COMPACT_LABELS
+        visible_text = DEVELOPMENT_LEVEL_COMPACT_LABELS.get(self._rating_token, self._rating_text) if self._compact else self._rating_text
+        self.setMinimumHeight(44 if self._compact else 32)
         self.setText(f"✓ {visible_text}" if selected else visible_text)
         state = "ausgewählt" if selected else "nicht ausgewählt"
         self.setAccessibleName(f"Bewertung {self._rating_text}, {state}")

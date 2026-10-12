@@ -24,6 +24,7 @@ class CompetencyPdfCompletionDialog(QDialog):
         self.remaining_label = QLabel()
         layout.addWidget(self.remaining_label)
         tabs = QTabWidget()
+        self.subject_tabs = tabs
         tabs.setUsesScrollButtons(True)
         tabs.setElideMode(Qt.TextElideMode.ElideNone)
         tabs.tabBar().setExpanding(False)

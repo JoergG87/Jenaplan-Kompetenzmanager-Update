@@ -15,12 +15,9 @@ OBSERVATION_CONTEXT_OPTIONS = (
     "Leseübung",
 )
 
-OBSERVATION_RATING_OPTIONS = (
-    "++ sicher erreicht",
-    "+ erreicht",
-    "- in Entwicklung",
-    "-- Unterstützungsbedarf",
-)
+from src.application.competency_development_levels import DEVELOPMENT_LEVEL_LABELS
+
+OBSERVATION_RATING_OPTIONS = tuple(DEVELOPMENT_LEVEL_LABELS[token] for token in ("++", "+", "-", "--"))
 
 OBSERVATION_RATING_TOKENS = ("++", "+", "-", "--")
 
@@ -36,24 +33,8 @@ COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS = (
 )
 
 RATING_LABELS_BY_PROFILE = {
-    RATING_PROFILE_STANDARD: {
-        "++": "++ sicher erreicht",
-        "+": "+ erreicht",
-        "-": "- in Entwicklung",
-        "--": "-- Unterstützungsbedarf",
-    },
-    RATING_PROFILE_SOCIAL: {
-        "++": "Ausgeprägt",
-        "+": "Gut",
-        "-": "Teilweise",
-        "--": "Kaum vorhanden",
-    },
-    RATING_PROFILE_SPORT: {
-        "++": "Sicher",
-        "+": "Meist",
-        "-": "Übt noch",
-        "--": "Erste Übungen",
-    },
+    profile: dict(DEVELOPMENT_LEVEL_LABELS)
+    for profile in (RATING_PROFILE_STANDARD, RATING_PROFILE_SOCIAL, RATING_PROFILE_SPORT)
 }
 
 OBSERVATION_RATING_SCORES = {

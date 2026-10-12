@@ -1,5 +1,7 @@
 # Data Registry
 
+Bewertungstexte: vier Pflanzenbeschreibungen aus Entwicklungsbuch Stand 06.01.2026.docx, bereits im Kompetenz-PDF verwendet. Gemeinsame kurze Labels und volle Beschreibungen in competency_development_levels; keine neue fachliche Datenquelle. Bisherige Sozial-/Sport-Anzeigetexte durch PO-Anweisung ersetzt, Tokens bleiben gleich.
+
 Ein-Finger-Scrollkorrektur: bestehende Katalog-/Rating-Projektionen unverändert; Pointerereignisse bleiben flüchtiger Präsentationszustand.
 
 iPad-App-Symbol: einzige Quelle assets/app_icon.png; abgeleitete opaque PNG-Größen ausschließlich im Staging-Assetkatalog. Keine neue fachliche Quelle.

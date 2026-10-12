@@ -68,7 +68,7 @@ from src.desktop_app.view_models.student_view_model import StudentDetailViewMode
 class ObservationRatingSelector(QWidget):
     """Exclusive four-chip selector with the former combo-box data contract."""
 
-    FULL_LABEL_MINIMUM_WIDTH = 520
+    FULL_LABEL_MINIMUM_WIDTH = 800
 
     def __init__(
         self,

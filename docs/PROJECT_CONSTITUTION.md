@@ -1,5 +1,7 @@
 # Project Constitution
 
+PO-Präzisierung 12.10.2026: Pflanzenbeschreibungen überall bei Kompetenzbewertungen, einschließlich Sozial-/Sportprofilen, anzeigen. Ersetzt deren frühere abweichende Anzeigetexte; unveränderte vier Ratingtokens und Reihenfolge. PDF und App beschreiben dieselben Stufen. iPad-PDF-Ergänzung erhält direkte Fachauswahl statt unlesbarer Tabpfeile.
+
 PO-Korrektur 12.10.2026: iPad-Beobachtung mit einem Finger bedienen; Kompetenzkatalog und ausgewählte Bewertungen mit nutzbarer Listenhöhe statt Mini-Scrollfenstern. Ausschließlich Präsentation, keine Modell-/Validierungsänderung.
 
 PO-Korrektur 12.10.2026: Bestehendes Jenaplan-App-Symbol auch als natives iPad-Startbildschirm-Symbol paketieren. Reine Build-/Präsentationsressource; keine Datenmodelländerung.

@@ -1,5 +1,7 @@
 # Design-System
 
+PO-Präzisierung 12.10.2026 supersediert bisherige profilabhängige Bewertungstexte: einheitliche Pflanzenbeschreibungen überall, keine Gut-/in-Entwicklung-Bezeichnungen. Kurze lesbare Chiptexte, bei knapper Breite zweizeilig statt reine Symbole; fachliche Farben/Tokens unverändert. PDF-Ergänzung auf iPad verwendet 44-Pixel-Fachauswahl mit voller Fachliste statt nativer schwarzer Tabpfeile.
+
 Ein-Finger-Bedienung: native erste Touchposition über Qt-Mausereignissynthese und LeftMouseButtonGesture verarbeiten; kein zusätzliches TouchGesture am selben Viewport. Katalog mindestens 420 Pixel, Bewertungen bei Auswahl 260–440 Pixel; Schritt darf insgesamt scrollen. Hardware-Erfolg erst nach Nutzerprüfung bestätigen.
 
 iPad-Startbildschirm übernimmt das vorhandene Jenaplan-Logo. Native Icon-Dateien quadratisch und ohne Alphakanal; transparente Quellränder werden auf Weiß gesetzt, iPadOS übernimmt die äußere Maskierung.

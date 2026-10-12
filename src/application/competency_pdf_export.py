@@ -27,16 +27,13 @@ class CompetencyPdfExportError(ValueError):
 
 
 _TOKENS = ("--", "-", "+", "++")
+from src.application.competency_development_levels import DEVELOPMENT_LEVEL_DESCRIPTIONS
+
 _LEGENDS = {
-    "standard": (
-        "Du hast erste Erfahrungen gesammelt.",
-        "Du kannst dein Wissen mit Unterstützung anwenden.",
-        "Du kannst deine erworbenen Kenntnisse meist anwenden.",
-        "Du kannst das Erlernte eigenständig und sicher anwenden.",
-    ),
-    "social": ("Kaum vorhanden", "Teilweise", "Gut", "Ausgeprägt"),
-    "sport": ("Erste Übungen", "Übt noch", "Meist", "Sicher"),
+    profile: tuple(DEVELOPMENT_LEVEL_DESCRIPTIONS[token] for token in _TOKENS)
+    for profile in ("standard", "social", "sport")
 }
+
 _NAVY = colors.HexColor("#123F67")
 _TEAL = colors.HexColor("#087F83")
 _BORDER = colors.HexColor("#CBD8E2")

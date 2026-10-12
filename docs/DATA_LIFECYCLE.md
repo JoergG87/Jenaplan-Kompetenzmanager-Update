@@ -1,5 +1,7 @@
 # Data Lifecycle
 
+Pflanzenbezeichnungen verändern keine gespeicherten Beobachtungen, Bestätigungen oder Ratingtokens. Fachauswahl im iPad-Ergänzungsdialog wechselt nur bestehende Tabs; Abbruch, Pflichtvollständigkeit und explizites Speichern unverändert.
+
 Ein-Finger-Wischbedienung nutzt bestehende Antippschutzfilter vor Actions; keine Auswahl oder Speicherung durch Wischen. Geräteupdate erhält synthetischen Bestand.
 
 App-Symbol-Build schreibt ausschließlich abgeleitete Bilder und Xcode-Projektressourcen im getrennten Staging. Quellbild und App-Nutzerdaten bleiben unverändert.

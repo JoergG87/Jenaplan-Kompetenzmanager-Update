@@ -174,10 +174,10 @@ def test_rating_profiles_keep_tokens_and_standard_labels() -> None:
     assert tuple(token for token, _label in standard) == OBSERVATION_RATING_TOKENS
     assert tuple(label for _token, label in standard) == OBSERVATION_RATING_OPTIONS
     assert tuple(social[token] for token in ("--", "-", "+", "++")) == (
-        "Kaum vorhanden", "Teilweise", "Gut", "Ausgeprägt",
+        "Erste Erfahrungen", "Mit Unterstützung", "Kenntnisse meist anwenden", "Eigenständig und sicher",
     )
     assert tuple(sport[token] for token in ("--", "-", "+", "++")) == (
-        "Erste Übungen", "Übt noch", "Meist", "Sicher",
+        "Erste Erfahrungen", "Mit Unterstützung", "Kenntnisse meist anwenden", "Eigenständig und sicher",
     )
     assert not any("Level " in label for _token, label in standard)
 
@@ -185,10 +185,10 @@ def test_rating_profiles_keep_tokens_and_standard_labels() -> None:
 @pytest.mark.parametrize(
     "subject_key,expected_labels",
     (
-        ("selbst_sozialkompetenz", {"--": "Kaum vorhanden", "++": "Ausgeprägt"}),
-        ("sport", {"--": "Erste Übungen", "++": "Sicher"}),
-        ("deutsch", {"--": "-- Unterstützungsbedarf", "++": "++ sicher erreicht"}),
-        ("mathematik", {"--": "-- Unterstützungsbedarf", "++": "++ sicher erreicht"}),
+        ("selbst_sozialkompetenz", {"--": "Erste Erfahrungen", "++": "Eigenständig und sicher"}),
+        ("sport", {"--": "Erste Erfahrungen", "++": "Eigenständig und sicher"}),
+        ("deutsch", {"--": "Erste Erfahrungen", "++": "Eigenständig und sicher"}),
+        ("mathematik", {"--": "Erste Erfahrungen", "++": "Eigenständig und sicher"}),
     ),
 )
 def test_observation_selector_uses_profile_and_shared_color_tokens(
@@ -212,11 +212,11 @@ def test_profile_switch_relabels_without_changing_persistent_value() -> None:
 
     selector.set_competency(_entry("selbst_sozialkompetenz"))
     assert selector.currentData() == "-"
-    assert selector.buttons["-"].text() == "✓ Teilweise"
+    assert selector.buttons["-"].text() == "✓ Mit Unterstützung"
 
     selector.set_competency(_entry("sport"))
     assert selector.currentData() == "-"
-    assert selector.buttons["-"].text() == "✓ Übt noch"
+    assert selector.buttons["-"].text() == "✓ Mit Unterstützung"
 
 
 def test_fresh_v4_seed_has_new_catalog_and_no_synthetic_work_data(

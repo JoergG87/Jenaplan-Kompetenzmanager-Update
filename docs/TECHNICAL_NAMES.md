@@ -1,5 +1,7 @@
 # Technical Naming Registry
 
+Registriert: src/application/competency_development_levels.py mit DEVELOPMENT_LEVEL_LABELS, DEVELOPMENT_LEVEL_DESCRIPTIONS und DEVELOPMENT_LEVEL_COMPACT_LABELS als gemeinsame reine Präsentationstexte. TabletCompetencyPdfCompletionDialog besitzt subject_picker und subject_tabs; synchronisiert ausschließlich bestehenden Tabindex, keine Fachlogik.
+
 TabletNewObservationDialog._refresh_competencies registriert den Antippschutz auch an neu aufgebauten Katalogkacheln. TabletNewObservationDialog._update_selection_summary erweitert nur die bestehende Anzeigehöhenberechnung; bei ausgewählten Bewertungen mindestens 260 Pixel, maximal 440 Pixel. configure_tablet_scroll_area verwendet einheitlich LeftMouseButtonGesture mit Qt-Synthese des ersten Fingerkontakts statt konkurrierendem TouchGesture.
 
 Registriert: configure_ipad_icon in scripts/build_ipad_app.py; erzeugt Assets.xcassets/AppIcon.appiconset und bindet den Katalog idempotent als Xcode-Ressource ein.

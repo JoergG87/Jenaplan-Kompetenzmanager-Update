@@ -374,3 +374,31 @@ def test_one_pointer_drag_moves_tablet_scroll_area():
         QTest.qWait(30)
     assert scroll.verticalScrollBar().value() > 150
     scroll.close()
+
+
+def test_tablet_pdf_completion_reaches_every_subject_without_arrow_tabs():
+    from PySide6.QtWidgets import QApplication
+    from src.desktop_app.view_models.competency_pdf import CompetencyPdfModel, CompetencyPdfSubject, CompetencyPdfRow
+    from src.tablet_app.dialogs import TabletCompetencyPdfCompletionDialog
+    app = QApplication.instance() or QApplication([])
+    model = CompetencyPdfModel('Testkind', '2026/27', tuple(
+        CompetencyPdfSubject(f'Langes Testfach {index}', profile,
+            (CompetencyPdfRow('Synthetische Kompetenz', '', '', '', f'CMP-{index}'),))
+        for index, profile in enumerate(['standard', 'social', 'sport'] * 4)))
+    dialog = TabletCompetencyPdfCompletionDialog(model)
+    assert dialog.subject_tabs.tabBar().isHidden()
+    assert dialog.subject_picker.count() == 12
+    assert not dialog.save_button.isEnabled()
+    for index in range(12):
+        dialog.subject_picker.setCurrentIndex(index)
+        assert dialog.subject_tabs.currentIndex() == index
+        choice = dialog.rating_inputs[f'CMP-{index}']
+        assert not choice.currentData()
+        assert [choice.itemData(i) for i in range(1, 5)] == ['--', '-', '+', '++']
+        assert choice.itemText(1) == 'Erste Erfahrungen'
+        choice.setCurrentIndex(2)
+    assert dialog.save_button.isEnabled()
+    assert set(dialog.selections().values()) == {'-'}
+    dialog.reject()
+    dialog.deleteLater()
+    app.processEvents()
