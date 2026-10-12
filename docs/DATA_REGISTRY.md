@@ -1,5 +1,7 @@
 # Data Registry
 
+Release 404 verwendet unveränderte hashgebundene SQLCipher-4.17-/sqlcipher3-0.6.2-Quellen, mit erneut auditiertem SDK-27-Wheel. Neue Wheelbytes sind Buildartefakt, keine neue Produktdatenquelle.
+
 Bewertungstexte wieder entsprechend den drei bestehenden Entwicklungsbuchprofilen standard/social/sport; gemeinsame Präsentationsquelle competency_development_levels. Frühere Vereinheitlichung durch aktuelle PO-Korrektur aufgehoben. Keine neue Datenquelle oder Schemaänderung.
 
 Stabile Bewertungsbutton-Geometrie verwendet ausschließlich vorhandene Ratinglabels und Auswahlzustände; keine neue Datenquelle.

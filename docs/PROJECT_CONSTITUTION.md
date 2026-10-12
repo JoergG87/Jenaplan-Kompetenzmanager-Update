@@ -1,5 +1,7 @@
 # Project Constitution
 
+Release 404: Nach Xcode-/SDK-Wechsel muss die unveränderte SQLCipher-4.17/CommonCrypto-Basis unter SDK 27 neu reproduziert und auditiert werden. Keine Änderung von Cipheralgorithmen, Parametern, Final-V4 oder Schlüsselverträgen. Hashgebundener neuer Buildinput erst nach zweimal identischem Build und Audit zulässig.
+
 PO-Releaseauftrag 12.10.2026: Mac-Version 0.4.4 / Build 404 nach vollständigen Paketgates im bestehenden Pilotkanal veröffentlichen. Build 403 unverändert; kein Stable-Wechsel, keine produktive App starten und keine Produktdaten/-schlüssel verändern.
 
 PO-Korrektur 12.10.2026: Bewertungstexte bereichsgerecht aus dem Entwicklungsbuch übernehmen. Standardfächer: fachliche Pflanzensätze; Selbst-/Sozialkompetenz: Kaum vorhanden/Teilweise/Gut/Ausgeprägt; Sport: Erste Übungen/Übt noch/Meist/Sicher mit vollständigen Originalerklärungen im PDF. Hebt die vorherige Vereinheitlichung ausdrücklich auf. Feste 32-Pixel-Buttons und gespeicherte Tokens bleiben.

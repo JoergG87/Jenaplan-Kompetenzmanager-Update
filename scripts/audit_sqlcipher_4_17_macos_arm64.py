@@ -194,7 +194,7 @@ def inspect_wheel(
         raise BuildError("wheel_unexpected_rpath")
     if not all(
         marker in load_commands
-        for marker in ("cmd LC_BUILD_VERSION", "platform 1", "minos 11.0", "sdk 26.5")
+        for marker in ("cmd LC_BUILD_VERSION", "platform 1", "minos 11.0", f"sdk {manifest['target']['macos_sdk']}")
     ):
         raise BuildError("wheel_build_version_mismatch")
 
@@ -210,7 +210,7 @@ def inspect_wheel(
         "file": file_output,
         "dynamic_dependencies": sorted(dependencies),
         "deployment_target": "macOS 11.0",
-        "sdk": "26.5",
+        "sdk": manifest["target"]["macos_sdk"],
         "source_date_epoch": SQLCIPHER_4_17_SOURCE_DATE_EPOCH,
         "rpath": "absent",
         "developer_paths": "absent",

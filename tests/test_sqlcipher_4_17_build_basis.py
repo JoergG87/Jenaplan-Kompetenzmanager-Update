@@ -40,8 +40,8 @@ def test_source_manifest_binds_exact_target_sources_and_wheel() -> None:
         "platform": "Darwin",
         "python": "3.14.6",
         "macos_deployment_target": "11.0",
-        "macos_sdk": "26.5",
-        "clang_identity": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+        "macos_sdk": "27.0",
+        "clang_identity": "Apple clang version 21.0.0 (clang-2100.3.34.2)",
         "crypto_provider": "commoncrypto",
     }
     assert manifest["sources"]["sqlcipher"]["version"] == "4.17.0"
@@ -52,7 +52,7 @@ def test_source_manifest_binds_exact_target_sources_and_wheel() -> None:
     )
     assert manifest["build"]["source_date_epoch"] == SQLCIPHER_4_17_SOURCE_DATE_EPOCH
     assert manifest["generated"]["expected_wheel_sha256"] == (
-        "60e337f882ed8d283529019c7799be09b8f68773fa277f6b7bc86e3722f52fdb"
+        "9ce432941a45f28af3877192149ab2583ae22f466e3b22c2a7323c5a84c577f9"
     )
     assert manifest["build"]["allowed_dynamic_dependencies"] == [
         "/usr/lib/libSystem.B.dylib",

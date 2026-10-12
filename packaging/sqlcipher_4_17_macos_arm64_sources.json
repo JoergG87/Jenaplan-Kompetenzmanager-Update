@@ -5,8 +5,8 @@
     "platform": "Darwin",
     "python": "3.14.6",
     "macos_deployment_target": "11.0",
-    "macos_sdk": "26.5",
-    "clang_identity": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "macos_sdk": "27.0",
+    "clang_identity": "Apple clang version 21.0.0 (clang-2100.3.34.2)",
     "crypto_provider": "commoncrypto"
   },
   "sources": {
@@ -45,7 +45,7 @@
     "sqlcipher_license_sha256": "2a2826f6acf46fa650730cf42cbb22a642be33a7ef119c9c4f4bf6daf3bef48e",
     "sqlite_license_sha256": "9a090bd3f65fa51e759fd6927c53d59bf9bfa31b82e2c1020fdb58a01271abab",
     "third_party_notice_sha256": "c72b6095985ce224d8f6578fe010af35926f2588458dbfd08a6f5e274844013c",
-    "expected_wheel_sha256": "60e337f882ed8d283529019c7799be09b8f68773fa277f6b7bc86e3722f52fdb"
+    "expected_wheel_sha256": "9ce432941a45f28af3877192149ab2583ae22f466e3b22c2a7323c5a84c577f9"
   },
   "build": {
     "source_date_epoch": 1783468800,

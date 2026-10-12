@@ -1,5 +1,7 @@
 # CHANGELOG
 
+Release 404: SDK-27-Neuqualifizierung abgeschlossen. Zwei unabhängige Builds bytegleich, Wheel-SHA256 9ce432941a45f28af3877192149ab2583ae22f466e3b22c2a7323c5a84c577f9. Audit GO: arm64, macOS-11-Mindestziel, ausschließlich erlaubte Systemabhängigkeiten, kein RPATH oder Buildpfadleck; SQLCipher 4.17/CommonCrypto-Roundtrip bestanden. Quellen/Amalgamation/Bindingpatch unverändert. Bestehender Audit liest den erwarteten SDK-Wert jetzt aus dem festen Manifest statt aus einer veralteten SDK-26.5-Konstante. Acht Buildbasisprüfungen bestanden. Nachweise /private/tmp/jkm-cipher404-build-a, jkm-cipher404-build-b2 und jkm-cipher404-audit-final.
+
 ## Mac-Update 0.4.4 / Build 404 vorbereiten – 12.10.2026
 
 PO autorisiert neuen Mac-Build und Veröffentlichung im bestehenden GitHub-Pilotkanal. Build 403 bleibt unverändert. Neues Paket übernimmt bereichsgerechte Entwicklungsbuch-Bezeichnungen in App und PDF sowie feste 32-Pixel-Bewertungsbuttons. Gemeinsame Quelle dcc7c46; keine Migration, kein Produktdaten-/Keyzugriff. Versionscommit, saubere Release-Kopie, Gesamtsuite, elf Paketgates und paketierter Restore-Worker-Smoke vor Veröffentlichung. Verschobene Pflanzen-ZIP im Arbeitsordner bleibt unangetastet. Veröffentlichung und Paketabnahme noch offen.

@@ -1,5 +1,7 @@
 # Design-System
 
+SDK-27-Neuqualifizierung betrifft keine Designwerte. Paketprüfung umfasst weiterhin vorhandene Desktopdarstellung, keine neue Ansicht.
+
 Aktuelle PO-Korrektur hebt die vorherige globale Textvereinheitlichung auf: bereichsgerechte Entwicklungsbuch-Bezeichnungen überall, auch im schmalen/kompakten Zustand. Vollständige Fach-/Sport-Erklärungen im PDF; Sozialkompetenz dort mit Kaum vorhanden bis Ausgeprägt. Feste Bewertungsbuttonhöhe 32 Pixel bleibt.
 
 Ausdrückliche PO-Präzisierung 12.10.2026: Bewertungsbuttons fest 32 Pixel hoch, unabhängig von Auswahl und kompaktem Text. Die allgemeinen Tablet-Touchgrößen dürfen diese ausdrücklich gewählte Höhe nicht überschreiben. Keine springende Bewertungszeile.

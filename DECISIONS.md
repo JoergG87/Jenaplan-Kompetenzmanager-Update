@@ -1,5 +1,9 @@
 # Architekturentscheidungen
 
+## Release 404: SQLCipher-Buildbasis unter SDK 27 neu qualifizieren
+
+Die bisherige SDK-26.5-Wheeldatei ist nach der Xcode-Einrichtung nicht mehr lokal verfügbar. Unveränderte hashgebundene Quellen, Python 3.14.6, SQLCipher 4.17.0, sqlcipher3 0.6.2 und CommonCrypto bleiben verbindlich. Zwei unabhängige Builds unter SDK 27 müssen identische Wheelbytes liefern; native Abhängigkeiten, Runtimeversionen, Cipher-Roundtrip und vollständige Paketgates vor Veröffentlichung prüfen. Kein Überspringen des Wheelhash-Gates, kein Wechsel zu Stock-SQLCipher und kein Datenmodell-/Schlüsselwechsel.
+
 ## iPad-App: gemeinsame AppShell statt zweiter Fachanwendung (11.10.2026)
 
 Bestehende PySide-Ansichten und Python-/Final-V4-Fachlogik werden wiederverwendet. Separate Tablet-Komposition isoliert testweise Standard-SQLite im eigenen Container; Desktop-Security und Prozessworker werden nicht auf iOS emuliert. Native Bibliotheken werden nicht durch Attrappen ersetzt. Fehlende Plattformports bleiben explizite Abnahmegrenzen. Zunächst Simulator, echtes Gerät nach gesonderter Signierung.

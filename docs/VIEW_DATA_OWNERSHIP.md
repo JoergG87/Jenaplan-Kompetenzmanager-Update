@@ -1,5 +1,7 @@
 # View Data Ownership
 
+SDK-27-Neuqualifizierung betrifft ausschließlich native Packagingbasis; vorhandene Ansichten und ihre Datenowner unverändert.
+
 App-Chips, Profilanzeigen und PDF-Ergänzung projizieren bestehendes Kompetenzprofil über gemeinsame bereichsspezifische Labels. PDF-Legende nutzt dieselben Profile mit vollständigen Originalerklärungen. Keine neue Ansicht.
 
 RatingBadgeButton besitzt zustandsunabhängige feste Höhe von 32 Pixeln; ObservationRatingSelector behält exklusive Auswahl und vorhandenen Tokenvertrag.

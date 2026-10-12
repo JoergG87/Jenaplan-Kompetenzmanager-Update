@@ -1,5 +1,7 @@
 # Technical Naming Registry
 
+SQLCipher-4.17-Buildmanifest target.macos_sdk/target.clang_identity werden für die aktuelle SDK-27-Werkzeugkette neu qualifiziert; bestehende Namen, Quellen und Bindingversion unverändert.
+
 Registriert im bestehenden competency_development_levels: DEVELOPMENT_LEVEL_LABELS_BY_PROFILE, DEVELOPMENT_LEVEL_DESCRIPTIONS_BY_PROFILE und compact_development_level_label. Reine bereichsspezifische Texte; kompakte Darstellung bindet den tatsächlichen Ratingtext statt ausschließlich den Token. Standard-Aliase bleiben erhalten.
 
 RatingBadgeButton legt seine Höhe einmalig fest auf 32 Pixel; _sync_selection_state verändert keine Geometriegrenzen beim Umschalten. Keine neuen technischen Namen.

@@ -1,5 +1,7 @@
 # Data Lifecycle
 
+SQLCipher-Neubuild unter SDK 27 verändert keine Daten, Schlüssel oder Migrationen. Prüfung ausschließlich in neuen synthetischen Tempbeständen; Produktroot und vorhandene Produktkeys bleiben unberührt.
+
 Bereichsgerechte Textkorrektur liest bestehendes Kompetenzprofil; keine Änderung vorhandener Ratingtokens, Bewertungen, Defaultwerte, Bestätigungen oder Speicherschritte.
 
 Geometriekorrektur der Bewertungsbuttons verändert weder Defaults noch explizite Auswahl-/Speichercommands; kein Datenreset.

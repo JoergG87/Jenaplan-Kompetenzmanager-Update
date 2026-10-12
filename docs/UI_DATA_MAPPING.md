@@ -1,5 +1,7 @@
 # UI Data Mapping
 
+SDK-27-Neuqualifizierung führt keine UI-Felder ein; Produktzugang und Ratingfelder unverändert.
+
 Vier unveränderte Tokens --/-/+/++: standard Erste Erfahrungen/Mit Unterstützung/Kenntnisse meist anwenden/Eigenständig und sicher; social Kaum vorhanden/Teilweise/Gut/Ausgeprägt; sport Erste Übungen/Übt noch/Meist/Sicher. Kompakte Labels behalten genau den Bereichstext. PDF-Legenden entsprechend Entwicklungsbuch; alle Buttons weiter 32 Pixel.
 
 Beobachtungsbewertung: Antippen verändert ausgewählte Stufe und sichtbares Häkchen, nicht die fest auf 32 Pixel gesetzte Höhe. Texte und vier Tokenwerte unverändert.
