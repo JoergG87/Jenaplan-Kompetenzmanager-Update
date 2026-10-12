@@ -1,5 +1,7 @@
 # Design-System
 
+Native Tablet-Meldungen behalten ihre Qt-Gridstruktur und Standardantworten. Bestehende Zurück-Aktion bleibt auch nach einem Qt-Layoutwechsel sichtbar in einer separaten Gridzeile; keine Überlagerung von Meldung oder Antwortbuttons.
+
 SDK-27-Neuqualifizierung betrifft keine Designwerte. Paketprüfung umfasst weiterhin vorhandene Desktopdarstellung, keine neue Ansicht.
 
 Aktuelle PO-Korrektur hebt die vorherige globale Textvereinheitlichung auf: bereichsgerechte Entwicklungsbuch-Bezeichnungen überall, auch im schmalen/kompakten Zustand. Vollständige Fach-/Sport-Erklärungen im PDF; Sozialkompetenz dort mit Kaum vorhanden bis Ausgeprägt. Feste Bewertungsbuttonhöhe 32 Pixel bleibt.

@@ -1,5 +1,7 @@
 # Technical Naming Registry
 
+TabletAppShell._present_dialog_page berücksichtigt vorhandene QBoxLayout-/QGridLayout-Owner: Zurück-Aktion im Boxlayout oben, in nativen Meldungs-Grids in einer eigenen abschließenden Zeile. Keine neue Action oder Eingabe; Qt darf die native QMessageBox-Struktur beim Einbetten erneuern.
+
 Vorhandene verzögerte UI-Aufrufe in NewObservationDialog, LearningReportDialog, LearningConferenceDialog, OverviewScreen, StudentProfileScreen und SchoolYearTransitionPreviewDialog erhalten ihren jeweiligen QObject-Kontext. Damit keine nachträglichen Fokus-/Scroll-/Beschriftungs-/Vorschauaktionen nach Löschung des Owners. Keine neuen Namen oder Fachcommands.
 
 SQLiteSecurityRepository._enable_wal_mode wiederholt ausschließlich SQLITE_BUSY/SQLITE_LOCKED bei der bestehenden WAL-Konfiguration, begrenzt auf fünf Sekunden. Andere Fehler unverändert weitergeben; fehlgeschlagene neue Schreibverbindungen schließen. Keine neue Tabelle oder fachliche Operation.

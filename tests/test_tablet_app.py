@@ -231,13 +231,16 @@ def test_tablet_message_choice_and_nested_page_restore(tmp_path):
     shell=TabletAppShell(path,paths=runtime_paths(path.parent),student_adapter=StudentDesktopAdapter(database=SQLiteDatabase(path,create=False)),backup_restore_available=False)
     page=QDialog(shell);QVBoxLayout(page);shell.tablet_dialog_policy.adapt(page)
     shell._present_dialog_page(page)
+    from src.desktop_app.theme import apply_app_theme
+    previous_stylesheet=app.styleSheet()
+    apply_app_theme(app)
     originals=install_tablet_message_port()
     try:
         def choose():
             message=shell.stack.currentWidget()
             assert isinstance(message,QMessageBox)
             message.button(QMessageBox.StandardButton.Cancel).click()
-        QTimer.singleShot(0,choose)
+        QTimer.singleShot(0,shell,choose)
         result=QMessageBox.question(page,'Testentscheidung','Keine automatische Zustimmung.',QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Cancel)
         assert result==QMessageBox.StandardButton.Cancel
         assert shell.stack.currentWidget() is page
@@ -245,6 +248,7 @@ def test_tablet_message_choice_and_nested_page_restore(tmp_path):
     finally:
         for key,value in originals.items():setattr(QMessageBox,key,value)
         page.reject();shell.close()
+        app.setStyleSheet(previous_stylesheet)
 
 
 def test_empty_tablet_scroll_surface_renders_light_with_dark_system_palette():

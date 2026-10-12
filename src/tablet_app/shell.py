@@ -231,7 +231,13 @@ class TabletAppShell(AppShell):
             configure_button(back, 'quiet', 'Eingabe schließen')
             back.setMinimumHeight(44)
             back.clicked.connect(dialog.reject)
-            dialog.layout().insertWidget(0, back)
+            layout = dialog.layout()
+            if isinstance(layout, QBoxLayout):
+                layout.insertWidget(0, back)
+            elif isinstance(layout, QGridLayout):
+                layout.addWidget(back, layout.rowCount(), 0, 1, max(1, layout.columnCount()))
+            else:
+                layout.addWidget(back)
             dialog.setProperty('tabletBackAdded', True)
             dialog.tablet_back_button = back
 
@@ -261,7 +267,7 @@ class TabletAppShell(AppShell):
         self._present_dialog_page(dialog)
         loop.exec()
         dialog.finished.disconnect(done)
-        QTimer.singleShot(0, dialog.deleteLater)
+        QTimer.singleShot(0, dialog, dialog.deleteLater)
         return result[0]
 
     def _exec_workspace(self, dialog):
