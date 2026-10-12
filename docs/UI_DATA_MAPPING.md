@@ -1,5 +1,7 @@
 # UI Data Mapping
 
+Beobachtungsbewertung: Antippen verändert ausgewählte Stufe und sichtbares Häkchen, nicht die fest auf 32 Pixel gesetzte Höhe. Texte und vier Tokenwerte unverändert.
+
 Vier Tokens --/-/+/++ entsprechen Erste Erfahrungen/Mit Unterstützung/Kenntnisse meist anwenden/Eigenständig und sicher. Gilt für alle Kompetenzprofile; PDF verwendet zugehörige volle Entwicklungsbuchsätze. Kompakte Chips umbrechen dieselben Wörter statt nur Tokens anzuzeigen. iPad-Fachauswahl projiziert bestehende Fachnamen samt offener Anzahl.
 
 Schritt 2: vorhandener Kompetenzkatalog mindestens 420 Pixel hoch; vorhandene ausgewählte Bewertungen bei belegter Auswahl mindestens 260 Pixel hoch. Leerer Bewertungsbereich bleibt kompakt. Keine neuen Felder.

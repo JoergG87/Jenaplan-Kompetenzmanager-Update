@@ -536,6 +536,7 @@ class RatingBadgeButton(QPushButton):
         self._rating_text = text
         self._rating_token = rating_token
         self._compact = False
+        self.setFixedHeight(32)
         self.setObjectName("RatingBadgeButton")
         self.setProperty("compact", False)
         self.setCheckable(True)
@@ -546,7 +547,7 @@ class RatingBadgeButton(QPushButton):
         self._sync_selection_state(False)
 
     def set_compact(self, compact: bool) -> None:
-        """Show only the symbol when the selector cannot fit full meanings."""
+        """Wrap stage descriptions when the selector cannot fit full labels."""
         if self._compact == compact:
             return
         self._compact = compact
@@ -563,7 +564,6 @@ class RatingBadgeButton(QPushButton):
     def _sync_selection_state(self, selected: bool) -> None:
         from src.application.competency_development_levels import DEVELOPMENT_LEVEL_COMPACT_LABELS
         visible_text = DEVELOPMENT_LEVEL_COMPACT_LABELS.get(self._rating_token, self._rating_text) if self._compact else self._rating_text
-        self.setMinimumHeight(44 if self._compact else 32)
         self.setText(f"✓ {visible_text}" if selected else visible_text)
         state = "ausgewählt" if selected else "nicht ausgewählt"
         self.setAccessibleName(f"Bewertung {self._rating_text}, {state}")

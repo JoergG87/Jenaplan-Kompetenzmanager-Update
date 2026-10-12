@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Bewertungsbuttons fest 32 Pixel hoch – 12.10.2026
+
+PO meldet größere Bewertungsbuttons vor der Auswahl und präzisiert ausdrücklich feste 32 Pixel Höhe. Ursache reproduziert: generische Tablet-Touchanpassung setzt zunächst 44 Pixel, während die Auswahlzustandsanzeige im breiten Modus auf 32 Pixel zurücksetzt. RatingBadgeButton erhält einmalig feste 32 Pixel; Umschalten ändert nur Text/Häkchen und Auswahlzustand. Allgemeine Tablet-Touchanpassung und dynamische Bewertungszeilen respektieren diese bewusst freigegebene feste Größe. Pflanzenbezeichnungen, Ratingtokens und Speichercommands unverändert.
+
+Validierung: Regression vor Korrektur im breiten Modus nachgewiesen (44 → 32 Pixel). Nach Korrektur 47 Tablet-/Fenster-/Beobachtungs-/Katalogprüfungen bestanden. Ergänzter Test wechselt sämtliche Stufen in schmaler und breiter Ansicht und vergleicht alle Button-Größen vor/nach Auswahl. Separat integrierte Prüfung der echten Tablet-Beobachtungszeile und Größenregression bestanden. Beide nativen Builds erfolgreich, Signaturen tief/strikt geprüft. Alle drei geänderten Quelldateien bytegleich in beiden Paketen nachgewiesen. Geräte-/Simulatorupdate installiert und gestartet. Hardware-Nachtest durch PO offen; keine Produktfreigabe.
+
 ## Einheitliche Pflanzenbezeichnungen und iPad-PDF-Fachauswahl – 12.10.2026
 
 PO bestätigt Pflanzenbeschreibungen überall bei Kompetenzbewertungen, einschließlich Sozialkompetenz und Sport. Gemeinsame Präsentationstexte aus den bereits verwendeten vier Entwicklungsbuchsätzen ersetzen die bisherigen Standard-/Sozial-/Sportbezeichnungen. App verwendet Erste Erfahrungen / Mit Unterstützung / Kenntnisse meist anwenden / Eigenständig und sicher; PDF dieselben vollständigen Sätze. Kompakte Bewertungs-Chips zeigen umbrochene Wörter statt alleiniger Tokens. Persistierte Werte --/-/+/++, Reihenfolge, Farbzuordnung, Berechnung, Auswahl und Writer bleiben unverändert; kein Datenmodellwechsel. Ältere Dokumentationsabschnitte mit abweichenden Profiltexten sind durch diese ausdrückliche PO-Präzisierung überholt.

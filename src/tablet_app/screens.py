@@ -106,8 +106,11 @@ class TabletNewObservationDialog(NewObservationDialog):
 
     def _add_competency_rating_row(self, *args, **kwargs):
         super()._add_competency_rating_row(*args, **kwargs)
+        from src.desktop_app.components import RatingBadgeButton
         for card in self.competency_rating_rows.values():
             for button in card.findChildren(QPushButton):
+                if isinstance(button, RatingBadgeButton):
+                    continue
                 button.setMaximumHeight(16777215)
                 button.setMinimumHeight(44)
             from src.tablet_app.presentation import touch_targets

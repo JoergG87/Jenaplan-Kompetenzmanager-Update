@@ -93,6 +93,16 @@ def test_original_shell_and_guided_observation_use_same_adapter(tmp_path):
     app.processEvents()
     assert dialog.catalog_scroll.viewport().height() >= 400
     assert all(hasattr(tile, 'tablet_tap_guard') for tile in dialog.competency_catalog_tiles.values())
+    key, tile = next(iter(dialog.competency_catalog_tiles.items()))
+    tile._activate()
+    app.processEvents()
+    selector = dialog.competency_rating_widgets[key]
+    assert all(button.minimumHeight() == button.maximumHeight() == 32
+               for button in selector.buttons.values())
+    selector.buttons['--'].click()
+    app.processEvents()
+    assert all(button.height() == 32 for button in selector.buttons.values())
+    dialog._remove_competency_rating(key)
     # All three steps must retain a real scroll range with keyboard-sized
     # available space, while their final window is the owning tablet shell.
     from PySide6.QtCore import QPoint, QPointF
@@ -402,3 +412,27 @@ def test_tablet_pdf_completion_reaches_every_subject_without_arrow_tabs():
     dialog.reject()
     dialog.deleteLater()
     app.processEvents()
+
+
+@pytest.mark.parametrize('width', [460, 940])
+def test_observation_rating_buttons_keep_size_when_selection_changes(width):
+    from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+    from src.desktop_app.dialogs.new_observation_dialog import ObservationRatingSelector
+    from src.tablet_app.presentation import touch_targets
+    app = QApplication.instance() or QApplication([])
+    parent = QWidget()
+    layout = QVBoxLayout(parent)
+    selector = ObservationRatingSelector('')
+    layout.addWidget(selector)
+    touch_targets(parent)
+    parent.resize(width, 120)
+    parent.show()
+    app.processEvents()
+    before = {token: (button.minimumHeight(), button.size()) for token, button in selector.buttons.items()}
+    for token, button in selector.buttons.items():
+        button.click()
+        app.processEvents()
+        assert selector.currentData() == token
+        assert {key: (item.minimumHeight(), item.size()) for key, item in selector.buttons.items()} == before
+        assert all(item.height() == 32 for item in selector.buttons.values())
+    parent.close()

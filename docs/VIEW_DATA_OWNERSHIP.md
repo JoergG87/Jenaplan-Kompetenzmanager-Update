@@ -1,5 +1,7 @@
 # View Data Ownership
 
+RatingBadgeButton besitzt zustandsunabhängige feste Höhe von 32 Pixeln; ObservationRatingSelector behält exklusive Auswahl und vorhandenen Tokenvertrag.
+
 Kompetenzbewertungen beziehen sichtbare Labels und PDF-Legenden aus gemeinsamer Pflanzenbeschreibung. TabletCompetencyPdfCompletionDialog ersetzt nur Fachnavigation; vorhandener CompetencyPdfCompletionDialog bleibt Owner der Eingaben und bestehenden Application-Speicherverträge.
 
 TabletDialogPolicy besitzt Katalog-Mindesthöhe 420 Pixel und Bewertungsfläche bis 440 Pixel. Überhöhe bleibt über den jeweiligen Schritt erreichbar; vorhandene Dialogadapter bleiben fachliche Owner.

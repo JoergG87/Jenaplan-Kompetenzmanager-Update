@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QLabel, QLineEdit, QSizePolicy, QWidget, QStyledItemDelegate, QScrollArea, QScroller, QScrollerProperties,
 )
 from src.desktop_app.theme import COLOR_BACKGROUND, COLOR_TEXT
-from src.desktop_app.components import AppCard
+from src.desktop_app.components import AppCard, RatingBadgeButton
 
 
 class TabletTapGuard(QObject):
@@ -122,7 +122,7 @@ def touch_targets(root):
                 widget.installEventFilter(widget.tablet_tap_guard)
         if isinstance(widget, QScrollArea):
             configure_tablet_scroll_area(widget)
-        if isinstance(widget, (QAbstractButton, QComboBox, QLineEdit, QDateTimeEdit)):
+        if isinstance(widget, (QAbstractButton, QComboBox, QLineEdit, QDateTimeEdit)) and not isinstance(widget, RatingBadgeButton):
             widget.setMaximumHeight(max(44, widget.maximumHeight()))
             widget.setMinimumHeight(max(44, widget.minimumHeight()))
         if isinstance(widget, QComboBox):
