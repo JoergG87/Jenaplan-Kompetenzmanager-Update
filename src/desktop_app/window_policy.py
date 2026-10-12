@@ -63,3 +63,13 @@ def open_maximized_workspace(dialog: QDialog, owner: QWidget | None) -> None:
     prepare_maximized_workspace(dialog, owner)
     dialog.setWindowModality(Qt.WindowModality.WindowModal)
     dialog.showMaximized()
+
+
+def exec_owned_dialog(dialog: QDialog, owner: QWidget | None = None) -> int:
+    """Let the owning app present an input, retaining standalone Qt behavior."""
+    parent = owner or dialog.parentWidget()
+    window = parent.window() if parent is not None else None
+    presenter = getattr(window, '_exec_dialog', None)
+    if callable(presenter):
+        return presenter(dialog)
+    return dialog.exec()

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 import weakref
+import sys
 
 from PySide6.QtCore import (
     QEasingCurve,
@@ -160,6 +161,8 @@ def animate_value(
 
 
 def _opacity_effect(widget: QWidget) -> QGraphicsOpacityEffect | None:
+    if sys.platform == "ios":
+        return None
     effect = getattr(widget, "_motion_opacity_effect", None)
     if effect is not None:
         return effect
@@ -551,6 +554,8 @@ class _CardMotionController(QObject):
 
 def install_card_motion(card: QWidget) -> QObject:
     """Install the shared interactive-card hover behavior exactly once."""
+    if sys.platform == "ios":
+        return install_pointer_cursor(card)
     controller = getattr(card, "_motion_card_controller", None)
     if controller is None:
         controller = _CardMotionController(card)

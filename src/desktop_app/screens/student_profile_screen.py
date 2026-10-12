@@ -136,30 +136,33 @@ class DocumentationRing(QWidget):
 
     def paintEvent(self, _event: object) -> None:  # noqa: N802 - Qt API
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        ring = QRectF(6, 6, self.width() - 12, self.height() - 12)
-        painter.setPen(QPen(
-            QColor("#DFE8EA"),
-            6,
-            Qt.PenStyle.SolidLine,
-            Qt.PenCapStyle.RoundCap,
-        ))
-        painter.drawArc(ring, 0, 360 * 16)
-        if self._total:
-            span = int(360 * 16 * min(1.0, self._documented / self._total))
+        try:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            ring = QRectF(6, 6, self.width() - 12, self.height() - 12)
             painter.setPen(QPen(
-                QColor(COLOR_TURQUOISE),
+                QColor("#DFE8EA"),
                 6,
                 Qt.PenStyle.SolidLine,
                 Qt.PenCapStyle.RoundCap,
             ))
-            painter.drawArc(ring, 90 * 16, -span)
-        painter.setPen(QColor(COLOR_NAVY))
-        painter.drawText(
-            ring,
-            Qt.AlignmentFlag.AlignCenter,
-            f"{self._documented}/{self._total}",
-        )
+            painter.drawArc(ring, 0, 360 * 16)
+            if self._total:
+                span = int(360 * 16 * min(1.0, self._documented / self._total))
+                painter.setPen(QPen(
+                    QColor(COLOR_TURQUOISE),
+                    6,
+                    Qt.PenStyle.SolidLine,
+                    Qt.PenCapStyle.RoundCap,
+                ))
+                painter.drawArc(ring, 90 * 16, -span)
+            painter.setPen(QColor(COLOR_NAVY))
+            painter.drawText(
+                ring,
+                Qt.AlignmentFlag.AlignCenter,
+                f"{self._documented}/{self._total}",
+            )
+        finally:
+            painter.end()
 
 
 class ReportTimelineScrollArea(QScrollArea):

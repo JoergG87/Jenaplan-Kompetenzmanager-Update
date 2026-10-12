@@ -1,5 +1,15 @@
 # iPad-Machbarkeitstest
 
+## Gesamte isolierte App: aktueller Simulatorstand 12.10.2026
+
+Die ursprüngliche Dreiauswahlprobe unten bleibt historische Referenz. Die vollständige Test-App verwendet `src/tablet_app/`, die ursprüngliche AppShell und dieselben kanonischen Python-/SQLite-Verträge. Bundle-ID: `de.jenaplan.kompetenzmanager.ipad-app-test`. Daten ausschließlich in der eigenen App-Sandbox unter der festen Rolle `synthetic-tablet-app`; kein produktiver Mac-Pfad oder Schlüsselbund. Fehlende/ungültige Testautorität bricht ab, bestehende Daten werden beim Update erhalten. Final-V4 bleibt unverändert.
+
+`scripts/build_ipad_app.py` stellt einen leeren, ungeschützten Zielordner bereit und erzeugt die eigene Konfiguration. Parameter: `--stage`, `--deploy-tool`, `--pyside-wheel`, `--shiboken-wheel`, `--python-xcframework`, wiederholtes `--dependency-wheel`. Offizielle passende ARM64-Simulator-Wheels und Python.xcframework erforderlich; Pillow, ReportLab und charset-normalizer separat. Erzeugtes Xcode-Projekt mit `ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGN_IDENTITY=-` bauen. Nach jedem inkrementellen Quellbuild das fertige Simulator-App-Bundle ausdrücklich mit `codesign --force --sign - <App-Pfad>` erneut ad-hoc signieren und mit `codesign --verify --deep --strict <App-Pfad>` prüfen. Xcode erkennt zusätzlich kopierte Python-Ressourcen nicht zuverlässig als Signaturänderung; BUILD SUCCEEDED allein genügt nicht. Keinen Geräterelease aus dem Simulatorpaket ableiten.
+
+Lokaler Build: `output/ipad-app/build/DerivedData/Build/Products/Debug-iphonesimulator/Jenaplan-iPad-App-Test.app`. Aktuelle Prüfergebnisse in PROJECT.md und CHANGELOG.md; Bilder unter `output/ipad-app/screenshots/refined/`, vollständiger Pflanzenexport unter `output/ipad-app/Kompetenzexport-Simulator-Mila.pdf`. Alle dargestellten Kinder und Eingaben sind synthetisch. Gerätesignierung, echte Hardware, Files-Import/Backup/Restore und Schutz-/Accessibility-Abnahme bleiben offen. Kein Produktrelease.
+
+## Historie: erste Dreiauswahlprobe
+
 Separater Prototyp, kein Produktbuild. Drei feste synthetische Kompetenzen,
 explizite Auswahl, Standard-SQLite und Wiederöffnung. Keine realen Schülerdaten,
 keine Produktmodule, kein Zugriff auf Mac-Produktdaten oder Schlüssel.

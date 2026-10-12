@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from src.desktop_app.window_policy import exec_owned_dialog
+
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Sequence
 from datetime import date, datetime
@@ -345,7 +347,7 @@ class LearningConferenceCloseDialog(MotionDialog):
     @classmethod
     def ask(cls, parent: QWidget) -> str:
         dialog = cls(parent)
-        return dialog.choice if dialog.exec() == QDialog.DialogCode.Accepted else "continue"
+        return dialog.choice if exec_owned_dialog(dialog) == QDialog.DialogCode.Accepted else "continue"
 
 
 class LearningConferenceDraftSelectionDialog(MotionDialog):
@@ -436,7 +438,7 @@ class LearningConferenceDraftSelectionDialog(MotionDialog):
         parent: QWidget,
     ) -> tuple[bool, LearningConferenceDraftViewModel | None]:
         dialog = cls(drafts, parent)
-        accepted = dialog.exec() == QDialog.DialogCode.Accepted
+        accepted = exec_owned_dialog(dialog) == QDialog.DialogCode.Accepted
         return accepted, dialog.selected_draft
 
 
@@ -502,7 +504,7 @@ class LearningConferenceRevisionHistoryDialog(MotionDialog):
         dialog = cls(status, parent)
         return (
             dialog.selected_revision_id
-            if dialog.exec() == QDialog.DialogCode.Accepted
+            if exec_owned_dialog(dialog) == QDialog.DialogCode.Accepted
             else ""
         )
 
@@ -1781,7 +1783,7 @@ class LearningConferenceDialog(QDialog):
             "Der Entwurf bleibt für spätere Korrekturen bearbeitbar. Fortfahren?",
             confirm_text="Gespräch abschließen",
         )
-        message.exec()
+        exec_owned_dialog(message, self)
         confirmed = message.clickedButton() is confirm
         message.deleteLater()
         if confirmed:

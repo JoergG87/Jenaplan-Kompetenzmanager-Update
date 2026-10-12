@@ -1,5 +1,19 @@
 # UI Data Mapping
 
+Simulator-Verfeinerung: Bericht-Bereichsauswahl entspricht vorhandenem Gesamttext/Fachbutton; LEG-Bereichsauswahl entspricht vorhandenen sechs Gesprächsankern. Keine Vorauswahl fachlicher Werte. Profil-Suche erhält eine volle Zeile, vorhandene Filter eine zweite Zeile. Tastatur darf Abschlussaktionen nicht verdecken.
+
+Tablet-Dialogseiten 12.10.2026: AppShell._exec_dialog / _exec_workspace / _open_dialog / _open_workspace sind Präsentationsports mit identischen Desktopdefaults. TabletAppShell zeigt vorhandene Qt-Dialoginhalte als fokussierte Seite im eigenen Stack; fachliche Accept-/Reject-/Finished-Verträge bleiben erhalten. Navigation ist während der Eingabe gesperrt, Zurück verwendet den vorhandenen Abbruch-/Entwurfschutz. Keine zweite Validierung oder Persistenz.
+
+Tablet-PDF-Port 12.10.2026: Tablet-PDF-Aktion öffnet nach erforderlicher expliziter Ergänzung das native Teilen-Menü (z. B. In Dateien sichern). Rückmeldung benennt geöffnete Ausgabe, keine behauptete Speicherung. Fach-/Kompetenzauswahl und fachliche Persistenz bleiben bestehende Verträge.
+
+## iPad-UX-Präzisierung – PO-Auftrag 12.10.2026
+
+Tablet-Bedienung folgt dem Arbeitsablauf: Kind → Kontext → Kompetenzen/Bewertungen → Notiz → Speichern. Beobachtungsdialog komponiert dieselben vorhandenen Felder in drei direkt wechselbare Bereiche; keine Daten-/Validierungsänderung; bestehende Bewertungsdefaults bleiben unverändert. Speichern und Abbrechen bleiben dauerhaft sichtbar. Bildschirmtastatur reserviert unteren Raum, Schrittfelder sind scrollbar; dynamische Bewertungsflächen mindestens 44 Pixel hoch. Hauptnavigation im Hochformat als Menü, kompakte zweizeilige Profilaktionen, Kompetenzlisten mit natürlicher Zeilenhöhe statt verteilter Vollbildfelder. Desktop bleibt unverändert. Breite Arbeitsschritte müssen innerhalb der Tabletbreite umbrechen; globales horizontales Scrollen ist kein fertiges Tablet-Design.
+
+## Gesamte App für iPad – PO-Auftrag 11.10.2026
+
+iPad-App-Test übernimmt sämtliche fachlichen Felder/Signale der vorhandenen AppShell unverändert. Zusätzlicher sichtbarer Testhinweis: synthetische Daten. Hauptnavigation im schmalen Format einklappbar; Touchziele mindestens 44 logische Pixel. Kontoschutz-/Update-/Restoreaktionen ohne Tablet-Port gesperrt. Simulatorprüfung umfasst Navigation, Schülerprofil und echte Speicherung; reine Darstellung zählt nicht als vollständige Funktionsabnahme.
+
 ## iPad-Machbarkeitstest
 
 iPad-Prototyp: je synthetischer Kompetenz eine Auswahlbox; Speichern über Repository, Statuslabel für Ergebnis. Sichtbarer Hinweis Nur erfundene Testdaten. Keine Namenseingabe, kein Import.

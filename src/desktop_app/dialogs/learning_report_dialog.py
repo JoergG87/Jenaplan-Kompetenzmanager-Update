@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from src.desktop_app.window_policy import exec_owned_dialog
+
 import weakref
 from collections.abc import Sequence
 from datetime import date
@@ -151,7 +153,7 @@ class LearningReportCloseDialog(MotionDialog):
         dialog = cls(parent)
         return (
             dialog.choice
-            if dialog.exec() == QDialog.DialogCode.Accepted
+            if exec_owned_dialog(dialog) == QDialog.DialogCode.Accepted
             else "continue"
         )
 
@@ -241,7 +243,7 @@ class LearningReportDraftSelectionDialog(MotionDialog):
         parent: QWidget,
     ) -> tuple[bool, LearningReportDraftViewModel | None]:
         dialog = cls(drafts, parent)
-        accepted = dialog.exec() == QDialog.DialogCode.Accepted
+        accepted = exec_owned_dialog(dialog) == QDialog.DialogCode.Accepted
         return accepted, dialog.selected_draft
 
 
@@ -327,7 +329,7 @@ class LearningReportPeriodSelectionDialog(MotionDialog):
         initial_period: tuple[date, date] | None = None,
     ) -> tuple[bool, tuple[date, date] | None]:
         dialog = cls(parent, initial_period)
-        accepted = dialog.exec() == QDialog.DialogCode.Accepted
+        accepted = exec_owned_dialog(dialog) == QDialog.DialogCode.Accepted
         return accepted, dialog.selected_period
 
 
@@ -1844,7 +1846,7 @@ class LearningReportDialog(QDialog):
         confirmation.setDefaultButton(cancel_button)
         confirmation.setEscapeButton(cancel_button)
         stabilize_message_box_buttons(confirmation, (remove_button, cancel_button))
-        confirmation.exec()
+        exec_owned_dialog(confirmation, self)
         return confirmation.clickedButton() is remove_button
 
     def _set_subject_checkbox(self, subject_id: str, checked: bool) -> None:
@@ -2131,7 +2133,7 @@ class LearningReportDialog(QDialog):
         preview: LearningReportFinalizationPreviewViewModel,
     ) -> None:
         confirmation = self.create_finalization_confirmation(preview)
-        confirmation.exec()
+        exec_owned_dialog(confirmation, self)
 
     def create_finalization_confirmation(
         self,

@@ -1,5 +1,29 @@
 # Technical Naming Registry
 
+Native Tablet-Port jkm_ios_share.is_simulator: kompiliertes TARGET_OS_SIMULATOR-Merkmal für reine Eingabeprojektion; keine Umgebungs-/Datenautorität.
+
+Registriert: src/tablet_app/presentation.py (TabletChoiceDelegate, touch_targets, reflow_filter_bar, reflow_actions, NavigationPicker), src/tablet_app/dialogs.py (TabletLearningReportDialog, TabletLearningConferenceDialog, install_tablet_message_port). Alle sind reine Präsentationsports. Keine zweite Fach-/Speicherlogik.
+
+TabletOverviewScreen und dashboard_screen_factory: reine Präsentationsvariante der bestehenden Heute-Projektion; kompakter Zeitplan neben der aktuellen Stunde im Hochformat. Desktopdefault bleibt OverviewScreen.
+
+exec_owned_dialog (bestehendes window_policy-Modul) bindet auch Bericht-/LEG-Auswahl und Entwurfschutz an den Präsentationsport des owning App-Fensters; standalone Qt bleibt unverändert.
+
+Tablet-Dialogseiten 12.10.2026: AppShell._exec_dialog / _exec_workspace / _open_dialog / _open_workspace sind Präsentationsports mit identischen Desktopdefaults. TabletAppShell zeigt vorhandene Qt-Dialoginhalte als fokussierte Seite im eigenen Stack; fachliche Accept-/Reject-/Finished-Verträge bleiben erhalten. Navigation ist während der Eingabe gesperrt, Zurück verwendet den vorhandenen Abbruch-/Entwurfschutz. Keine zweite Validierung oder Persistenz.
+
+AppShell._create_dialog ist ein reiner Präsentations-Factory-Port. TabletDialogPolicy wird ausschließlich nach vollständiger Dialogkonstruktion an die konkrete Dialoginstanz gebunden; keine globalen Python-Eventfilter während nativer iOS-Widgetkonstruktion.
+
+Tablet-Ansichtsvarianten: TabletStudentsScreen (kompakte berührbare Schülerkarten), TabletStudentProfileScreen (iOS-sicherer Widget-Lifecycle), TabletNewObservationDialog (Touchgrößen neu erzeugter Bewertungszeilen). AppShell erhält optionale students_workspace_factory / student_profile_screen_factory; Desktopdefaults bleiben identisch. StudentsWorkspace akzeptiert eine injizierte Schüleransicht.
+
+Tablet-Runtimeoption: PYSIDE6_OPTION_LAZY=0 ausschließlich im Tablet-Entry vor Qt-Import; vorhandene Reduced-Motion-Policy aktiv, um iOS-Offscreen-Effekte zu vermeiden. Kein globales System-/Desktopsetting.
+
+Tablet-Qt-Testmodus: jkm_ios_share.install_test_accessibility_mode / tablet_test_accessibility_update setzt ausschließlich in der isolierten iPad-Test-App Qt-Accessibility inaktiv. PO stellt Bedienhilfen wegen bestätigtem nativen Qt-Absturz am 12.10.2026 zurück. Kein Betriebssystemsetting, keine Mac-Änderung; keine Accessibility-Abnahme behauptet.
+
+Tablet-PDF-Port 12.10.2026: TabletPdfShareService (src/tablet_app/exports.py), native_share.mm mit eingebautem Modul jkm_ios_share/share_file; native iPad-Teilen-Port für bewusste PDF-Ausgabe. Gemeinsamer ReportLab-Renderer, natives Pillow-iOS-Wheel ohne Ersatzimplementierung.
+
+## Gesamte App für iPad – PO-Auftrag 11.10.2026
+
+Neue Plattformkomposition: src/tablet_app/main.py (iPad-Testentry), src/tablet_app/runtime.py (TabletRuntime, sandboxgebundene Testablage), src/tablet_app/shell.py (TabletAppShell, bestehende AppShell mit Tablet-Layout), scripts/build_ipad_app.py (separates Packaging). Bundle-ID de.jenaplan.kompetenzmanager.ipad-app-test. Keine neuen fachlichen Entitäten. PDF-Abhängigkeiten werden erst bei expliziter PDF-Nutzung geladen; Security-Typreferenzen laden keinen nativen Security-Stack.
+
 ## iPad-Machbarkeitstest
 
 Registriert: prototypes/ipad/main.py, DemoRepository, DEMO_COMPETENCIES, build_window, prototype_data_root. Eigene Bundle-Zielidentität de.jenaplan.kompetenzmanager.ipad-prototype; keine Produktidentität.

@@ -275,8 +275,14 @@ class AppShell(QMainWindow):
         student_adapter: StudentDesktopAdapter | None = None,
         backup_restore_available: bool = True,
         backup_restore_adapter: BackupRestoreDesktopAdapter | None = None,
+        dashboard_screen_factory: Callable[[], OverviewScreen] | None = None,
+        students_workspace_factory: Callable[[], StudentsWorkspace] | None = None,
+        student_profile_screen_factory: Callable[..., StudentProfileScreen] | None = None,
     ) -> None:
         super().__init__()
+        self._dashboard_screen_factory = dashboard_screen_factory or OverviewScreen
+        self._students_workspace_factory = students_workspace_factory or StudentsWorkspace
+        self._student_profile_screen_factory = student_profile_screen_factory or StudentProfileScreen
         self.now_provider = now_provider
         self.display_name: str | None = None
         self.runtime_paths = paths or runtime_paths(database_path.parent)
@@ -376,6 +382,22 @@ class AppShell(QMainWindow):
         self.dashboard_refresh_timer.start()
         self.refresh_all()
 
+    def _create_dialog(self, dialog_type, *args, **kwargs):
+        """Construct one presentation without changing its application contracts."""
+        return dialog_type(*args, **kwargs)
+
+    def _exec_dialog(self, dialog):
+        return dialog.exec()
+
+    def _exec_workspace(self, dialog):
+        return exec_maximized_workspace(dialog, self)
+
+    def _open_dialog(self, dialog):
+        dialog.open()
+
+    def _open_workspace(self, dialog):
+        open_maximized_workspace(dialog, self)
+
     def _build(self) -> None:
         root = QWidget()
         root.setObjectName("AppRoot")
@@ -454,14 +476,14 @@ class AppShell(QMainWindow):
         )
 
         self.stack = QStackedWidget()
-        self.dashboard_screen = OverviewScreen()
+        self.dashboard_screen = self._dashboard_screen_factory()
         self.onboarding_screen = OnboardingScreen()
-        self.students_workspace = StudentsWorkspace()
+        self.students_workspace = self._students_workspace_factory()
         self.overview_screen = self.students_workspace.groups_screen
         self.courses_screen = self.students_workspace.courses_screen
         self.course_groups_screen = self.students_workspace.course_groups_screen
         self.students_screen = self.students_workspace.students_screen
-        self.student_profile_screen = StudentProfileScreen(
+        self.student_profile_screen = self._student_profile_screen_factory(
             export_directory=self.exports_directory
         )
         self.master_data_screen = MasterDataScreen()
@@ -994,7 +1016,7 @@ class AppShell(QMainWindow):
             )
             controller.succeeded.connect(lambda _result: self.refresh_all())
             self._active_school_year_transition_controller = controller
-        dialog = SchoolYearTransitionPreviewDialog(
+        dialog = self._create_dialog(SchoolYearTransitionPreviewDialog,
             plan,
             self,
             activation_controller=controller,
@@ -1257,7 +1279,7 @@ class AppShell(QMainWindow):
             "Der aktuelle lokale Datenbestand wird ersetzt. Vorher wird automatisch ein Sicherheitsbackup erstellt. Nicht gespeicherte Änderungen in geöffneten Arbeitsfenstern werden verworfen. Die App wird anschließend neu gestartet.\n\nWiederherstellung jetzt starten?",
             confirm_text="Wiederherstellen",
         )
-        message.exec()
+        self._exec_dialog(message)
         confirmed = message.clickedButton() is confirm
         message.deleteLater()
         if not confirmed:
@@ -1502,8 +1524,8 @@ class AppShell(QMainWindow):
     def open_new_timetable_entry_dialog(self, weekday: int) -> None:
         """Create one timetable entry from the settings week."""
         week = self.timetable_adapter.week_view_model()
-        dialog = TimetableEntryDialog(week, weekday=weekday, parent=self)
-        if dialog.exec() != QDialog.DialogCode.Accepted:
+        dialog = self._create_dialog(TimetableEntryDialog, week, weekday=weekday, parent=self)
+        if self._exec_dialog(dialog) != QDialog.DialogCode.Accepted:
             return
         self._save_timetable_dialog(dialog)
 
@@ -1522,13 +1544,13 @@ class AppShell(QMainWindow):
         if entry is None:
             QMessageBox.warning(self, "Stundenplan", "Der Eintrag wurde nicht gefunden.")
             return
-        dialog = TimetableEntryDialog(
+        dialog = self._create_dialog(TimetableEntryDialog,
             week,
             weekday=entry.weekday,
             entry=entry,
             parent=self,
         )
-        if dialog.exec() != QDialog.DialogCode.Accepted:
+        if self._exec_dialog(dialog) != QDialog.DialogCode.Accepted:
             return
         self._save_timetable_dialog(dialog)
 
@@ -1540,7 +1562,7 @@ class AppShell(QMainWindow):
             "Diesen Stundenplaneintrag wirklich löschen?",
             confirm_text="Stunde löschen",
         )
-        message.exec()
+        self._exec_dialog(message)
         confirmed = message.clickedButton() is confirm
         message.deleteLater()
         if not confirmed:
@@ -1785,9 +1807,9 @@ class AppShell(QMainWindow):
 
     def open_new_student_dialog(self) -> None:
         """Open the existing new-student dialog and refresh after success."""
-        dialog = NewStudentDialog(self.adapter, self.master_data_adapter)
+        dialog = self._create_dialog(NewStudentDialog, self.adapter, self.master_data_adapter)
         dialog.student_created.connect(self.handle_student_created)
-        dialog.exec()
+        self._exec_dialog(dialog)
 
     def open_learning_report_dialog(
         self,
@@ -1919,7 +1941,7 @@ class AppShell(QMainWindow):
                 workspace_key=workspace_key,
             )
             return
-        dialog = LearningReportDialog(
+        dialog = self._create_dialog(LearningReportDialog,
             preparation,
             self,
             initial_draft,
@@ -2032,7 +2054,7 @@ class AppShell(QMainWindow):
 
         dialog.finished.connect(finish_report_workspace)
         dialog.destroyed.connect(clear_active_report)
-        open_maximized_workspace(dialog, self)
+        self._open_workspace(dialog)
 
     def _open_learning_report_html_dialog(
         self,
@@ -2091,7 +2113,7 @@ class AppShell(QMainWindow):
             show_final_pdf=None,
         )
         bridge = LearningReportHtmlBridge(session)
-        dialog = LearningReportHtmlDialog(bridge, self)
+        dialog = self._create_dialog(LearningReportHtmlDialog, bridge, self)
         session.show_final_pdf = lambda artifact_id: self._open_final_pdf_artifact(
             artifact_id,
             parent=dialog,
@@ -2129,7 +2151,7 @@ class AppShell(QMainWindow):
 
         dialog.finished.connect(finish)
         dialog.destroyed.connect(clear_active)
-        open_maximized_workspace(dialog, self)
+        self._open_workspace(dialog)
 
     def open_learning_report_revision(
         self,
@@ -2177,7 +2199,7 @@ class AppShell(QMainWindow):
             )
         except Exception as error:
             artifact_error = self.adapter.learning_report_pdf_error_message(error)
-        revision_dialog = LearningReportRevisionDialog(
+        revision_dialog = self._create_dialog(LearningReportRevisionDialog,
             revision,
             dialog_parent,
             artifact,
@@ -2241,7 +2263,7 @@ class AppShell(QMainWindow):
 
         revision_dialog.finished.connect(finish_revision_mode)
         revision_dialog.destroyed.connect(clear_revision_mode)
-        revision_dialog.open()
+        self._open_dialog(revision_dialog)
 
     def open_learning_conference_dialog(
         self,
@@ -2345,7 +2367,7 @@ class AppShell(QMainWindow):
                 active_student_ids.discard(student_id)
             self.show_student_profile(student_id)
             return
-        dialog = LearningConferenceDialog(preparation, self, initial_draft)
+        dialog = self._create_dialog(LearningConferenceDialog, preparation, self, initial_draft)
         dialog.setProperty("learningConferenceDraftKey", draft_lock_key)
 
         def refresh_revision_status() -> None:
@@ -2414,7 +2436,7 @@ class AppShell(QMainWindow):
 
         dialog.finished.connect(finish_learning_conference_workspace)
         dialog.destroyed.connect(clear_active_learning_conference)
-        open_maximized_workspace(dialog, self)
+        self._open_workspace(dialog)
 
     def _open_learning_conference_html_dialog(
         self,
@@ -2488,7 +2510,7 @@ class AppShell(QMainWindow):
             show_final_pdf=None,
         )
         bridge = LearningConferenceHtmlBridge(session)
-        dialog = LearningConferenceHtmlDialog(bridge, self)
+        dialog = self._create_dialog(LearningConferenceHtmlDialog, bridge, self)
         session.open_revision = lambda revision_id: self.open_learning_conference_revision(
             revision_id,
             dialog,
@@ -2498,7 +2520,7 @@ class AppShell(QMainWindow):
             parent=dialog,
         )
         dialog.setProperty("learningConferenceDraftKey", draft_lock_key)
-        exec_maximized_workspace(dialog, self)
+        self._exec_workspace(dialog)
 
     def open_learning_conference_revision(
         self,
@@ -2536,7 +2558,7 @@ class AppShell(QMainWindow):
             artifact_error = self.adapter.learning_conference_pdf_error_message(
                 error
             )
-        revision_dialog = LearningConferenceRevisionDialog(
+        revision_dialog = self._create_dialog(LearningConferenceRevisionDialog,
             revision,
             dialog_parent,
             artifact,
@@ -2572,7 +2594,7 @@ class AppShell(QMainWindow):
                 parent=revision_dialog,
             )
         )
-        revision_dialog.exec()
+        self._exec_dialog(revision_dialog)
 
     def _open_final_pdf_artifact(
         self,
@@ -2592,7 +2614,7 @@ class AppShell(QMainWindow):
                 consumer=consumer,
             )
             pdf_bytes = consumer.take()
-            viewer = PdfArtifactViewerDialog(
+            viewer = self._create_dialog(PdfArtifactViewerDialog,
                 pdf_bytes=pdf_bytes,
                 parent=parent,
             )
@@ -2618,7 +2640,7 @@ class AppShell(QMainWindow):
         app = QApplication.instance()
         if app is not None:
             app.aboutToQuit.connect(viewer.close)
-        viewer.open()
+        self._open_dialog(viewer)
 
     def export_competency_overview_pdf(self, student_id: str) -> None:
         """Choose an explicit external cleartext export; keep domain work outside Qt."""
@@ -2627,8 +2649,8 @@ class AppShell(QMainWindow):
         try:
             model = self.adapter.competency_pdf_for_student(student_id)
             if pending_competency_pdf_rows(model):
-                dialog = CompetencyPdfCompletionDialog(model, self)
-                if dialog.exec() != QDialog.DialogCode.Accepted:
+                dialog = self._create_dialog(CompetencyPdfCompletionDialog, model, self)
+                if self._exec_dialog(dialog) != QDialog.DialogCode.Accepted:
                     return
                 self.adapter.complete_competency_pdf(student_id, model, dialog.selections())
                 tab = self.student_profile_screen.profile_tabs.currentIndex()
@@ -2723,12 +2745,12 @@ class AppShell(QMainWindow):
         if student is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")
             return
-        dialog = NewStudentDialog(
+        dialog = self._create_dialog(NewStudentDialog,
             self.adapter,
             self.master_data_adapter,
             student=student,
         )
-        if dialog.exec():
+        if self._exec_dialog(dialog):
             self.refresh_overview()
             self.refresh_students()
             self.show_student_profile(student_id)
@@ -2772,7 +2794,7 @@ class AppShell(QMainWindow):
             )
             return
         prefill = self._pending_timetable_observation_draft(student)
-        dialog = NewObservationDialog(
+        dialog = self._create_dialog(NewObservationDialog,
             student,
             self.curriculum_adapter,
             self.adapter,
@@ -2805,7 +2827,7 @@ class AppShell(QMainWindow):
             parent=self,
         )
         self._clear_pending_timetable_observation()
-        if exec_maximized_workspace(dialog, self) or dialog.has_saved_observation is True:
+        if self._exec_workspace(dialog) or dialog.has_saved_observation is True:
             self.show_student_profile(student.student_id)
             self.status_label.setText("Beobachtung wurde gespeichert.")
 
@@ -2822,7 +2844,7 @@ class AppShell(QMainWindow):
             )
             return
         prefill = self._pending_timetable_observation_draft(student)
-        dialog = NewObservationDialog(
+        dialog = self._create_dialog(NewObservationDialog,
             student,
             self.curriculum_adapter,
             self.adapter,
@@ -2855,7 +2877,7 @@ class AppShell(QMainWindow):
             parent=self,
         )
         self._clear_pending_timetable_observation()
-        if exec_maximized_workspace(dialog, self) or dialog.has_saved_observation is True:
+        if self._exec_workspace(dialog) or dialog.has_saved_observation is True:
             self.refresh_overview()
             self.refresh_students()
             self.status_label.setText("Beobachtung wurde gespeichert.")
@@ -2881,7 +2903,7 @@ class AppShell(QMainWindow):
         if student is None:
             self.status_label.setText("Schülerprofil wurde nicht gefunden.")
             return
-        dialog = NewObservationDialog(
+        dialog = self._create_dialog(NewObservationDialog,
             student,
             self.curriculum_adapter,
             self.adapter,
@@ -2902,7 +2924,7 @@ class AppShell(QMainWindow):
             ),
             parent=self,
         )
-        if exec_maximized_workspace(dialog, self):
+        if self._exec_workspace(dialog):
             self.show_student_profile(student.student_id)
             self.status_label.setText("Beobachtung wurde aktualisiert.")
 
@@ -2918,7 +2940,7 @@ class AppShell(QMainWindow):
             "Diese Beobachtung aus dem Profil ausblenden?",
             confirm_text="Beobachtung löschen",
         )
-        message.exec()
+        self._exec_dialog(message)
         confirmed = message.clickedButton() is confirm
         message.deleteLater()
         if not confirmed:
@@ -2967,7 +2989,7 @@ class AppShell(QMainWindow):
             "Die Datei bleibt im Dateisystem erhalten.",
             confirm_text="Datei entfernen",
         )
-        message.exec()
+        self._exec_dialog(message)
         confirmed = message.clickedButton() is confirm
         message.deleteLater()
         if not confirmed:
@@ -3024,25 +3046,25 @@ class AppShell(QMainWindow):
 
     def open_app_info_dialog(self) -> None:
         """Open the compact app information dialog."""
-        dialog = AppInfoDialog()
-        dialog.exec()
+        dialog = self._create_dialog(AppInfoDialog)
+        self._exec_dialog(dialog)
 
     def open_new_group_dialog(self) -> None:
         """Open the persistent new-group dialog."""
-        dialog = MasterDataNameDialog("Neue Stammgruppe")
-        if dialog.exec():
+        dialog = self._create_dialog(MasterDataNameDialog, "Neue Stammgruppe")
+        if self._exec_dialog(dialog):
             self.master_data_adapter.add_group(dialog.name())
             self.refresh_master_data()
             self.status_label.setText("Stammgruppe wurde gespeichert.")
 
     def open_new_course_dialog(self) -> None:
         """Open the persistent new-course dialog."""
-        dialog = MasterDataNameDialog(
+        dialog = self._create_dialog(MasterDataNameDialog,
             "Neuer Kurs",
             include_color=True,
             include_year_level=True,
         )
-        if dialog.exec():
+        if self._exec_dialog(dialog):
             self.master_data_adapter.add_course(
                 dialog.name(),
                 dialog.color_hex(),
@@ -3054,13 +3076,13 @@ class AppShell(QMainWindow):
     def open_rename_group_dialog(self, group_id: str) -> None:
         """Open the persistent rename dialog for a group."""
         item = self.master_data_adapter.groups[group_id]
-        dialog = MasterDataNameDialog(
+        dialog = self._create_dialog(MasterDataNameDialog,
             "Stammgruppe bearbeiten",
             item.name,
             include_active=True,
             initial_active=item.is_active,
         )
-        if dialog.exec():
+        if self._exec_dialog(dialog):
             try:
                 self.master_data_adapter.rename_group(
                     group_id,
@@ -3077,7 +3099,7 @@ class AppShell(QMainWindow):
     def open_rename_course_dialog(self, course_id: str) -> None:
         """Open the persistent rename dialog for a course."""
         item = self.master_data_adapter.courses[course_id]
-        dialog = MasterDataNameDialog(
+        dialog = self._create_dialog(MasterDataNameDialog,
             "Kurs bearbeiten",
             item.name,
             include_color=True,
@@ -3087,7 +3109,7 @@ class AppShell(QMainWindow):
             include_active=True,
             initial_active=item.is_active,
         )
-        if dialog.exec():
+        if self._exec_dialog(dialog):
             try:
                 self.master_data_adapter.rename_course(
                     course_id,
@@ -3106,13 +3128,13 @@ class AppShell(QMainWindow):
     def open_new_course_group_dialog(self) -> None:
         """Open the persistent dialog for a new course group."""
         view_model = self.master_data_adapter.view_model()
-        dialog = CourseGroupDialog(
+        dialog = self._create_dialog(CourseGroupDialog,
             CourseGroupViewModel("", "", (), ()),
             view_model.groups,
             view_model.courses,
             title="Neuer Kursverbund",
         )
-        if dialog.exec():
+        if self._exec_dialog(dialog):
             try:
                 self.master_data_adapter.add_course_group(
                     dialog.name(),
@@ -3129,8 +3151,8 @@ class AppShell(QMainWindow):
         """Open the persistent edit dialog for one course group."""
         view_model = self.master_data_adapter.view_model()
         course_group = self.master_data_adapter.course_groups[course_group_id]
-        dialog = CourseGroupDialog(course_group, view_model.groups, view_model.courses)
-        if dialog.exec():
+        dialog = self._create_dialog(CourseGroupDialog, course_group, view_model.groups, view_model.courses)
+        if self._exec_dialog(dialog):
             try:
                 updated_course_group = self.master_data_adapter.update_course_group(
                     course_group_id,

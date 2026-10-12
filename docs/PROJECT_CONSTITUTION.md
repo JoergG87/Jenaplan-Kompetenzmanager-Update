@@ -1,5 +1,13 @@
 # Project Constitution
 
+PO-Auftrag 12.10.2026: Simulator-App vollständig auf bedienbare Tablet-Präsentation verfeinern. Bestehende fachliche Entscheidungen, Final-V4 und lokale Testautorität bleiben unverändert; kein Geräte-/Produktrelease.
+
+PO-Präzisierung 12.10.2026: Bedienhilfen dürfen für den ersten iPad-Test zurückgestellt werden. Der nachgewiesen abstürzende Qt-iOS-Accessibility-Pfad bleibt ausschließlich im getrennten Testbuild deaktiviert; Touch, Layout und Fachabläufe haben zunächst Priorität. Das ist keine Accessibility- oder Produktionsfreigabe.
+
+## Gesamte App für iPad – PO-Auftrag 11.10.2026
+
+PO-Auftrag 11.10.2026: Die gesamte bestehende PySide-App im gleichen Design für iPad vorbereiten, zunächst im Simulator mit ausschließlich synthetischen Daten. Gemeinsame Fachlogik, Final-V4-Schema, ViewModels und Design-System bleiben verbindlich. Separater Tablet-Start statt Desktop-Security-/Sparkle-/Worker-Startup. Standard-SQLite ausschließlich im Testbuild; keine Freigabe für echte Schülerdaten. Touch-/Layoutanpassung freigegeben; kein Produktmodellwechsel. Eigene Daten pro Installation ohne Synchronisierung.
+
 ## iPad-Machbarkeitstest
 
 PO-Testauftrag 11.10.2026: Separater iPad-Machbarkeitsprototyp mit synthetischen, unveränderlich vorgegebenen Kompetenzen; Standard-SQLite ohne App-Verschlüsselung ist ausschließlich hier zulässig. Produktmodell, Mac-App und SQLCipher-Gates bleiben unverändert. Kein Import realer Daten, keine Produktionsfreigabe.

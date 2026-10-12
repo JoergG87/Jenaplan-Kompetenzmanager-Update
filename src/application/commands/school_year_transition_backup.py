@@ -27,7 +27,10 @@ from src.core.database_compatibility import (
 from src.core.sqlite_school_year_transition import (
     school_year_transition_source_sha256,
 )
-from src.security.final_v4_backup_runtime import FinalV4EncryptedBackupService
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.security.final_v4_backup_runtime import FinalV4EncryptedBackupService
 
 
 @dataclass(frozen=True, slots=True)

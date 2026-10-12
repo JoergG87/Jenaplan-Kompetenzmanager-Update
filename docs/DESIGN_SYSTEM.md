@@ -1,5 +1,23 @@
 # Design-System
 
+Verschachtelte Tablet-Scrollflächen erhalten eine Wischgeste: Simulator mit linker Maus als Fingereingabe, Gerätebuild mit TouchGesture. Erkennung ausschließlich über Apples kompiliertes TARGET_OS_SIMULATOR. Keine Geste auf Texteingabe-Viewports.
+
+Simulator-Verfeinerung 12.10.2026: Ruhige einspaltige Arbeitsseiten. Seitliche Bericht-/LEG-Navigation durch 44-Pixel-Bereichsauswahl einschließlich Popup-Zeilen ersetzen; vorhandene Texte/Werte erhalten. Suchzeile vor Filtern, umbrochene Inhalte, Dokumentvorschau innerhalb der verfügbaren Breite. Abschlussleiste dauerhaft erreichbar, bei schmaler Breite mehrzeilig. Hauptnavigation während fokussierter Eingabe vollständig ausblenden. Fachgrafik im Heute-Hero bleibt sichtbar.
+
+PO-Korrektur 12.10.2026: Heute-Hero im iPad-Hochformat zweispaltig. Aktuelle Stunde links, kompakte Zeitplangrafik rechts (höchstens 280 Pixel breit, mittig ausgerichtet); bestehende Fachgrafik als 104 × 88 Pixel großes Symbol neben den Stundenangaben erhalten. Ausführliche Stundenliste darunter bleibt erhalten. Kein neues Feld oder fachlicher Inhalt.
+
+Tablet-Rendering 12.10.2026: Zentrales Motion-Modul erzeugt auf iOS keine QGraphicsOpacityEffect-/Card-Shadow-Flächen; Sichtbarkeit und Auswahlzustände werden direkt gesetzt. Desktop-Rendering unverändert. Das Tablet übernimmt ruhige Themeflächen ohne Offscreen-Paint-Effekte.
+
+PO-Präzisierung 12.10.2026: Bedienhilfen dürfen für den ersten iPad-Test zurückgestellt werden. Der nachgewiesen abstürzende Qt-iOS-Accessibility-Pfad bleibt ausschließlich im getrennten Testbuild deaktiviert; Touch, Layout und Fachabläufe haben zunächst Priorität. Das ist keine Accessibility- oder Produktionsfreigabe.
+
+## iPad-UX-Präzisierung – PO-Auftrag 12.10.2026
+
+Tablet-Bedienung folgt dem Arbeitsablauf: Kind → Kontext → Kompetenzen/Bewertungen → Notiz → Speichern. Beobachtungsdialog komponiert dieselben vorhandenen Felder in drei direkt wechselbare Bereiche; keine Daten-/Validierungsänderung; bestehende Bewertungsdefaults bleiben unverändert. Speichern und Abbrechen bleiben dauerhaft sichtbar. Bildschirmtastatur reserviert unteren Raum, Schrittfelder sind scrollbar; dynamische Bewertungsflächen mindestens 44 Pixel hoch. Hauptnavigation im Hochformat als Menü, kompakte zweizeilige Profilaktionen, Kompetenzlisten mit natürlicher Zeilenhöhe statt verteilter Vollbildfelder. Desktop bleibt unverändert. Breite Arbeitsschritte müssen innerhalb der Tabletbreite umbrechen; globales horizontales Scrollen ist kein fertiges Tablet-Design.
+
+## Gesamte App für iPad – PO-Auftrag 11.10.2026
+
+PO wünscht gleiches Design der gesamten iPad-App: bestehendes zentrales Theme, App-Icon, Marineblau/Petrol, Karten und Komponenten übernehmen. Keine frei erfundene mobile Farbwelt. Touchziele mindestens 44 logische Pixel, verfügbare Bildschirmgröße statt Desktop-Mindestfenster. Schmale Ansicht mit einblendbarer Navigation und horizontal scrollbar erhaltenen breiten Arbeitsbereichen; anschließend gezielte Reflow-Prüfung für Profil/Dialoge. Virtuelle Tastatur, Hoch-/Querformat und Modalbedienung sind separat zu prüfen.
+
 ## iPad-Machbarkeitstest
 
 iPad-Prototyp: kompakte scrollbare Einspaltenansicht mit mindestens 44 Pixel hohen Auswahlfeldern und Schaltfläche; keine feste Desktop-Mindestgröße. Kein Nachweis nativer iPad-Bedienbarkeit vor Gerätetest.

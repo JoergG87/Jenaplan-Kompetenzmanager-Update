@@ -1,5 +1,17 @@
 # Data Lifecycle
 
+Synthetische Exportprüfung 12.10.2026: 329 von 331 Ständen für Mila Hartmann ausschließlich im eigenen Simulatorcontainer über den bestehenden Bestätigungsadapter vorbereitet; zwei Mathematikstände ausdrücklich im UI gewählt und gespeichert. Abbruch vor der Auswahl ließ beide offen. Kein Schemawechsel und keine Produktdaten.
+
+Simulator-Verfeinerung: Neue Tablet-Bereichsauswahl aktiviert dieselben vorhandenen Buttons/Commands. Entwurfschutz, Accept/Reject, Validierung und Speicherung unverändert. Qt-Hinweise/Bestätigungen erhalten einen eigenen Tablet-Präsentationsport; keine automatisch bestätigten Entscheidungen.
+
+Tablet-Containerbindung 12.10.2026: iPadOS darf bei erneutem Installieren den absoluten Sandboxpfad ändern und Daten erhalten. Testautorität bindet deshalb eigene Bundle-ID und festen relativen Rootzweck innerhalb der ausschließlich durch QStandardPaths gelieferten Sandbox, keinen absoluten Pfadhash. Alte experimentelle Testmarker werden nicht automatisch repariert; nur der bekannte synthetische Simulatorbestand wird für den lokalen Entwicklungsversuch gezielt aktualisiert.
+
+Tablet-PDF-Port 12.10.2026: Bewusste Tablet-PDF-Ausgabe: Vollständigkeitsprüfung über bestehenden Application-Vertrag, Memory-Rendering, exklusiv erzeugte temporäre PDF, UIKit-Share-Sheet. Ausgabe wird nach Abschluss oder Abbruch des Share-Sheets entfernt; keine Erfolgsmeldung über eine Speicherung ohne Nutzeraktion. Ausgaben aus früherem Prozessabbruch dürfen nur im eigenen, eindeutig gebundenen Ausgabe-Unterordner bereinigt werden.
+
+## Gesamte App für iPad – PO-Auftrag 11.10.2026
+
+TabletRuntime bindet ausschließlich QStandardPaths.AppLocalDataLocation unter der eigenen Test-Bundle-ID. Erstanlage nur bei völlig leerem dediziertem Unterordner, geprüftem Vorlagenhash und exakter Final-V4-Vorlage; temporäre Stagingkopie und atomare Publikation. Vorhandene Testdaten werden schema-/integritätsgeprüft geöffnet, nicht ersetzt. Symlinks, fremde/teilweise Dateien oder fehlende Vorlagen blockieren. Fachwrites bleiben bestehende Application-/Repositoryprozesse. Desktop-Restore, Prozessrestart und Security-Mutationen im iPad-Test gesperrt. Kein produktives Migrationstool.
+
 ## iPad-Machbarkeitstest
 
 iPad-Prototyp: DemoRepository erstellt ausschließlich die separate Testtabelle demo_ratings, speichert validierte explizite Stufenauswahl transaktional und liest sie nach Neuöffnung. Vorhandene fremde Datenbank ohne passende SQLite application_id wird vor Tabellenschreibzugriff abgewiesen. Keine Lösch-/Import-/Migrationsfunktion.

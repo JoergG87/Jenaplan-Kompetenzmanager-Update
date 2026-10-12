@@ -1,5 +1,13 @@
 # Data Registry
 
+Simulator-Verfeinerung: Bereichsauswahl liest ausschließlich vorhandene NavigationButtons und deren Auswahlzustände. Keine zusätzliche fachliche Quelle; Export liest weiterhin frische kanonische Modelle.
+
+Tablet-PDF-Port 12.10.2026: PDF-Teilen verwendet ausschließlich aus kanonischen ViewModels erzeugte PDF-Bytes; temporäre Ausgabe im eigenen NS-Temp-Unterordner jkm-tablet-share. Keine neue fachliche Quelle oder persistierte Bewertung.
+
+## Gesamte App für iPad – PO-Auftrag 11.10.2026
+
+iPad-App-Test verwendet dieselbe Final-V4-Datenstruktur und denselben offiziellen Entwicklungsbuch-Katalog. Ein ausschließlich synthetischer, im Systemtemp erzeugter Testbestand wird als unveränderliche Startvorlage ins separate Bundle aufgenommen. Bei Erststart exklusive Kopie in eigenen App-Container; keine Mac-Dateien, Produktkeys, Importe oder Shared Container. Vorlagenhash und Schema werden geprüft. Eigene SQLite-Datei ist danach alleinige Testwahrheit; kein Reset bei Update oder fehlenden Begleitdateien.
+
 ## iPad-Machbarkeitstest
 
 iPad-Prototyp: drei fest vorgegebene synthetische Kompetenztexte und vier bestehende Stufentokens (--,-,+,++). Separate SQLite-Testdatei demo.sqlite in eigenem Prototyp-Unterordner von Qt AppLocalDataLocation. Keine produktive Datenquelle oder Änderung des Produktmodells.

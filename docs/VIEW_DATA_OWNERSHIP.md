@@ -1,5 +1,17 @@
 # View Data Ownership
 
+Simulator-Verfeinerung: Einspaltige Bericht-/LEG-Seiten verwenden vorhandene Projektionen. Tablet-Auswahlfelder projizieren NavigationButtons; Suche/Filter werden lediglich neu angeordnet. Abschlussaktionen bleiben außerhalb des scrollbaren Inhalts. Keine persistierten Layoutzustände.
+
+Tablet-Dialogseiten 12.10.2026: AppShell._exec_dialog / _exec_workspace / _open_dialog / _open_workspace sind Präsentationsports mit identischen Desktopdefaults. TabletAppShell zeigt vorhandene Qt-Dialoginhalte als fokussierte Seite im eigenen Stack; fachliche Accept-/Reject-/Finished-Verträge bleiben erhalten. Navigation ist während der Eingabe gesperrt, Zurück verwendet den vorhandenen Abbruch-/Entwurfschutz. Keine zweite Validierung oder Persistenz.
+
+## iPad-UX-Präzisierung – PO-Auftrag 12.10.2026
+
+Tablet-Bedienung folgt dem Arbeitsablauf: Kind → Kontext → Kompetenzen/Bewertungen → Notiz → Speichern. Beobachtungsdialog komponiert dieselben vorhandenen Felder in drei direkt wechselbare Bereiche; keine Daten-/Validierungsänderung; bestehende Bewertungsdefaults bleiben unverändert. Speichern und Abbrechen bleiben dauerhaft sichtbar. Bildschirmtastatur reserviert unteren Raum, Schrittfelder sind scrollbar; dynamische Bewertungsflächen mindestens 44 Pixel hoch. Hauptnavigation im Hochformat als Menü, kompakte zweizeilige Profilaktionen, Kompetenzlisten mit natürlicher Zeilenhöhe statt verteilter Vollbildfelder. Desktop bleibt unverändert. Breite Arbeitsschritte müssen innerhalb der Tabletbreite umbrechen; globales horizontales Scrollen ist kein fertiges Tablet-Design.
+
+## Gesamte App für iPad – PO-Auftrag 11.10.2026
+
+TabletAppShell komponiert die vorhandenen Heute-/Schüler-/Profil-/Stammdaten-/Einstellungen-Ansichten aus AppShell. Quellen, Aggregate, Projektionen und Schreibownership bleiben unverändert. Tablet-Layout besitzt nur Navigation, Scrollen, Dialoggröße und Touchflächen. Keine zweite Fachlogik oder eigene Schüler-/Kompetenztabellen. Fehlende iOS-Plattformfunktionen müssen sichtbar gesperrt sein, niemals als erfolgreich simuliert.
+
 ## iPad-Machbarkeitstest
 
 iPad-Prototypfenster projiziert ausschließlich DemoRepository mit drei fest vorgegebenen Kompetenzen. Keine Verbindung zu Desktop-Adaptern oder Nutzerdaten. Keine neue Produktansicht.

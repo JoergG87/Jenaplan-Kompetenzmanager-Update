@@ -104,11 +104,21 @@ def test_shell_routes_observation_report_and_leg_through_central_policy() -> Non
         )
     )
 
-    assert "open_maximized_workspace(dialog, self)" in report_source
+    assert "self._open_workspace(dialog)" in report_source
     assert "exec_maximized_workspace(dialog, self)" not in report_source
-    assert "open_maximized_workspace(dialog, self)" in leg_source
+    assert "self._open_workspace(dialog)" in leg_source
     assert "exec_maximized_workspace(dialog, self)" not in leg_source
     assert "dialog.finished.connect(finish_learning_conference_workspace)" in leg_source
     assert "dialog.destroyed.connect(clear_active_learning_conference)" in leg_source
-    assert observation_sources.count("exec_maximized_workspace(dialog, self)") == 3
+    assert observation_sources.count("self._exec_workspace(dialog)") == 3
     assert observation_sources.count("parent=self") == 3
+
+
+def test_desktop_workspace_ports_preserve_central_policy(monkeypatch):
+    calls=[]
+    monkeypatch.setattr('src.desktop_app.shell.open_maximized_workspace', lambda dialog, owner: calls.append(('open',dialog,owner)))
+    monkeypatch.setattr('src.desktop_app.shell.exec_maximized_workspace', lambda dialog, owner: 7)
+    owner=object();dialog=object()
+    AppShell._open_workspace(owner,dialog)
+    assert calls==[('open',dialog,owner)]
+    assert AppShell._exec_workspace(owner,dialog)==7

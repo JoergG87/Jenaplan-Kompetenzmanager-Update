@@ -193,7 +193,6 @@ from src.desktop_app.view_models.learning_report_view_model import (
     build_learning_report_revision_view_model,
     build_learning_report_pdf_artifact_view_model,
 )
-from prototypes.pdf_engine.renderer import PdfRenderer
 from src.desktop_app.view_models.learning_conference_view_model import (
     LearningConferenceDraftViewModel,
     LearningConferencePreparationViewModel,
@@ -2682,6 +2681,8 @@ class StudentDesktopAdapter:
     ) -> LearningReportPdfApplicationService:
         report_repository = SQLiteLearningReportRepository(self.database)
         artifact_repository = SQLiteLearningReportPdfArtifactRepository(self.database)
+        from prototypes.pdf_engine.renderer import PdfRenderer
+
         renderer = PdfRenderer()
         domain_service = LearningReportPdfService(
             LearningReportRevisionReadService(report_repository),
@@ -3027,6 +3028,8 @@ class StudentDesktopAdapter:
     def _learning_conference_pdf_application_service(
         self,
     ) -> LearningConferencePdfApplicationService:
+        from prototypes.pdf_engine.renderer import PdfRenderer
+
         revision_repository = SQLiteLearningConferenceRepository(self.database)
         artifact_repository = SQLiteLearningConferencePdfArtifactRepository(
             self.database

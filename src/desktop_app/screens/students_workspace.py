@@ -27,7 +27,7 @@ class StudentsWorkspace(QWidget):
     all_students_requested = Signal()
     course_selected = Signal(str)
 
-    def __init__(self) -> None:
+    def __init__(self, *, students_screen: StudentsScreen | None = None) -> None:
         super().__init__()
         self.setObjectName("StudentsWorkspace")
         self._list_source_key = "all"
@@ -37,7 +37,7 @@ class StudentsWorkspace(QWidget):
             section="course_groups",
             show_header=False,
         )
-        self.students_screen = StudentsScreen(show_header=False)
+        self.students_screen = students_screen or StudentsScreen(show_header=False)
         self.courses_screen.direct_course_selected.connect(self.course_selected.emit)
         self._build()
 
