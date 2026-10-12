@@ -937,7 +937,7 @@ class LearningReportDialog(QDialog):
             tree.setFocus(Qt.FocusReason.ShortcutFocusReason)
 
         focus_target()
-        QTimer.singleShot(0, lambda: QTimer.singleShot(0, focus_target))
+        QTimer.singleShot(0, self, lambda: QTimer.singleShot(0, self, focus_target))
         return True
 
     def _action_bar(self) -> QFrame:

@@ -1,5 +1,7 @@
 # Data Lifecycle
 
+Release-404-Abnahme: WAL-Aktivierung vor Sicherheits-Schreibtransaktionen darf bei parallel öffnenden Verbindungen ausschließlich vorübergehende SQLite-Sperren bis fünf Sekunden abwarten. Recovery-Code-Verbrauch bleibt atomar mit genau einem Gewinner; keine Änderung von Schlüssel-, Konto-, Schema- oder Persistenzverträgen. Prüfungen ausschließlich synthetisch.
+
 SQLCipher-Neubuild unter SDK 27 verändert keine Daten, Schlüssel oder Migrationen. Prüfung ausschließlich in neuen synthetischen Tempbeständen; Produktroot und vorhandene Produktkeys bleiben unberührt.
 
 Bereichsgerechte Textkorrektur liest bestehendes Kompetenzprofil; keine Änderung vorhandener Ratingtokens, Bewertungen, Defaultwerte, Bestätigungen oder Speicherschritte.

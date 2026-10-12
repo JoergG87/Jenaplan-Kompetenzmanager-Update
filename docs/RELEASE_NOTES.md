@@ -116,3 +116,5 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 Explizit ältere Release-, Sprint-, Foundation- und Builddokumente bleiben als
 Historie erhalten. Ihre Aussagen beschreiben nicht den aktuellen
 Final-V4-Produktpfad und werden nicht als aktuelle Pilotunterlagen erzeugt.
+
+- Geschlossene Berichtsfenster erhalten keinen nachträglichen Fokus; gleichzeitige Prüfungen desselben Recovery-Codes werden zuverlässig abgearbeitet.

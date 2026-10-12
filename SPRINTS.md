@@ -1,5 +1,8 @@
 # Sprintplanung
 
+Release-404-Endabnahme ergänzt: Qt-Testfenster werden nach jeder Prüfung geordnet entsorgt; bestehende Dialogports in Testdoubles aktualisiert. Verzögerter Berichts-Fokus ist an den lebenden Dialog gebunden. Reproduzierte WAL-Initialisierungskollision im Sicherheitsrepository begrenzt auf fünf Sekunden abwarten, andere Fehler unverändert. 36 Recoveryprüfungen inklusive 20 gleichzeitiger Doppelverwendungen und Fehler-/Timeoutfällen bestanden; genau ein Gewinner. Kein Datenmodellwechsel. Finale Gesamtsuite und Neubau aus diesem Stand vor Veröffentlichung.
+
+
 Release 404: SDK-27-Neuqualifizierung abgeschlossen. Zwei unabhängige Builds bytegleich, Wheel-SHA256 9ce432941a45f28af3877192149ab2583ae22f466e3b22c2a7323c5a84c577f9. Audit GO: arm64, macOS-11-Mindestziel, ausschließlich erlaubte Systemabhängigkeiten, kein RPATH oder Buildpfadleck; SQLCipher 4.17/CommonCrypto-Roundtrip bestanden. Quellen/Amalgamation/Bindingpatch unverändert. Bestehender Audit liest den erwarteten SDK-Wert jetzt aus dem festen Manifest statt aus einer veralteten SDK-26.5-Konstante. Acht Buildbasisprüfungen bestanden. Nachweise /private/tmp/jkm-cipher404-build-a, jkm-cipher404-build-b2 und jkm-cipher404-audit-final.
 
 ## Mac-Update 0.4.4 / Build 404 vorbereiten – 12.10.2026

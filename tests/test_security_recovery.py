@@ -8,6 +8,9 @@ import hashlib
 from pathlib import Path
 import sqlite3
 import uuid
+from unittest.mock import Mock
+
+import src.security.infrastructure.sqlite_repository as repository_module
 
 import pytest
 
@@ -247,7 +250,8 @@ def test_regeneration_crash_after_commit_has_complete_new_active_set(
     )
 
 
-def test_concurrent_double_consumption_has_exactly_one_winner(tmp_path: Path) -> None:
+@pytest.mark.parametrize("attempt", range(20))
+def test_concurrent_double_consumption_has_exactly_one_winner(tmp_path: Path, attempt: int) -> None:
     root = tmp_path / "runtime"
     first, _repository, clock, enrolled = enroll(root)
     second, _repository, _clock = make_service(
@@ -290,3 +294,48 @@ def test_recovery_results_repr_and_process_output_do_not_expose_codes(
     for code in (*result.recovery_codes, *prepared.recovery_codes):
         assert code not in repr(result)
         assert code not in repr(prepared)
+
+
+@pytest.mark.parametrize("code", (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED))
+def test_wal_setup_retries_transient_contention_only(monkeypatch, code) -> None:
+    error = sqlite3.OperationalError("transient test contention")
+    error.sqlite_errorcode = code
+    connection = Mock()
+    connection.execute.side_effect = (error, None)
+    sleep = Mock()
+    monkeypatch.setattr(repository_module.time, "sleep", sleep)
+    monkeypatch.setattr(repository_module.time, "monotonic", lambda: 100.0)
+    SQLiteSecurityRepository._enable_wal_mode(connection)
+    assert connection.execute.call_count == 2
+    sleep.assert_called_once_with(0.01)
+
+
+@pytest.mark.parametrize("code", (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_IOERR))
+def test_wal_setup_expires_or_preserves_non_lock_errors(monkeypatch, code) -> None:
+    error = sqlite3.OperationalError("test failure")
+    error.sqlite_errorcode = code
+    connection = Mock()
+    connection.execute.side_effect = error
+    ticks = iter((100.0, 105.0))
+    monkeypatch.setattr(repository_module.time, "monotonic", lambda: next(ticks))
+    sleep = Mock()
+    monkeypatch.setattr(repository_module.time, "sleep", sleep)
+    with pytest.raises(sqlite3.OperationalError) as caught:
+        SQLiteSecurityRepository._enable_wal_mode(connection)
+    assert caught.value is error
+    assert connection.execute.call_count == 1
+    sleep.assert_not_called()
+
+
+def test_failed_write_connection_setup_closes_new_connection(tmp_path, monkeypatch) -> None:
+    _service, repository, _clock, _enrolled = enroll(tmp_path / "runtime")
+    error = sqlite3.OperationalError("test IO failure")
+    error.sqlite_errorcode = sqlite3.SQLITE_IOERR
+    connection = Mock()
+    connection.execute.side_effect = (None, error)
+    monkeypatch.setattr(repository, "_ensure_current_schema", lambda: None)
+    monkeypatch.setattr(repository_module.sqlite3, "connect", lambda *args, **kwargs: connection)
+    with pytest.raises(sqlite3.OperationalError) as caught:
+        repository._connect_write()
+    assert caught.value is error
+    connection.close.assert_called_once_with()

@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import sqlite3
 import tempfile
+import time
 
 from ..domain import (
     AccountRecord,
@@ -1126,7 +1127,7 @@ class SQLiteSecurityRepository:
             )
             connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA foreign_keys = ON")
-            connection.execute("PRAGMA journal_mode = WAL")
+            self._enable_wal_mode(connection)
             connection.execute("PRAGMA synchronous = FULL")
             connection.execute("BEGIN IMMEDIATE")
             application_id = int(connection.execute("PRAGMA application_id").fetchone()[0])
@@ -1221,12 +1222,33 @@ class SQLiteSecurityRepository:
     def _connect_write(self) -> sqlite3.Connection:
         self._ensure_current_schema()
         connection = sqlite3.connect(self._database_path, isolation_level=None, timeout=5.0)
-        connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA foreign_keys = ON")
-        connection.execute("PRAGMA journal_mode = WAL")
-        connection.execute("PRAGMA synchronous = FULL")
-        self._permissions.secure_sqlite_files(self._database_path)
-        return connection
+        try:
+            connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA foreign_keys = ON")
+            self._enable_wal_mode(connection)
+            connection.execute("PRAGMA synchronous = FULL")
+            self._permissions.secure_sqlite_files(self._database_path)
+            return connection
+        except BaseException:
+            connection.close()
+            raise
+
+    @staticmethod
+    def _enable_wal_mode(connection: sqlite3.Connection) -> None:
+        """Allow only transient journal setup contention within the write timeout."""
+        deadline = time.monotonic() + 5.0
+        while True:
+            try:
+                connection.execute("PRAGMA journal_mode = WAL")
+                return
+            except sqlite3.OperationalError as error:
+                code = getattr(error, "sqlite_errorcode", None)
+                if code not in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
+                    raise
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise
+                time.sleep(min(0.01, remaining))
 
     def _write_transaction(self):
         return _WriteTransaction(self)

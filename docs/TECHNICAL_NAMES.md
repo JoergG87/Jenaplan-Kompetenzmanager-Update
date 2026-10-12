@@ -1,5 +1,11 @@
 # Technical Naming Registry
 
+SQLiteSecurityRepository._enable_wal_mode wiederholt ausschließlich SQLITE_BUSY/SQLITE_LOCKED bei der bestehenden WAL-Konfiguration, begrenzt auf fünf Sekunden. Andere Fehler unverändert weitergeben; fehlgeschlagene neue Schreibverbindungen schließen. Keine neue Tabelle oder fachliche Operation.
+
+LearningReportDialog.focus_evidence_subject bindet beide vorhandenen verzögerten Fokusaufrufe an den QObject-Kontext des Dialogs; Qt verwirft sie bei dessen Löschung. Keine neue API oder Datenquelle.
+
+Testinfrastruktur: tests/conftest.py::dispose_qt_test_windows hält _qt_test_application während des Laufs und entsorgt ausschließlich neu erzeugte Qt-Testfenster nach jeder Prüfung über DeferredDelete. Keine Produktansicht oder Produktlaufzeitbindung.
+
 SQLCipher-4.17-Buildmanifest target.macos_sdk/target.clang_identity werden für die aktuelle SDK-27-Werkzeugkette neu qualifiziert; bestehende Namen, Quellen und Bindingversion unverändert.
 
 Registriert im bestehenden competency_development_levels: DEVELOPMENT_LEVEL_LABELS_BY_PROFILE, DEVELOPMENT_LEVEL_DESCRIPTIONS_BY_PROFILE und compact_development_level_label. Reine bereichsspezifische Texte; kompakte Darstellung bindet den tatsächlichen Ratingtext statt ausschließlich den Token. Standard-Aliase bleiben erhalten.

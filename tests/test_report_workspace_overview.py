@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QEvent, QPoint, Qt
+from shiboken6 import isValid
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
     QApplication,
@@ -1444,6 +1445,15 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         self.assertEqual(dialog.selected_competency_ids, before)
         dialog.close()
 
+    def test_queued_subject_focus_does_not_outlive_destroyed_report(self) -> None:
+        dialog = LearningReportDialog(self.preparation)
+        dialog.show()
+        self.assertTrue(dialog.focus_evidence_subject("math"))
+        dialog.deleteLater()
+        self.app.sendPostedEvents(dialog, QEvent.Type.DeferredDelete)
+        self.assertFalse(isValid(dialog))
+        self.app.processEvents()
+
     def test_report_page_reflows_through_three_two_and_one_columns(self) -> None:
         screen = self._screen(self._overview())
         screen.show()
@@ -1699,6 +1709,9 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
     ) -> None:
         report = self._report_draft("RPD-1")
         report_shell = Mock()
+        report_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        report_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, report_shell)
+        report_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, report_shell)
         report_shell.adapter.list_learning_report_drafts_for_student.return_value = (
             report,
         )
@@ -1722,6 +1735,9 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
 
         leg = self._leg_draft("LCD-1")
         leg_shell = Mock()
+        leg_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        leg_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, leg_shell)
+        leg_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, leg_shell)
         leg_shell.adapter.list_learning_conference_drafts_for_student.return_value = (
             leg,
         )
@@ -1758,6 +1774,8 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
     def test_async_report_shell_releases_and_reopens_five_workspaces(self) -> None:
         report = self._report_draft("RPD-1")
         owner = QWidget()
+        owner._create_dialog = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        owner._open_workspace = lambda dialog: shell.open_maximized_workspace(dialog, owner)
         owner.adapter = Mock()
         owner.adapter.list_learning_report_drafts_for_student.return_value = (report,)
         owner.adapter.learning_report_preparation_for_student.return_value = self.preparation
@@ -1824,6 +1842,9 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         self,
     ) -> None:
         report_shell = Mock()
+        report_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        report_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, report_shell)
+        report_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, report_shell)
         report_shell.adapter.list_learning_report_drafts_for_student.return_value = ()
         report_shell.adapter.learning_report_preparation_for_student.return_value = (
             self.preparation
@@ -1875,6 +1896,9 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         first = self._report_draft("RPD-1")
         second = self._report_draft("RPD-2")
         report_shell = Mock()
+        report_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        report_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, report_shell)
+        report_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, report_shell)
         report_shell.adapter.list_learning_report_drafts_for_student.return_value = (
             first,
             second,
@@ -1932,6 +1956,9 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         first = self._report_draft("RPD-1")
         second = self._report_draft("RPD-2")
         report_shell = Mock()
+        report_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        report_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, report_shell)
+        report_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, report_shell)
         report_shell.adapter.list_learning_report_drafts_for_student.return_value = (
             first,
             second,
@@ -1964,6 +1991,9 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
 
     def test_new_report_period_cancel_stops_before_preparation(self) -> None:
         report_shell = Mock()
+        report_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        report_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, report_shell)
+        report_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, report_shell)
         report_shell.adapter.list_learning_report_drafts_for_student.return_value = ()
         report_shell.adapter.current_school_year.return_value = SimpleNamespace(
             start_date=date(2026, 8, 1),
@@ -1992,6 +2022,9 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
     def test_single_report_draft_opens_without_period_selection(self) -> None:
         report = self._report_draft("RPD-1")
         report_shell = Mock()
+        report_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        report_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, report_shell)
+        report_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, report_shell)
         report_shell.adapter.list_learning_report_drafts_for_student.return_value = (
             report,
         )
@@ -2037,6 +2070,9 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
         first = self._report_draft("RPD-1")
         second = self._report_draft("RPD-2")
         report_shell = Mock()
+        report_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        report_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, report_shell)
+        report_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, report_shell)
         report_shell.adapter.list_learning_report_drafts_for_student.return_value = (
             first,
             second,
@@ -2086,10 +2122,16 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
 
     def test_shell_handles_repeated_unreadable_list_actions(self) -> None:
         report_shell = Mock()
+        report_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        report_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, report_shell)
+        report_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, report_shell)
         report_shell.adapter.list_learning_report_drafts_for_student.side_effect = (
             ValueError("bad report row")
         )
         leg_shell = Mock()
+        leg_shell._create_dialog.side_effect = lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs)
+        leg_shell._open_workspace.side_effect = lambda dialog: shell.open_maximized_workspace(dialog, leg_shell)
+        leg_shell._exec_workspace.side_effect = lambda dialog: shell.exec_maximized_workspace(dialog, leg_shell)
         leg_shell.adapter.list_learning_conference_drafts_for_student.side_effect = (
             ValueError("bad LEG row")
         )
