@@ -1545,7 +1545,7 @@ class LearningConferenceDialog(QDialog):
         if focus:
             target = self.phase_first_focus.get(key)
             if target is not None:
-                QTimer.singleShot(0, target.setFocus)
+                QTimer.singleShot(0, target, target.setFocus)
 
     def _update_filters(self, *_args: object) -> None:
         if not self.phase_built["evidence"]:

@@ -934,6 +934,7 @@ class OverviewScreen(QWidget):
         if close_button is not None:
             QTimer.singleShot(
                 0,
+                close_button,
                 lambda: close_button.setFocus(Qt.FocusReason.OtherFocusReason),
             )
 

@@ -10,6 +10,8 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 - Bestehende Bewertungen bleiben unverändert gespeichert. Es erfolgt keine automatische Neubewertung oder Datenmigration.
 - Der Elternexport umfasst weiterhin alle aktuellen Fächer und Bereiche. Fehlende Entwicklungsstände müssen ausdrücklich ergänzt werden; interne Bestätigungsangaben erscheinen nicht auf dem Elternblatt.
 
+- Geschlossene Berichtsfenster erhalten keinen nachträglichen Fokus; gleichzeitige Prüfungen desselben Recovery-Codes werden zuverlässig abgearbeitet.
+
 ## Fachliche Grundlage und Dokumentation
 
 - Fachliche Grundlage ist das offizielle Jenaplan-Entwicklungsbuch mit 331
@@ -101,20 +103,14 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
   und erfolgreich erzeugtem und verifiziertem Safety-`.jkmebackup`. Er ändert
   keine Fachdaten oder Datenschlüssel und gibt Support keinen Datenzugriff.
 
-## Offene Gates
+## Weiterhin bestehende Grenzen
 
-- finaler Pilotbuild nach bestandenem Source-/Dokument-/Fresh-First-Run-Gate;
-- reales Keychain-/Codesign-/Restore-Bundlegate;
-- Support Reset und Backup/Restore im real gebauten Bundle;
-- finaler DMG-Smoke;
-- portable Backup-Recovery beziehungsweise DMK-Recovery;
-- Developer ID und Apple-Notarisierung;
-- ausdrückliches Pilot-GO.
+- Keine portable Backup-Recovery beziehungsweise Wiederherstellung eines verlorenen lokalen Datenschlüssels.
+- Developer ID und Apple-Notarisierung bleiben ein separater Arbeitsschritt.
+- Dieses Update bleibt im bestehenden Pilotkanal; der Stable-Kanal wird nicht freigegeben.
 
 ## Historische Dokumentation
 
 Explizit ältere Release-, Sprint-, Foundation- und Builddokumente bleiben als
 Historie erhalten. Ihre Aussagen beschreiben nicht den aktuellen
 Final-V4-Produktpfad und werden nicht als aktuelle Pilotunterlagen erzeugt.
-
-- Geschlossene Berichtsfenster erhalten keinen nachträglichen Fokus; gleichzeitige Prüfungen desselben Recovery-Codes werden zuverlässig abgearbeitet.

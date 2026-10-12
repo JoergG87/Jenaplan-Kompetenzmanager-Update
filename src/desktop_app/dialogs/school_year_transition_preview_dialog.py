@@ -987,6 +987,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             return
         QTimer.singleShot(
             0,
+            self,
             lambda: self._apply_course_selection(student_id, selection),
         )
 
@@ -997,6 +998,7 @@ class SchoolYearTransitionPreviewDialog(MotionDialog):
             return
         QTimer.singleShot(
             0,
+            self,
             lambda: self._apply_group_selection(student_id, selection),
         )
 

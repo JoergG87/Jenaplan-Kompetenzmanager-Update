@@ -24,7 +24,7 @@ def dispose_qt_test_windows():
     from shiboken6 import isValid
     for widget in app.topLevelWidgets():
         if widget not in previous and isValid(widget):
-            widget.close()
+            widget.hide()
             widget.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     app.processEvents()

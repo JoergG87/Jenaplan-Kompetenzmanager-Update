@@ -878,7 +878,7 @@ class NewObservationDialog(QDialog):
             prepend=True,
         )
         self._set_catalog_tile_selected(competency_key, True)
-        QTimer.singleShot(0, self._scroll_selected_to_top)
+        QTimer.singleShot(0, self, self._scroll_selected_to_top)
 
     def _set_catalog_tile_selected(self, competency_key: str, selected: bool) -> None:
         tile = self.competency_catalog_tiles.get(competency_key)

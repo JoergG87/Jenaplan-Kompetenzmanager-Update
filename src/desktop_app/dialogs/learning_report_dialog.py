@@ -812,7 +812,7 @@ class LearningReportDialog(QDialog):
             else "Noch kein Fach ausgewählt"
         )
         self.continue_to_writing_button.setEnabled(bool(selected_names))
-        QTimer.singleShot(0, self._sync_evidence_sidebar_footer_height)
+        QTimer.singleShot(0, self, self._sync_evidence_sidebar_footer_height)
 
     def _sync_evidence_sidebar_footer_height(self) -> None:
         """Keep wrapped footer copy readable while only the subject list shrinks."""
@@ -841,7 +841,7 @@ class LearningReportDialog(QDialog):
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
         super().resizeEvent(event)
-        QTimer.singleShot(0, self._sync_evidence_sidebar_footer_height)
+        QTimer.singleShot(0, self, self._sync_evidence_sidebar_footer_height)
 
     def _set_editor_section(self, index: int) -> None:
         if index > 0:
@@ -2092,7 +2092,7 @@ class LearningReportDialog(QDialog):
         self.toast.show_message("Berichtsentwurf gespeichert.", tone="success")
         self._refresh_workspace_context()
         self.update_preview()
-        QTimer.singleShot(1600, lambda: self.save_button.setText("Entwurf speichern"))
+        QTimer.singleShot(1600, self, lambda: self.save_button.setText("Entwurf speichern"))
 
     def apply_revision_status(
         self,

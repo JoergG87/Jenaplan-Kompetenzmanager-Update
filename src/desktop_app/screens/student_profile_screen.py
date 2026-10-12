@@ -3438,7 +3438,7 @@ class StudentProfileScreen(QWidget):
             self._report_timeline_initialized = True
             self._update_report_timeline_controls()
 
-        QTimer.singleShot(0, restore_position)
+        QTimer.singleShot(0, self, restore_position)
 
     def _capture_report_timeline_state(
         self,

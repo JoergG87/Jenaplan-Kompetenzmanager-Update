@@ -1,5 +1,7 @@
 # Technical Naming Registry
 
+Vorhandene verzögerte UI-Aufrufe in NewObservationDialog, LearningReportDialog, LearningConferenceDialog, OverviewScreen, StudentProfileScreen und SchoolYearTransitionPreviewDialog erhalten ihren jeweiligen QObject-Kontext. Damit keine nachträglichen Fokus-/Scroll-/Beschriftungs-/Vorschauaktionen nach Löschung des Owners. Keine neuen Namen oder Fachcommands.
+
 SQLiteSecurityRepository._enable_wal_mode wiederholt ausschließlich SQLITE_BUSY/SQLITE_LOCKED bei der bestehenden WAL-Konfiguration, begrenzt auf fünf Sekunden. Andere Fehler unverändert weitergeben; fehlgeschlagene neue Schreibverbindungen schließen. Keine neue Tabelle oder fachliche Operation.
 
 LearningReportDialog.focus_evidence_subject bindet beide vorhandenen verzögerten Fokusaufrufe an den QObject-Kontext des Dialogs; Qt verwirft sie bei dessen Löschung. Keine neue API oder Datenquelle.
