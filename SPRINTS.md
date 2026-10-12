@@ -1,5 +1,9 @@
 # Sprintplanung
 
+## Mac-Update 0.4.4 / Build 404 vorbereiten – 12.10.2026
+
+PO autorisiert neuen Mac-Build und Veröffentlichung im bestehenden GitHub-Pilotkanal. Build 403 bleibt unverändert. Neues Paket übernimmt bereichsgerechte Entwicklungsbuch-Bezeichnungen in App und PDF sowie feste 32-Pixel-Bewertungsbuttons. Gemeinsame Quelle dcc7c46; keine Migration, kein Produktdaten-/Keyzugriff. Versionscommit, saubere Release-Kopie, Gesamtsuite, elf Paketgates und paketierter Restore-Worker-Smoke vor Veröffentlichung. Verschobene Pflanzen-ZIP im Arbeitsordner bleibt unangetastet. Veröffentlichung und Paketabnahme noch offen.
+
 ## iPad-Simulator: UX-Verfeinerung geprüft – 12.10.2026
 
 Die aktuelle Prüfrunde ist abgeschlossen: eigene Suchzeile und Filter, Touch-Auswahlmenüs, einspaltige Bericht-/LEG-Arbeitsseiten, responsive Berichtsvorschau und Abschlussleisten oberhalb der Bildschirmtastatur. Bereichsauswahl aktualisiert vorhandene Inhalte, Wischgesten funktionieren auch in verschachtelten Simulator-Scrollflächen. Dokumentationsring beendet QPainter explizit; im letzten Profil-/Scrolllauf keine QPainter-/BackingStore-Warnung mehr.

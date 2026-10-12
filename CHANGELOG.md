@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Mac-Update 0.4.4 / Build 404 vorbereiten – 12.10.2026
+
+PO autorisiert neuen Mac-Build und Veröffentlichung im bestehenden GitHub-Pilotkanal. Build 403 bleibt unverändert. Neues Paket übernimmt bereichsgerechte Entwicklungsbuch-Bezeichnungen in App und PDF sowie feste 32-Pixel-Bewertungsbuttons. Gemeinsame Quelle dcc7c46; keine Migration, kein Produktdaten-/Keyzugriff. Versionscommit, saubere Release-Kopie, Gesamtsuite, elf Paketgates und paketierter Restore-Worker-Smoke vor Veröffentlichung. Verschobene Pflanzen-ZIP im Arbeitsordner bleibt unangetastet. Veröffentlichung und Paketabnahme noch offen.
+
 ## Bereichsgerechte Entwicklungsbuch-Bezeichnungen – 12.10.2026
 
 PO korrigiert die zuvor gewünschte Vereinheitlichung: Bewertungsbezeichnungen wieder entsprechend dem Bereich anzeigen. Standardfächer behalten die kurzen fachlichen Pflanzenbeschreibungen; Selbst-/Sozialkompetenz zeigt Kaum vorhanden / Teilweise / Gut / Ausgeprägt; Sport Erste Übungen / Übt noch / Meist / Sicher. Gemeinsame Präsentationsquelle definiert alle drei Profile. PDF-Legenden verwenden die jeweiligen vollständigen Originalerklärungen des Entwicklungsbuchs. Kompakte Chips umbrechen den tatsächlichen Bereichstext, statt allein anhand desselben Tokens irrtümlich Standardtexte einzusetzen. Feste 32-Pixel-Höhe, Tokenwerte, Farben, Defaultauswahl, Berechnung und Speicherverträge bleiben unverändert. Kein Datenmodellwechsel.

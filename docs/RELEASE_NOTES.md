@@ -4,25 +4,11 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 ## Neu in diesem Pilotupdate
 
-- Die Kompetenzübersicht exportiert immer alle aktuellen Fächer und überfachlichen Bereiche als PDF für Eltern. Ansichtsfilter verkürzen den Export nicht.
-- Vier neu gezeichnete Pflanzen mit transparentem Hintergrund zeigen die Entwicklungsstufen. Interne Bestätigungsangaben und Bestätigungsdaten erscheinen nicht auf dem Elternblatt.
-- Vor dem Export müssen alle aktuellen Kompetenzen einen ausdrücklich gewählten Entwicklungsstand haben. Ein Ergänzungsdialog führt durch die noch offenen Kompetenzen. Es gibt keine automatische Bewertung.
-- Der native macOS-Speicherdialog ermöglicht die Wahl von Dateiname und Zielordner, einschließlich Downloads. Die Erfolgsmeldung zeigt auch lange Dateinamen vollständig.
-
-- Das Dashboard berücksichtigt die individuellen Dokumentationsfächer jedes
-  Kindes auch in der Heatmap und bei passenden Kindern für die Unterrichtsstunde.
-- `⌘N` öffnet eine Beobachtung für das aktuelle Kind. Ohne eindeutige Auswahl
-  führt das Kürzel zur Schülersuche.
-- `Speichern & weitere` speichert eine Beobachtung und öffnet eine leere
-  Folgeeingabe für dasselbe Kind. Bereits gespeicherte Einträge bleiben auch
-  beim Abbrechen der nächsten Eingabe erhalten.
-- Neue Beobachtungen beginnen mit dem Fokus in der Kompetenzsuche; beim
-  Bearbeiten steht der Fokus in der vorhandenen Notiz.
-- Fachabschnitte der Berichtsvorschau lassen sich ein- und ausklappen.
-  Berichtsinhalte und PDF bleiben dabei vollständig.
-- In den Einstellungen erscheint ein ruhiger Hinweis auf fehlende oder
-  mindestens sieben Tage alte geprüfte Sicherungen. Neue Sicherungen werden
-  weiterhin bewusst gestartet.
+- Kompetenzbewertungen verwenden die zum Bereich passenden Beschreibungen aus dem Entwicklungsbuch: fachliche Pflanzenstufen, „Kaum vorhanden“ bis „Ausgeprägt“ für Selbst- und Sozialkompetenz sowie „Erste Übungen“ bis „Sicher“ für Sport.
+- Die gleichen Bereichsbezeichnungen erscheinen im Kompetenzprofil, im Beobachtungsdialog, beim Ergänzen offener Entwicklungsstände und in der Legende des Eltern-PDFs.
+- Bewertungsbuttons bleiben vor und nach dem Auswählen gleich groß und sind fest 32 Pixel hoch. Bei knapper Breite bleiben ihre Bezeichnungen lesbar umbrochen.
+- Bestehende Bewertungen bleiben unverändert gespeichert. Es erfolgt keine automatische Neubewertung oder Datenmigration.
+- Der Elternexport umfasst weiterhin alle aktuellen Fächer und Bereiche. Fehlende Entwicklungsstände müssen ausdrücklich ergänzt werden; interne Bestätigungsangaben erscheinen nicht auf dem Elternblatt.
 
 ## Fachliche Grundlage und Dokumentation
 
