@@ -1,5 +1,7 @@
 # Design-System
 
+Ein-Finger-Bedienung: native erste Touchposition über Qt-Mausereignissynthese und LeftMouseButtonGesture verarbeiten; kein zusätzliches TouchGesture am selben Viewport. Katalog mindestens 420 Pixel, Bewertungen bei Auswahl 260–440 Pixel; Schritt darf insgesamt scrollen. Hardware-Erfolg erst nach Nutzerprüfung bestätigen.
+
 iPad-Startbildschirm übernimmt das vorhandene Jenaplan-Logo. Native Icon-Dateien quadratisch und ohne Alphakanal; transparente Quellränder werden auf Weiß gesetzt, iPadOS übernimmt die äußere Maskierung.
 
 Tablet-Hauptbody folgt exakt dem eigenen Viewport. Automatische QScrollArea-heightForWidth-Vergrößerung aus versteckten Seiten darf den sichtbaren Dialog nicht über den Bildschirm hinaus vergrößern; Scrollen verbleibt in den Seiten und Dialogschritten.
@@ -10,7 +12,7 @@ Tablet-Bedienung: Scrollen/Wischen ist keine Auswahl. Auch nach Rückbewegung zu
 
 Tablet-Fehlerkorrektur 12.10.2026: Native Window-/Base-Palette verwendet COLOR_BACKGROUND, auch im dunklen iPad-Systemmodus. Scrollrahmen/Viewports erhalten deckende App-Hintergründe; kinetisches Überschwingen ist ausgeschaltet, damit Inhalte keine unbemalten Flächen freilegen. Klassenmatrix muss alle Zeilen erreichbar halten.
 
-Verschachtelte Tablet-Scrollflächen erhalten eine Wischgeste: Simulator mit linker Maus als Fingereingabe, Gerätebuild mit TouchGesture. Erkennung ausschließlich über Apples kompiliertes TARGET_OS_SIMULATOR. Keine Geste auf Texteingabe-Viewports.
+Tablet-Scrollflächen verwenden einheitlich LeftMouseButtonGesture; auf dem Gerät liefert Qt dafür den ersten Fingerkontakt als synthetische Mausereignisse. Keine Geste auf Texteingabe-Viewports.
 
 Simulator-Verfeinerung 12.10.2026: Ruhige einspaltige Arbeitsseiten. Seitliche Bericht-/LEG-Navigation durch 44-Pixel-Bereichsauswahl einschließlich Popup-Zeilen ersetzen; vorhandene Texte/Werte erhalten. Suchzeile vor Filtern, umbrochene Inhalte, Dokumentvorschau innerhalb der verfügbaren Breite. Abschlussleiste dauerhaft erreichbar, bei schmaler Breite mehrzeilig. Hauptnavigation während fokussierter Eingabe vollständig ausblenden. Fachgrafik im Heute-Hero bleibt sichtbar.
 

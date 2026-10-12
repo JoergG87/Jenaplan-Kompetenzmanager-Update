@@ -1,5 +1,7 @@
 # Project Constitution
 
+PO-Korrektur 12.10.2026: iPad-Beobachtung mit einem Finger bedienen; Kompetenzkatalog und ausgewählte Bewertungen mit nutzbarer Listenhöhe statt Mini-Scrollfenstern. Ausschließlich Präsentation, keine Modell-/Validierungsänderung.
+
 PO-Korrektur 12.10.2026: Bestehendes Jenaplan-App-Symbol auch als natives iPad-Startbildschirm-Symbol paketieren. Reine Build-/Präsentationsressource; keine Datenmodelländerung.
 
 PO-Fehlerauftrag 12.10.2026: Alle drei Bereiche des Beobachtungsdialogs müssen bei Überhöhe per Wischgeste scrollbar bleiben, einschließlich Bildschirmtastatur. Tablet-Präsentationskorrektur; Beobachtungs-/Rating-/Speicherverträge unverändert.

@@ -87,6 +87,16 @@ from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 
 
 class TabletNewObservationDialog(NewObservationDialog):
+    def _update_selection_summary(self):
+        super()._update_selection_summary()
+        if self.competency_rating_entries:
+            self.selected_scroll.setMinimumHeight(max(260, self.selected_scroll.minimumHeight()))
+
+    def _refresh_competencies(self, *args, **kwargs):
+        super()._refresh_competencies(*args, **kwargs)
+        from src.tablet_app.presentation import touch_targets
+        touch_targets(self.competency_zone)
+
     def _focus_initial_input(self):
         if not hasattr(self, 'tablet_steps'):
             return super()._focus_initial_input()

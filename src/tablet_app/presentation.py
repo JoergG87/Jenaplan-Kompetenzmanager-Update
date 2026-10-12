@@ -1,5 +1,4 @@
 """Tablet layout helpers; all values and actions remain owned by the original UI."""
-import sys
 from PySide6.QtCore import QEvent, QObject, Qt, QSize
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
@@ -64,13 +63,10 @@ def configure_tablet_scroll_area(scroll):
         QScroller.ungrabGesture(scroll.viewport())
         return
     if not scroll.property('tabletScrollGesture'):
-        simulator = sys.platform != 'ios'
-        if sys.platform == 'ios':
-            from jkm_ios_share import is_simulator
-            simulator = is_simulator()
-        gesture = QScroller.ScrollerGestureType.LeftMouseButtonGesture if simulator else QScroller.ScrollerGestureType.TouchGesture
-        scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, not simulator)
-        QScroller.grabGesture(scroll.viewport(), gesture)
+        # Qt synthesizes mouse events for the first unhandled finger contact.
+        # Use the same path as buttons/cards, rather than competing touch grabs.
+        scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, False)
+        QScroller.grabGesture(scroll.viewport(), QScroller.ScrollerGestureType.LeftMouseButtonGesture)
         scroll.setProperty('tabletScrollGesture', True)
     scroller = QScroller.scroller(scroll.viewport())
     properties = scroller.scrollerProperties()
@@ -119,7 +115,8 @@ class TabletChoiceDelegate(QStyledItemDelegate):
 def touch_targets(root):
     for widget in root.findChildren(QWidget):
         if (isinstance(widget, QAbstractButton)
-                or isinstance(widget, AppCard) and widget.property('interactive')):
+                or isinstance(widget, AppCard) and (widget.property('interactive')
+                    or widget.objectName() in ('ObservationCatalogCompetencyTile', 'ObservationRecentCompetencyChip'))):
             if not hasattr(widget, 'tablet_tap_guard'):
                 widget.tablet_tap_guard = TabletTapGuard(widget)
                 widget.installEventFilter(widget.tablet_tap_guard)

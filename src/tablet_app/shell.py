@@ -96,7 +96,10 @@ class TabletDialogPolicy(QObject):
             dialog.tablet_next_buttons.append(next_button)
         tabs.tabBar().setMinimumHeight(44)
         dialog.selected_scroll.setMinimumHeight(70)
-        dialog.selected_scroll.setMaximumHeight(200)
+        dialog.selected_scroll.setMaximumHeight(440)
+        dialog.catalog_scroll.setMinimumHeight(420)
+        if dialog.competency_rating_entries:
+            dialog._update_selection_summary()
         dialog.note_input.setMinimumHeight(160)
         dialog.quick_observation_checkbox.toggled.connect(
             lambda checked: tabs.setCurrentIndex(2) if checked else None

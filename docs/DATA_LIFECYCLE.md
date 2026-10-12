@@ -1,5 +1,7 @@
 # Data Lifecycle
 
+Ein-Finger-Wischbedienung nutzt bestehende Antippschutzfilter vor Actions; keine Auswahl oder Speicherung durch Wischen. Geräteupdate erhält synthetischen Bestand.
+
 App-Symbol-Build schreibt ausschließlich abgeleitete Bilder und Xcode-Projektressourcen im getrennten Staging. Quellbild und App-Nutzerdaten bleiben unverändert.
 
 Beobachtungsdialog: Gesten-Neubindung beendet eigene laufende Scrollbewegungen vor erneuter Registrierung. Keine Beobachtung, Auswahl oder Notiz dadurch gespeichert/verworfen.

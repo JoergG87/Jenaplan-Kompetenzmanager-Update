@@ -89,6 +89,10 @@ def test_original_shell_and_guided_observation_use_same_adapter(tmp_path):
     assert dialog._initial_focus_applied
     assert not dialog.catalog_search_input.hasFocus()
     assert not dialog.note_input.hasFocus()
+    tabs.setCurrentIndex(1)
+    app.processEvents()
+    assert dialog.catalog_scroll.viewport().height() >= 400
+    assert all(hasattr(tile, 'tablet_tap_guard') for tile in dialog.competency_catalog_tiles.values())
     # All three steps must retain a real scroll range with keyboard-sized
     # available space, while their final window is the owning tablet shell.
     from PySide6.QtCore import QPoint, QPointF
@@ -291,7 +295,7 @@ def test_projection_cleanup_stops_active_swipe_without_detaching_native_window()
     parent.close()
 
 
-@pytest.mark.parametrize('kind', ['card', 'button'])
+@pytest.mark.parametrize('kind', ['card', 'button', 'catalog'])
 def test_tablet_swipe_and_scroller_cancel_do_not_activate_but_taps_do(kind):
     from PySide6.QtCore import QEvent, QPointF, Qt
     from PySide6.QtGui import QMouseEvent
@@ -307,6 +311,9 @@ def test_tablet_swipe_and_scroller_cancel_do_not_activate_but_taps_do(kind):
         target = DashboardMatchingStudentAction(
             DashboardSuggestedStudentViewModel('STU-TEST', 'Testkind', 'Nur Testdaten'),
             lambda: activations.append('open'))
+    elif kind == 'catalog':
+        from src.desktop_app.dialogs.new_observation_dialog import ObservationCatalogCompetencyTile
+        target = ObservationCatalogCompetencyTile('CMP-TEST', lambda: activations.append('open'), False)
     else:
         target = QPushButton('Testaktion')
         target.clicked.connect(lambda: activations.append('open'))
@@ -337,3 +344,33 @@ def test_tablet_swipe_and_scroller_cancel_do_not_activate_but_taps_do(kind):
     pointer(QEvent.Type.MouseButtonRelease, 20, 20)
     assert activations == ['open']
     parent.close()
+
+
+def test_one_pointer_drag_moves_tablet_scroll_area():
+    from PySide6.QtCore import QEvent, QPointF, Qt
+    from PySide6.QtGui import QMouseEvent
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QApplication, QScrollArea, QWidget
+    from src.tablet_app.presentation import configure_tablet_scroll_area
+    app = QApplication.instance() or QApplication([])
+    scroll = QScrollArea()
+    content = QWidget()
+    content.setMinimumHeight(2000)
+    scroll.setWidget(content)
+    scroll.resize(320, 500)
+    scroll.show()
+    configure_tablet_scroll_area(scroll)
+    app.processEvents()
+    viewport = scroll.viewport()
+    # Real press/move/release delivery, rather than calling scrollTo directly.
+    for kind, y in ((QEvent.Type.MouseButtonPress, 400),
+                    (QEvent.Type.MouseMove, 350), (QEvent.Type.MouseMove, 250),
+                    (QEvent.Type.MouseMove, 150), (QEvent.Type.MouseButtonRelease, 150)):
+        point = QPointF(100, y)
+        button = Qt.MouseButton.NoButton if kind == QEvent.Type.MouseMove else Qt.MouseButton.LeftButton
+        buttons = Qt.MouseButton.NoButton if kind == QEvent.Type.MouseButtonRelease else Qt.MouseButton.LeftButton
+        app.sendEvent(viewport, QMouseEvent(kind, point, QPointF(viewport.mapToGlobal(point.toPoint())),
+                      button, buttons, Qt.KeyboardModifier.NoModifier))
+        QTest.qWait(30)
+    assert scroll.verticalScrollBar().value() > 150
+    scroll.close()

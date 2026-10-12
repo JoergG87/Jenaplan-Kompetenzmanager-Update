@@ -1,5 +1,7 @@
 # View Data Ownership
 
+TabletDialogPolicy besitzt Katalog-Mindesthöhe 420 Pixel und Bewertungsfläche bis 440 Pixel. Überhöhe bleibt über den jeweiligen Schritt erreichbar; vorhandene Dialogadapter bleiben fachliche Owner.
+
 iPad-Startbildschirm-Symbol gehört zur nativen Paketpräsentation. Quelle assets/app_icon.png; keine neue fachliche Ansicht.
 
 Beobachtungsdialog: TabletDialogPolicy/TabletAppShell besitzen finale Gestenbindung und Mindestgrößen der vorhandenen drei Schritte. Inhalt und Commands bleiben ursprünglicher Dialog.

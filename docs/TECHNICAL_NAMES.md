@@ -1,5 +1,7 @@
 # Technical Naming Registry
 
+TabletNewObservationDialog._refresh_competencies registriert den Antippschutz auch an neu aufgebauten Katalogkacheln. TabletNewObservationDialog._update_selection_summary erweitert nur die bestehende Anzeigehöhenberechnung; bei ausgewählten Bewertungen mindestens 260 Pixel, maximal 440 Pixel. configure_tablet_scroll_area verwendet einheitlich LeftMouseButtonGesture mit Qt-Synthese des ersten Fingerkontakts statt konkurrierendem TouchGesture.
+
 Registriert: configure_ipad_icon in scripts/build_ipad_app.py; erzeugt Assets.xcassets/AppIcon.appiconset und bindet den Katalog idempotent als Xcode-Ressource ein.
 
 TabletAppShell.eventFilter bindet ausschließlich Resize des eigenen Tablet-Hauptviewports an tablet_body.resize; kein globaler Filter. Hauptbody bleibt exakt viewportgroß, Scrollownership liegt bei den vorhandenen Seiten/Schritten. tabletViewportOnly markiert den reinen Hauptwrapper ohne eigene Scrollgeste.

@@ -1,5 +1,7 @@
 # Data Registry
 
+Ein-Finger-Scrollkorrektur: bestehende Katalog-/Rating-Projektionen unverändert; Pointerereignisse bleiben flüchtiger Präsentationszustand.
+
 iPad-App-Symbol: einzige Quelle assets/app_icon.png; abgeleitete opaque PNG-Größen ausschließlich im Staging-Assetkatalog. Keine neue fachliche Quelle.
 
 Beobachtungsdialog-Scrollkorrektur: Scrollposition/Gestenregistrierung nur flüchtige Präsentation, keine neue Datenquelle.

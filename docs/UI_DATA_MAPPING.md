@@ -1,5 +1,7 @@
 # UI Data Mapping
 
+Schritt 2: vorhandener Kompetenzkatalog mindestens 420 Pixel hoch; vorhandene ausgewählte Bewertungen bei belegter Auswahl mindestens 260 Pixel hoch. Leerer Bewertungsbereich bleibt kompakt. Keine neuen Felder.
+
 iPadOS-AppIcon verweist auf den kompilierten AppIcon-Assetkatalog aus assets/app_icon.png. Kein Eingabefeld oder fachlicher Wert.
 
 Beobachtungsdialog: Kontext, Kompetenzen und Notiz bekommen nach Einbettung gültige Scrollgesten. Initiale Schrittleiste erhält Fokus; Tastatur erst bei bewusstem Antippen eines sichtbaren Textfelds. Abschlussaktionen bleiben außerhalb der Schritt-Scrollfläche; kein neues Feld.

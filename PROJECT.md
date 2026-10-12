@@ -1,5 +1,11 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## iPad: Ein-Finger-Scrollen und größere Kompetenzlisten – 12.10.2026
+
+PO meldet Scrollen erst mit zwei Fingern und einen zu kleinen Kompetenzbereich. Tablet-Scrollflächen verwenden jetzt einheitlich LeftMouseButtonGesture über Qt-Synthese des ersten Fingerkontakts; WA_AcceptTouchEvents bleibt am Scrollviewport aus, damit nicht parallel TouchGesture den Eingabepfad übernimmt. Katalog mindestens 420 Pixel hoch; ausgewählte Bewertungen mindestens 260 und höchstens 440 Pixel. Leere Bewertung bleibt kompakt. Bestehende fachliche Auswahl-/Rating-/Speicherlogik unverändert. Neu aufgebaute Katalogkacheln erhalten ebenfalls Antippschutz.
+
+Validierung: 32 Tablet-/Fenster-/Beobachtungsprüfungen bestanden, einschließlich echter Ein-Zeiger-Press/Move/Release-Sequenz mit nachgewiesener Scrollbewegung, Kataloghöhe über 400 Pixel und Wisch-/Abbruchschutz an Katalogkacheln bei weiterhin funktionierender Auswahl durch Antippen. Beide nativen Builds erfolgreich, Signaturen tief/strikt geprüft, auf Gerät und Simulator installiert. Gerätestart erfolgreich. Simulator: fünf Kompetenzkacheln zugleich sichtbar, einzelne Drag-Geste bewegt den Inhalt ohne Auswahl; Nachweis output/ipad-app/observation-scroll-fix/competency-one-pointer.png. Geräte-Nachtest mit einem Finger bleibt erforderlich; die genaue Ursache des vorherigen Zwei-Finger-Verhaltens ist nicht durch Gerätetraces bewiesen. Qt dokumentiert die standardmäßige Umsetzung des ersten Fingerkontakts in Mausereignisse (https://doc.qt.io/qt-6/qtouchevent.html). Keine Datenmodelländerung, kein Reset und keine Produktfreigabe.
+
 ## iPad: natives App-Symbol – 12.10.2026
 
 Das bestehende assets/app_icon.png wird für Geräte- und Simulatorpakete in einen nativen AppIcon-Assetkatalog umgerechnet, ohne die Quelle zu verändern. Opaque PNGs enthalten die iPad-/iPhone-Größen und das 1024-Pixel-Symbol; der Katalog wird idempotent in die Xcode-Ressourcen eingebunden. Bisher war zwar das Logo innerhalb der App vorhanden, aber keine native Symbolressource paketiert.
