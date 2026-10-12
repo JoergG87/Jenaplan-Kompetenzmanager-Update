@@ -915,7 +915,7 @@ def main() -> int:
     parser.add_argument("--version", required=True)
     parser.add_argument("--build-version", required=True)
     parser.add_argument("--pilot-commit", default="", help=argparse.SUPPRESS)
-    parser.add_argument("--document-date", default="14. August 2026")
+    parser.add_argument("--document-date", default="12. Oktober 2026")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--manual-only", action="store_true")
     parser.add_argument("--manual-output", type=Path)

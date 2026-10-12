@@ -3,8 +3,7 @@
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 > [!HINWEIS]
-> Vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder
-> Releaseartefakt.
+> Mac-Pilotversion {{PILOT_VERSION}} / Build {{PILOT_BUILD}}.
 
 Die App erstellt unter `Einstellungen > Datensicherung` ausschließlich ein
 verschlüsseltes `.jkmebackup`. Es umfasst die verschlüsselte Final-V4-

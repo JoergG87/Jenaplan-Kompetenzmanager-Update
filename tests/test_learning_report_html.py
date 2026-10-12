@@ -361,7 +361,7 @@ def test_shell_keeps_qt_default_and_html_selection_deliberate() -> None:
     assert 'len(drafts) == 1 and selected_ui == "qt"' in source
     assert 'selected_ui == "qt" and not subject_id and not workspace_key' in source
     assert 'selected_ui == "html" and initial_draft is not None' in source
-    assert "LearningReportDialog(" in source
+    assert "self._create_dialog(LearningReportDialog," in source
     assert "LearningReportHtmlSession(" in helper
     assert "session.show_final_pdf" in helper
     assert "_open_final_pdf_artifact" in helper

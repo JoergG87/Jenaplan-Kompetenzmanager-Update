@@ -174,10 +174,10 @@ class LearningConferenceUiTest(unittest.TestCase):
     def test_canonical_status_projection_preserves_all_rating_profiles(self) -> None:
         expected_by_subject = {
             "deutsch": (
-                "-- Unterstützungsbedarf",
-                "- in Entwicklung",
-                "+ erreicht",
-                "++ sicher erreicht",
+                "Erste Erfahrungen",
+                "Mit Unterstützung",
+                "Kenntnisse meist anwenden",
+                "Eigenständig und sicher",
             ),
             "selbst_sozialkompetenz": (
                 "Kaum vorhanden",

@@ -96,6 +96,8 @@ def test_report_and_leg_ids_open_and_reopen_the_same_shell_viewer_contract() -> 
     parent = QWidget()
     harness = SimpleNamespace(
         adapter=_ViewerAdapter(),
+        _create_dialog=lambda dialog_type, *args, **kwargs: dialog_type(*args, **kwargs),
+        _open_dialog=lambda dialog: dialog.open(),
         _active_pdf_viewer_dialog=None,
     )
 

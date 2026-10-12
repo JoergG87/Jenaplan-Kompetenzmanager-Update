@@ -3,17 +3,15 @@
 ## 1. Titel und Versionsstand
 
 - Produktversion: {{PILOT_VERSION}}
-- Vorbereiteter Pilotbuild: {{PILOT_BUILD}}
-- Dokumentstand: 14. August 2026
+- Pilotbuild: {{PILOT_BUILD}}
+- Dokumentstand: 12. Oktober 2026
 - Plattform: macOS auf Apple Silicon (arm64), ab macOS 13
-- Status: vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder
-  Releaseartefakt
+- Status: Mac-Pilotversion
 
 Dieses Handbuch beschreibt die lokale Qt-Desktop-App. Alle eingebundenen
 Screenshots werden aus einem datenschutzneutralen synthetischen Bestand mit der
-aktuellen Qt-Oberfläche erzeugt. Die Ausgabe bleibt ein Reviewdokument; der
-genaue Produkt-Commit wird erst mit dem späteren sauberen Build als
-Artefaktnachweis festgehalten.
+aktuellen Qt-Oberfläche erzeugt. Der genaue Produkt-Commit wird im Release-Manifest des sauberen Builds
+als Artefaktnachweis festgehalten.
 
 ## 2. Wofür die App da ist
 

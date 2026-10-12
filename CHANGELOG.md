@@ -1,5 +1,7 @@
 # CHANGELOG
 
+Release-404-Prüfpflege: Versionsanzeige aus der Produktkonstante prüfen, Entwicklungsbuch-Standardtexte im LEG-Profilnachweis aktualisieren und bestehende Dialog-Factory im HTML-/PDF-Testvertrag berücksichtigen. Der PDF-Testharness erhält die Factory; fehlende Testmethode hatte irrtümlich den echten Warnungsdialog geöffnet und den Lauf blockiert. Produktcode unverändert. Begleitdokumente erhalten aktuellen Dokumentstand und Mac-Pilotstatus; überholte Hinweise auf noch fehlende Bundles entfallen.
+
 Release 404: SDK-27-Neuqualifizierung abgeschlossen. Zwei unabhängige Builds bytegleich, Wheel-SHA256 9ce432941a45f28af3877192149ab2583ae22f466e3b22c2a7323c5a84c577f9. Audit GO: arm64, macOS-11-Mindestziel, ausschließlich erlaubte Systemabhängigkeiten, kein RPATH oder Buildpfadleck; SQLCipher 4.17/CommonCrypto-Roundtrip bestanden. Quellen/Amalgamation/Bindingpatch unverändert. Bestehender Audit liest den erwarteten SDK-Wert jetzt aus dem festen Manifest statt aus einer veralteten SDK-26.5-Konstante. Acht Buildbasisprüfungen bestanden. Nachweise /private/tmp/jkm-cipher404-build-a, jkm-cipher404-build-b2 und jkm-cipher404-audit-final.
 
 ## Mac-Update 0.4.4 / Build 404 vorbereiten – 12.10.2026

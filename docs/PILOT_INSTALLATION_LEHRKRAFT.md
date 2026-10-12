@@ -1,8 +1,7 @@
 # Installation des Jenaplan-Kompetenzmanagers
 
-Diese Anleitung gilt für den vorbereiteten Final-V4-Pilotstand Version
-{{PILOT_VERSION}} / Build {{PILOT_BUILD}}. Sie ist noch kein finales App-Bundle
-oder Releaseartefakt.
+Diese Anleitung gilt für die Mac-Pilotversion
+{{PILOT_VERSION}} / Build {{PILOT_BUILD}}.
 
 ## 1. Voraussetzungen
 

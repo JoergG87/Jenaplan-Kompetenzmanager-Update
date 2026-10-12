@@ -3,8 +3,7 @@
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 > [!HINWEIS]
-> Vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder
-> Releaseartefakt.
+> Mac-Pilotversion {{PILOT_VERSION}} / Build {{PILOT_BUILD}}.
 
 1. DMG öffnen, die App nach `Programme` ziehen und von dort starten.
 2. App-Passwort festlegen und Recovery-Codes getrennt vom Mac sichern.

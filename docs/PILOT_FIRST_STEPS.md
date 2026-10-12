@@ -3,8 +3,7 @@
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 > [!HINWEIS]
-> Vorbereiteter Final-V4-Pilotstand. Diese Ausgabe ist noch kein finales
-> App-Bundle oder Releaseartefakt.
+> Mac-Pilotversion {{PILOT_VERSION}} / Build {{PILOT_BUILD}}.
 
 ## 1. Willkommen und sicher starten
 

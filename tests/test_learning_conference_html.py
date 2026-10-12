@@ -431,7 +431,7 @@ def test_qt_fallback_stays_default_and_webengine_import_is_lazy_in_shell() -> No
 
     assert 'values.get(LEG_UI_ENV, "qt")' in gate_source
     assert 'if selected_ui == "html":' in shell_source
-    assert "dialog = LearningConferenceDialog(preparation, self, initial_draft)" in shell_source
+    assert "dialog = self._create_dialog(LearningConferenceDialog, preparation, self, initial_draft)" in shell_source
     assert "from src.desktop_app.leg_html.host import" in shell_source
     assert "from PySide6.QtWebEngine" not in shell_source
     assert "_active_learning_conference_student_ids" in shell_source
