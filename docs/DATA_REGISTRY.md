@@ -1,5 +1,9 @@
 # Data Registry
 
+iPad-App-Symbol: einzige Quelle assets/app_icon.png; abgeleitete opaque PNG-Größen ausschließlich im Staging-Assetkatalog. Keine neue fachliche Quelle.
+
+Beobachtungsdialog-Scrollkorrektur: Scrollposition/Gestenregistrierung nur flüchtige Präsentation, keine neue Datenquelle.
+
 Tablet-Antippschutz: Pointerposition und erkannte Wischbewegung sind ausschließlich flüchtiger Eingabezustand; keine zusätzliche Datenquelle oder persistierte Auswahl.
 
 Tablet-Fehlerkorrektur 12.10.2026: Hintergrundpalette und Scroll-/Widget-Lifecycle sind flüchtige Präsentation; keine neue Datenquelle. Geräteberichte ausschließlich Diagnose des eigenen synthetischen Testbundles.

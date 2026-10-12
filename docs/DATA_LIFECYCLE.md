@@ -1,5 +1,9 @@
 # Data Lifecycle
 
+App-Symbol-Build schreibt ausschließlich abgeleitete Bilder und Xcode-Projektressourcen im getrennten Staging. Quellbild und App-Nutzerdaten bleiben unverändert.
+
+Beobachtungsdialog: Gesten-Neubindung beendet eigene laufende Scrollbewegungen vor erneuter Registrierung. Keine Beobachtung, Auswahl oder Notiz dadurch gespeichert/verworfen.
+
 Tablet-Antippschutz verwirft Wisch-/Abbruch-Releases vor vorhandenen Karten-/Buttonaktionen. Bewusste Antipp- und Tastaturaktionen verwenden unveränderte bestehende Commands/Writer.
 
 Tablet-Fehlerkorrektur 12.10.2026: Vor erneutem Aufbau von Heute-Inhalten laufende kinetische Scrollbewegungen beenden; verworfene Widgets verborgen zur verzögerten Löschung geben, ohne setParent(None). Kein zusätzlicher fachlicher Writer oder Datenreset bei Geräteupdate.

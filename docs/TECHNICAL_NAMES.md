@@ -1,5 +1,13 @@
 # Technical Naming Registry
 
+Registriert: configure_ipad_icon in scripts/build_ipad_app.py; erzeugt Assets.xcassets/AppIcon.appiconset und bindet den Katalog idempotent als Xcode-Ressource ein.
+
+TabletAppShell.eventFilter bindet ausschließlich Resize des eigenen Tablet-Hauptviewports an tablet_body.resize; kein globaler Filter. Hauptbody bleibt exakt viewportgroß, Scrollownership liegt bei den vorhandenen Seiten/Schritten. tabletViewportOnly markiert den reinen Hauptwrapper ohne eigene Scrollgeste.
+
+TabletNewObservationDialog._focus_initial_input überschreibt nur den Desktop-Autofokus: initialer Fokus auf sichtbarer Schrittleiste statt verstecktem Such-/Notizfeld, keine vorzeitige Bildschirmtastatur.
+
+Registriert: rebind_tablet_scroll_gestures in src/tablet_app/presentation.py. Gesten an vorhandenen QScrollArea-Viewports nach finaler Widget-Einbettung neu binden; keine globalen Eventfilter.
+
 Registriert: TabletTapGuard in src/tablet_app/presentation.py. Instanzgebundener Eventfilter an bereits konstruierten interaktiven AppCards und QAbstractButtons; flüchtiger Press-/Bewegungszustand (_press, _dragged), Haltereferenz tablet_tap_guard. Kein globaler QApplication-Eventfilter.
 
 Tablet-Darstellungsports registriert: apply_tablet_theme, configure_tablet_scroll_area, stop_tablet_scrollers, clear_tablet_layout in src/tablet_app/presentation.py. Einheitliche native Palette/opaque Scrollhintergründe, begrenzte Scrollgesten und Widget-Lifecycle ohne temporäre Top-Level-Fenster; keine fachlichen Felder.

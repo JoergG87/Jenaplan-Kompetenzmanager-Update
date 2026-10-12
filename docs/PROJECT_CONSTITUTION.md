@@ -1,5 +1,9 @@
 # Project Constitution
 
+PO-Korrektur 12.10.2026: Bestehendes Jenaplan-App-Symbol auch als natives iPad-Startbildschirm-Symbol paketieren. Reine Build-/Präsentationsressource; keine Datenmodelländerung.
+
+PO-Fehlerauftrag 12.10.2026: Alle drei Bereiche des Beobachtungsdialogs müssen bei Überhöhe per Wischgeste scrollbar bleiben, einschließlich Bildschirmtastatur. Tablet-Präsentationskorrektur; Beobachtungs-/Rating-/Speicherverträge unverändert.
+
 PO-Fehlerauftrag 12.10.2026: Wischen darf beim Anhalten keine Karten-/Buttonaktion auslösen. Schutz ausschließlich im Tablet-Präsentationspfad; echte Antipp- und Tastaturaktionen sowie bestehende Fach-/Speichersignale bleiben erhalten.
 
 PO-Fehlerauftrag 12.10.2026: Schwarze Leerflächen, abgeschnittene Scrollinhalte und Absturz beim unteren Heute-Bereich im installierten synthetischen iPad-Test prüfen und korrigieren. Tablet-Präsentation und Widget-Lifecycle dürfen angepasst werden; Quellen, Final-V4, Fach-/Speicherverträge unverändert. Absturzursache erst nach Diagnose als bestätigt ausweisen.

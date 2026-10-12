@@ -1,5 +1,9 @@
 # View Data Ownership
 
+iPad-Startbildschirm-Symbol gehört zur nativen Paketpräsentation. Quelle assets/app_icon.png; keine neue fachliche Ansicht.
+
+Beobachtungsdialog: TabletDialogPolicy/TabletAppShell besitzen finale Gestenbindung und Mindestgrößen der vorhandenen drei Schritte. Inhalt und Commands bleiben ursprünglicher Dialog.
+
 TabletTapGuard besitzt nur die Unterscheidung Antippen/Wischen. Vorhandene Karten und Schaltflächen behalten ihre fachliche Action-/Signalownership; Desktop unverändert.
 
 Tablet-Fehlerkorrektur 12.10.2026: Heute-Klassen-/Kompetenzmatrix bleibt bestehende kanonische Projektion, erhält bei Überhöhe vertikalen Zugriff. Tablet-Hintergrund/Lifecycle sind Präsentationsownership; keine Fachänderung.

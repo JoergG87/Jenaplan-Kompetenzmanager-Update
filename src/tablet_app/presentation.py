@@ -60,12 +60,16 @@ def configure_tablet_scroll_area(scroll):
         surface.setAutoFillBackground(True)
         surface.style().unpolish(surface)
         surface.style().polish(surface)
+    if scroll.property('tabletViewportOnly'):
+        QScroller.ungrabGesture(scroll.viewport())
+        return
     if not scroll.property('tabletScrollGesture'):
         simulator = sys.platform != 'ios'
         if sys.platform == 'ios':
             from jkm_ios_share import is_simulator
             simulator = is_simulator()
         gesture = QScroller.ScrollerGestureType.LeftMouseButtonGesture if simulator else QScroller.ScrollerGestureType.TouchGesture
+        scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, not simulator)
         QScroller.grabGesture(scroll.viewport(), gesture)
         scroll.setProperty('tabletScrollGesture', True)
     scroller = QScroller.scroller(scroll.viewport())
@@ -80,6 +84,15 @@ def stop_tablet_scrollers(root):
     for scroll in root.findChildren(QScrollArea):
         if QScroller.hasScroller(scroll.viewport()):
             QScroller.scroller(scroll.viewport()).stop()
+
+
+def rebind_tablet_scroll_gestures(root):
+    """Register gestures in the final window after a dialog becomes a page."""
+    stop_tablet_scrollers(root)
+    for scroll in root.findChildren(QScrollArea):
+        QScroller.ungrabGesture(scroll.viewport())
+        scroll.setProperty('tabletScrollGesture', False)
+        configure_tablet_scroll_area(scroll)
 
 
 def clear_tablet_layout(layout):

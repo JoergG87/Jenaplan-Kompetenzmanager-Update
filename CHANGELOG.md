@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## iPad: natives App-Symbol – 12.10.2026
+
+Das bestehende assets/app_icon.png wird für Geräte- und Simulatorpakete in einen nativen AppIcon-Assetkatalog umgerechnet, ohne die Quelle zu verändern. Opaque PNGs enthalten die iPad-/iPhone-Größen und das 1024-Pixel-Symbol; der Katalog wird idempotent in die Xcode-Ressourcen eingebunden. Bisher war zwar das Logo innerhalb der App vorhanden, aber keine native Symbolressource paketiert.
+
+Validierung: Symboltest besteht (Größen, deckende Bilder, unveränderte Quelle, wiederholte Konfiguration). Beide nativen Builds erfolgreich, Signaturen tief/strikt geprüft, kompilierter Katalog und iPad-Iconreferenz in beiden Paket-Plists vorhanden. Geräteupdate erfolgreich installiert; Startbildschirm-Symbol im Simulator sichtbar geprüft und gesichert unter output/ipad-app/observation-scroll-fix/app-icon-home.png. Geräte-Sichtprüfung durch PO noch offen. Keine Veröffentlichungsfreigabe.
+
+## iPad: Beobachtungsschritte scrollbar einbetten – 12.10.2026
+
+PO meldet fehlende Wischbedienung in allen drei Beobachtungsschritten. Scrollgesten werden nach finaler Einbettung des Dialogs in die Tablet-App neu registriert und Geräteviewports akzeptieren explizit Touch-Ereignisse. Dialog- und Tabseiten dürfen auf den sichtbaren Platz schrumpfen; Schrittinhalte behalten ihre natürliche Mindesthöhe. Hauptbody wird exakt an den eigenen Viewport gebunden, statt durch heightForWidth versteckter Desktopseiten über die Bildschirmhöhe hinaus vergrößert zu werden. Der äußere Wrapper besitzt keine eigene Scrollgeste; Seiten und Schritte behalten Scrollownership. Kontextzonen werden direkt in ihre Scrollfläche übertragen, ohne temporäre Top-Level-Fenster. Dynamische Bewertungsbuttons behalten Touchgrößen und Antippschutz. Initialer Fokus liegt auf der sichtbaren Schrittleiste statt im versteckten Such-/Notizfeld; keine vorzeitig eingeblendete Bildschirmtastatur.
+
+Validierung: 18 Tablet-/Fensterprüfungen bestanden, jetzt mit allen drei Schritten im 810 × 620 großen Fenster, echtem Scrollbereich bis zum jeweiligen Ende, finalem owning Fenster und vollständig sichtbarer Abschlussleiste. Speicherung derselben synthetischen Beobachtung unverändert geprüft. Separat zwölf Beobachtungsprüfungen bestanden. Beide nativen Builds erfolgreich und signiert, Geräte-/Simulatorupdate installiert. Simulator zeigt Kontext ohne ungewollte Tastatur und mit vollständig sichtbarer Abschlussleiste. Wisch-Nachtest aller drei Schritte auf Hardware noch offen; keine vollständige Hardwarefreigabe. Keine Modell-/Quellen-/Writeränderung, kein Reset der Testdaten.
+
 ## iPad: Wischen von Antippen unterscheiden – 12.10.2026
 
 PO meldet versehentliche Aktivierung beim Anhalten einer Wischbewegung. Instanzgebundener TabletTapGuard schützt bereits konstruierte interaktive Karten und QAbstractButtons im Tablet-Präsentationspfad. Aktion nur nach eigenem Press innerhalb der nativen Drag-Schwelle und Release im ursprünglichen Element. Begonnene Bewegung bleibt auch bei Rückkehr zum Ausgangspunkt eine Wischbewegung. QScroller-Abbruchrelease außerhalb des Elements und Releases ohne Press werden verworfen; gedrückter Zustand wird zurückgesetzt. Keine globalen Eventfilter, keine Änderung von Fachcommands oder Desktopbedienung.

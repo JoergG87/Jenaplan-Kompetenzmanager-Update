@@ -60,14 +60,17 @@ class TabletDialogPolicy(QObject):
         tabs = QTabWidget()
         tabs.setObjectName('TabletObservationSteps')
         tabs.setAccessibleName('Beobachtung: Kontext, Kompetenzen und Notiz')
+        tabs.setMinimumSize(0, 0)
+        tabs.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         dialog.tablet_steps = tabs
         dialog.tablet_next_buttons = []
         dialog.tablet_step_scrolls = []
         zones = [splitter.widget(i) for i in range(splitter.count())]
         for zone, title in zip(zones, ('1 · Kontext', '2 · Kompetenzen', '3 · Notiz')):
-            zone.setParent(None)
             zone.setMinimumWidth(0)
             zone.setMaximumWidth(16777215)
+            zone.layout().setHorizontalSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+            zone.layout().setVerticalSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
             scroll.setFrameShape(QScrollArea.Shape.NoFrame)
@@ -142,8 +145,14 @@ class TabletAppShell(AppShell):
         layout.addLayout(header)
         self.tablet_scroll = QScrollArea()
         self.tablet_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        self.tablet_scroll.setWidgetResizable(True)
+        # Hidden desktop pages contribute a height-for-width larger than the
+        # viewport. Fit the shell explicitly; each page owns its scrolling.
+        self.tablet_scroll.setWidgetResizable(False)
+        self.tablet_scroll.setProperty('tabletViewportOnly', True)
+        self.tablet_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.tablet_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.tablet_scroll.setWidget(original)
+        self.tablet_scroll.viewport().installEventFilter(self)
         layout.addWidget(self.tablet_scroll, 1)
         QScroller.grabGesture(self.tablet_scroll.viewport(), QScroller.ScrollerGestureType.TouchGesture)
         self.setCentralWidget(outer)
@@ -168,6 +177,12 @@ class TabletAppShell(AppShell):
         self.tablet_profile_grid.setContentsMargins(0, 0, 0, 0)
         profile_header.layout().addWidget(action_box)
         self._adapt_width()
+        self.tablet_body.resize(self.tablet_scroll.viewport().size())
+
+    def eventFilter(self, obj, event):
+        if hasattr(self, 'tablet_scroll') and obj is self.tablet_scroll.viewport() and event.type() == QEvent.Type.Resize:
+            self.tablet_body.resize(event.size())
+        return super().eventFilter(obj, event)
 
     def _create_dialog(self, dialog_type, *args, **kwargs):
         from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
@@ -196,6 +211,7 @@ class TabletAppShell(AppShell):
         dialog.setWindowFlags(Qt.WindowType.Widget)
         dialog.setParent(self.stack)
         dialog.setMinimumSize(0, 0)
+        dialog.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self.stack.addWidget(dialog)
         self.stack.setCurrentWidget(dialog)
         self.tablet_navigation_button.setEnabled(False)
@@ -221,6 +237,8 @@ class TabletAppShell(AppShell):
         dialog.finished.connect(finished)
         dialog.show()
         self._adapt_width()
+        from src.tablet_app.presentation import rebind_tablet_scroll_gestures
+        rebind_tablet_scroll_gestures(dialog)
 
     def _exec_dialog(self, dialog):
         self.tablet_dialog_policy.adapt(dialog)

@@ -87,12 +87,21 @@ from src.desktop_app.dialogs.new_observation_dialog import NewObservationDialog
 
 
 class TabletNewObservationDialog(NewObservationDialog):
+    def _focus_initial_input(self):
+        if not hasattr(self, 'tablet_steps'):
+            return super()._focus_initial_input()
+        if not self._initial_focus_applied and self.isVisible():
+            self._initial_focus_applied = True
+            self.tablet_steps.tabBar().setFocus(Qt.FocusReason.OtherFocusReason)
+
     def _add_competency_rating_row(self, *args, **kwargs):
         super()._add_competency_rating_row(*args, **kwargs)
         for card in self.competency_rating_rows.values():
             for button in card.findChildren(QPushButton):
                 button.setMaximumHeight(16777215)
                 button.setMinimumHeight(44)
+            from src.tablet_app.presentation import touch_targets
+            touch_targets(card)
 
 
 class TabletOverviewScreen(OverviewScreen):

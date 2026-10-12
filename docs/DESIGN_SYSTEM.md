@@ -1,5 +1,11 @@
 # Design-System
 
+iPad-Startbildschirm übernimmt das vorhandene Jenaplan-Logo. Native Icon-Dateien quadratisch und ohne Alphakanal; transparente Quellränder werden auf Weiß gesetzt, iPadOS übernimmt die äußere Maskierung.
+
+Tablet-Hauptbody folgt exakt dem eigenen Viewport. Automatische QScrollArea-heightForWidth-Vergrößerung aus versteckten Seiten darf den sichtbaren Dialog nicht über den Bildschirm hinaus vergrößern; Scrollen verbleibt in den Seiten und Dialogschritten.
+
+Tablet-Beobachtungsdialog: Tabseiten dürfen kleiner als ihre Inhaltshöhe werden. Inhalte behalten ihre natürliche Mindesthöhe und bleiben über Scrollen erreichbar; Gesten werden erst im finalen owning Fenster verbindlich registriert.
+
 Tablet-Bedienung: Scrollen/Wischen ist keine Auswahl. Auch nach Rückbewegung zum Start bleibt eine begonnene Wischbewegung von Antippen getrennt. Native Drag-Schwelle statt Zeitheuristik; Tastatur-/Commandaktivierung unverändert.
 
 Tablet-Fehlerkorrektur 12.10.2026: Native Window-/Base-Palette verwendet COLOR_BACKGROUND, auch im dunklen iPad-Systemmodus. Scrollrahmen/Viewports erhalten deckende App-Hintergründe; kinetisches Überschwingen ist ausgeschaltet, damit Inhalte keine unbemalten Flächen freilegen. Klassenmatrix muss alle Zeilen erreichbar halten.

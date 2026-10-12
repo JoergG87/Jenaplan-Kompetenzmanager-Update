@@ -86,6 +86,28 @@ def test_original_shell_and_guided_observation_use_same_adapter(tmp_path):
     assert not shell.tablet_navigation_button.isEnabled()
     tabs=dialog.findChild(QTabWidget,'TabletObservationSteps')
     assert tabs is not None and tabs.count()==3
+    assert dialog._initial_focus_applied
+    assert not dialog.catalog_search_input.hasFocus()
+    assert not dialog.note_input.hasFocus()
+    # All three steps must retain a real scroll range with keyboard-sized
+    # available space, while their final window is the owning tablet shell.
+    from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtWidgets import QScroller
+    shell.resize(810, 620)
+    for index, scroll in enumerate(dialog.tablet_step_scrolls):
+        tabs.setCurrentIndex(index)
+        app.processEvents()
+        assert scroll.window() is shell
+        assert QScroller.hasScroller(scroll.viewport())
+        maximum = scroll.verticalScrollBar().maximum()
+        assert maximum > 0
+        QScroller.scroller(scroll.viewport()).scrollTo(QPointF(0, maximum), 0)
+        app.processEvents()
+        assert scroll.verticalScrollBar().value() == maximum
+        assert dialog.observation_actions.mapTo(shell.tablet_scroll.viewport(), QPoint(0, dialog.observation_actions.height())).y() <= shell.tablet_scroll.viewport().height()
+    shell.resize(810, 1080)
+    tabs.setCurrentIndex(0)
+    app.processEvents()
     dialog.tablet_next_buttons[0].click()
     assert tabs.currentIndex()==1
     dialog.tablet_next_buttons[1].click()

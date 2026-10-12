@@ -1,5 +1,9 @@
 # UI Data Mapping
 
+iPadOS-AppIcon verweist auf den kompilierten AppIcon-Assetkatalog aus assets/app_icon.png. Kein Eingabefeld oder fachlicher Wert.
+
+Beobachtungsdialog: Kontext, Kompetenzen und Notiz bekommen nach Einbettung gültige Scrollgesten. Initiale Schrittleiste erhält Fokus; Tastatur erst bei bewusstem Antippen eines sichtbaren Textfelds. Abschlussaktionen bleiben außerhalb der Schritt-Scrollfläche; kein neues Feld.
+
 Tablet-Antippschutz: Karten/Buttons aktivieren nur nach eigenem linken Press, ohne überschrittene native Drag-Schwelle, bei Release innerhalb des ursprünglichen Elements. QScroller-Abbruchrelease und Release ohne Press werden verworfen; keine neuen sichtbaren Felder.
 
 Tablet-Fehlerkorrektur 12.10.2026: Leere Scroll-/Tabellenbereiche verwenden App-Hintergrundfarbe. Klassen-/Kompetenzmatrix wird bei Überbreite/-höhe scrollbar; sämtliche ursprünglichen Zeilen/Spalten bleiben erhalten. Keine neuen Eingabefelder.

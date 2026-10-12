@@ -48,6 +48,53 @@ def stage_app(target: Path):
     return target
 
 
+def configure_ipad_icon(target: Path, project: Path):
+    """Compile the existing brand image as a native, opaque iOS AppIcon."""
+    import re
+    from PIL import Image
+    text = project.read_text()
+    build_id, file_id = 'A96BA83F440B49299B6E0101', 'A96BA83F440B49299B6E0102'
+    if build_id not in text:
+        text = text.replace('/* End PBXBuildFile section */',
+            f'\t\t{build_id} /* Assets.xcassets in Resources */ = {{isa = PBXBuildFile; fileRef = {file_id}; }};\n/* End PBXBuildFile section */')
+        text = text.replace('/* End PBXFileReference section */',
+            f'\t\t{file_id} /* Assets.xcassets */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = SOURCE_ROOT; }};\n/* End PBXFileReference section */')
+        text, count = re.subn(r'(isa = PBXResourcesBuildPhase;.*?files = \()',
+            lambda match: match[0] + f'\n\t\t\t\t{build_id} /* Assets.xcassets in Resources */,',
+            text, count=1, flags=re.S)
+        if count != 1 or 'folder.assetcatalog' not in text:
+            raise ValueError('Xcode-Projekt besitzt keine bekannte Ressourcenstruktur.')
+    if 'ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;' not in text:
+        raise ValueError('Xcode-Projekt besitzt keine AppIcon-Buildkonfiguration.')
+    catalog = project.parent.parent / 'Assets.xcassets'
+    icons = catalog / 'AppIcon.appiconset'
+    icons.mkdir(parents=True, exist_ok=True)
+    metadata = {'info': {'author': 'xcode', 'version': 1}}
+    (catalog / 'Contents.json').write_text(json.dumps(metadata, indent=2) + '\n')
+    with Image.open(target / 'assets/app_icon.png') as source:
+        if source.width != source.height:
+            raise ValueError('App-Symbol muss quadratisch sein.')
+        source = source.convert('RGBA')
+        image = Image.new('RGB', source.size, 'white')
+        image.paste(source, mask=source.getchannel('A'))
+        entries = []
+        for idiom, size, scales in (
+            ('iphone', 20, (2, 3)), ('iphone', 29, (2, 3)),
+            ('iphone', 40, (2, 3)), ('iphone', 60, (2, 3)),
+            ('ipad', 20, (1, 2)), ('ipad', 29, (1, 2)),
+            ('ipad', 40, (1, 2)), ('ipad', 76, (1, 2)),
+            ('ipad', 83.5, (2,)), ('ios-marketing', 1024, (1,)),
+        ):
+            for scale in scales:
+                pixels = int(size * scale)
+                filename = f'icon-{pixels}.png'
+                image.resize((pixels, pixels), Image.Resampling.LANCZOS).save(icons / filename)
+                entries.append({'idiom': idiom, 'size': f'{size}x{size}',
+                                'scale': f'{scale}x', 'filename': filename})
+    (icons / 'Contents.json').write_text(json.dumps({**metadata, 'images': entries}, indent=2) + '\n')
+    project.write_text(text)
+
+
 def configure_project(target: Path, xcframework: Path, wheels: list[Path]):
     """Copy immutable resources and signed iOS extensions into the app bundle."""
     import re
@@ -85,6 +132,7 @@ def configure_project(target: Path, xcframework: Path, wheels: list[Path]):
         content = content.replace('    PyImport_AppendInittab("PySide6.QtCore", PyInit_QtCore);',
             '    PyImport_AppendInittab("jkm_ios_share", PyInit_jkm_ios_share);\n    PyImport_AppendInittab("PySide6.QtCore", PyInit_QtCore);')
         native.write_text(content)
+    configure_ipad_icon(target, project)
     return project
 
 
