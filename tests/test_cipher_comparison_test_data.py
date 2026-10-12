@@ -296,10 +296,10 @@ def test_comparison_seed_covers_catalog_profiles_workflows_and_encrypted_storage
     assert dict(rating_chip_options_for_competency(
         entry_by_subject["selbst_sozialkompetenz"]
     )) == {
-        "++": "Eigenständig und sicher", "+": "Kenntnisse meist anwenden", "-": "Mit Unterstützung", "--": "Erste Erfahrungen"
+        "++": "Ausgeprägt", "+": "Gut", "-": "Teilweise", "--": "Kaum vorhanden"
     }
     assert dict(rating_chip_options_for_competency(entry_by_subject["sport"])) == {
-        "++": "Eigenständig und sicher", "+": "Kenntnisse meist anwenden", "-": "Mit Unterstützung", "--": "Erste Erfahrungen"
+        "++": "Sicher", "+": "Meist", "-": "Übt noch", "--": "Erste Übungen"
     }
 
     provider = SQLCipherConnectionProvider(

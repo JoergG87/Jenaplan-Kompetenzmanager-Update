@@ -27,10 +27,10 @@ class CompetencyPdfExportError(ValueError):
 
 
 _TOKENS = ("--", "-", "+", "++")
-from src.application.competency_development_levels import DEVELOPMENT_LEVEL_DESCRIPTIONS
+from src.application.competency_development_levels import DEVELOPMENT_LEVEL_DESCRIPTIONS_BY_PROFILE
 
 _LEGENDS = {
-    profile: tuple(DEVELOPMENT_LEVEL_DESCRIPTIONS[token] for token in _TOKENS)
+    profile: tuple(DEVELOPMENT_LEVEL_DESCRIPTIONS_BY_PROFILE[profile][token] for token in _TOKENS)
     for profile in ("standard", "social", "sport")
 }
 

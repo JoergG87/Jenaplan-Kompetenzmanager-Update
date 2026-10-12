@@ -1,5 +1,7 @@
 # Design-System
 
+Aktuelle PO-Korrektur hebt die vorherige globale Textvereinheitlichung auf: bereichsgerechte Entwicklungsbuch-Bezeichnungen überall, auch im schmalen/kompakten Zustand. Vollständige Fach-/Sport-Erklärungen im PDF; Sozialkompetenz dort mit Kaum vorhanden bis Ausgeprägt. Feste Bewertungsbuttonhöhe 32 Pixel bleibt.
+
 Ausdrückliche PO-Präzisierung 12.10.2026: Bewertungsbuttons fest 32 Pixel hoch, unabhängig von Auswahl und kompaktem Text. Die allgemeinen Tablet-Touchgrößen dürfen diese ausdrücklich gewählte Höhe nicht überschreiben. Keine springende Bewertungszeile.
 
 PO-Präzisierung 12.10.2026 supersediert bisherige profilabhängige Bewertungstexte: einheitliche Pflanzenbeschreibungen überall, keine Gut-/in-Entwicklung-Bezeichnungen. Kurze lesbare Chiptexte, bei knapper Breite zweizeilig statt reine Symbole; fachliche Farben/Tokens unverändert. PDF-Ergänzung auf iPad verwendet 44-Pixel-Fachauswahl mit voller Fachliste statt nativer schwarzer Tabpfeile.

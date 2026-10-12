@@ -1,5 +1,7 @@
 # Project Constitution
 
+PO-Korrektur 12.10.2026: Bewertungstexte bereichsgerecht aus dem Entwicklungsbuch übernehmen. Standardfächer: fachliche Pflanzensätze; Selbst-/Sozialkompetenz: Kaum vorhanden/Teilweise/Gut/Ausgeprägt; Sport: Erste Übungen/Übt noch/Meist/Sicher mit vollständigen Originalerklärungen im PDF. Hebt die vorherige Vereinheitlichung ausdrücklich auf. Feste 32-Pixel-Buttons und gespeicherte Tokens bleiben.
+
 PO-Korrektur 12.10.2026: Bewertungsbuttons im Beobachtungsdialog behalten vor und nach Auswahl dieselbe Größe; PO präzisiert ausdrücklich feste 32 Pixel Höhe. Reine Darstellung; gewählte Stufe und bestehende Speicherlogik unverändert.
 
 PO-Präzisierung 12.10.2026: Pflanzenbeschreibungen überall bei Kompetenzbewertungen, einschließlich Sozial-/Sportprofilen, anzeigen. Ersetzt deren frühere abweichende Anzeigetexte; unveränderte vier Ratingtokens und Reihenfolge. PDF und App beschreiben dieselben Stufen. iPad-PDF-Ergänzung erhält direkte Fachauswahl statt unlesbarer Tabpfeile.

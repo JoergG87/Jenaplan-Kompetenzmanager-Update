@@ -405,7 +405,7 @@ def test_tablet_pdf_completion_reaches_every_subject_without_arrow_tabs():
         choice = dialog.rating_inputs[f'CMP-{index}']
         assert not choice.currentData()
         assert [choice.itemData(i) for i in range(1, 5)] == ['--', '-', '+', '++']
-        assert choice.itemText(1) == 'Erste Erfahrungen'
+        assert choice.itemText(1) == ['Erste Erfahrungen', 'Kaum vorhanden', 'Erste Übungen'][index % 3]
         choice.setCurrentIndex(2)
     assert dialog.save_button.isEnabled()
     assert set(dialog.selections().values()) == {'-'}

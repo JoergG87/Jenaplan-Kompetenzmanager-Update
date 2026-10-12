@@ -174,10 +174,10 @@ def test_rating_profiles_keep_tokens_and_standard_labels() -> None:
     assert tuple(token for token, _label in standard) == OBSERVATION_RATING_TOKENS
     assert tuple(label for _token, label in standard) == OBSERVATION_RATING_OPTIONS
     assert tuple(social[token] for token in ("--", "-", "+", "++")) == (
-        "Erste Erfahrungen", "Mit Unterstützung", "Kenntnisse meist anwenden", "Eigenständig und sicher",
+        "Kaum vorhanden", "Teilweise", "Gut", "Ausgeprägt",
     )
     assert tuple(sport[token] for token in ("--", "-", "+", "++")) == (
-        "Erste Erfahrungen", "Mit Unterstützung", "Kenntnisse meist anwenden", "Eigenständig und sicher",
+        "Erste Übungen", "Übt noch", "Meist", "Sicher",
     )
     assert not any("Level " in label for _token, label in standard)
 
@@ -185,8 +185,8 @@ def test_rating_profiles_keep_tokens_and_standard_labels() -> None:
 @pytest.mark.parametrize(
     "subject_key,expected_labels",
     (
-        ("selbst_sozialkompetenz", {"--": "Erste Erfahrungen", "++": "Eigenständig und sicher"}),
-        ("sport", {"--": "Erste Erfahrungen", "++": "Eigenständig und sicher"}),
+        ("selbst_sozialkompetenz", {"--": "Kaum vorhanden", "++": "Ausgeprägt"}),
+        ("sport", {"--": "Erste Übungen", "++": "Sicher"}),
         ("deutsch", {"--": "Erste Erfahrungen", "++": "Eigenständig und sicher"}),
         ("mathematik", {"--": "Erste Erfahrungen", "++": "Eigenständig und sicher"}),
     ),
@@ -212,11 +212,11 @@ def test_profile_switch_relabels_without_changing_persistent_value() -> None:
 
     selector.set_competency(_entry("selbst_sozialkompetenz"))
     assert selector.currentData() == "-"
-    assert selector.buttons["-"].text() == "✓ Mit Unterstützung"
+    assert selector.buttons["-"].text() == "✓ Teilweise"
 
     selector.set_competency(_entry("sport"))
     assert selector.currentData() == "-"
-    assert selector.buttons["-"].text() == "✓ Mit Unterstützung"
+    assert selector.buttons["-"].text() == "✓ Übt noch"
 
 
 def test_fresh_v4_seed_has_new_catalog_and_no_synthetic_work_data(
@@ -260,3 +260,21 @@ def test_fresh_v4_seed_has_new_catalog_and_no_synthetic_work_data(
         CurriculumDesktopAdapter().list_entries()
     )
     assert len(SQLiteCompetencyRepository(database).list_competencies()) == 331
+
+
+@pytest.mark.parametrize('subject_key,expected', [
+    ('deutsch', ['Eigenständig und sicher', 'Kenntnisse meist anwenden', 'Mit Unterstützung', 'Erste Erfahrungen']),
+    ('selbst_sozialkompetenz', ['Ausgeprägt', 'Gut', 'Teilweise', 'Kaum vorhanden']),
+    ('sport', ['Sicher', 'Meist', 'Übt noch', 'Erste Übungen']),
+])
+def test_compact_rating_labels_keep_their_area_and_32_pixel_height(subject_key, expected):
+    app = QApplication.instance() or QApplication([])
+    selector = ObservationRatingSelector('-', _entry(subject_key))
+    selector.resize(420, 32)
+    selector.show()
+    app.processEvents()
+    assert [' '.join(button.text().removeprefix('✓ ').split())
+            for button in selector.buttons.values()] == expected
+    assert all(button.height() == 32 for button in selector.buttons.values())
+    assert selector.currentData() == '-'
+    selector.close()

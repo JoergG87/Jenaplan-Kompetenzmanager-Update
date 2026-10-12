@@ -15,7 +15,7 @@ OBSERVATION_CONTEXT_OPTIONS = (
     "Leseübung",
 )
 
-from src.application.competency_development_levels import DEVELOPMENT_LEVEL_LABELS
+from src.application.competency_development_levels import DEVELOPMENT_LEVEL_LABELS, DEVELOPMENT_LEVEL_LABELS_BY_PROFILE
 
 OBSERVATION_RATING_OPTIONS = tuple(DEVELOPMENT_LEVEL_LABELS[token] for token in ("++", "+", "-", "--"))
 
@@ -33,7 +33,7 @@ COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS = (
 )
 
 RATING_LABELS_BY_PROFILE = {
-    profile: dict(DEVELOPMENT_LEVEL_LABELS)
+    profile: dict(DEVELOPMENT_LEVEL_LABELS_BY_PROFILE[profile])
     for profile in (RATING_PROFILE_STANDARD, RATING_PROFILE_SOCIAL, RATING_PROFILE_SPORT)
 }
 

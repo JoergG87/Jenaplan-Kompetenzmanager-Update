@@ -1,5 +1,7 @@
 # Data Lifecycle
 
+Bereichsgerechte Textkorrektur liest bestehendes Kompetenzprofil; keine Änderung vorhandener Ratingtokens, Bewertungen, Defaultwerte, Bestätigungen oder Speicherschritte.
+
 Geometriekorrektur der Bewertungsbuttons verändert weder Defaults noch explizite Auswahl-/Speichercommands; kein Datenreset.
 
 Pflanzenbezeichnungen verändern keine gespeicherten Beobachtungen, Bestätigungen oder Ratingtokens. Fachauswahl im iPad-Ergänzungsdialog wechselt nur bestehende Tabs; Abbruch, Pflichtvollständigkeit und explizites Speichern unverändert.

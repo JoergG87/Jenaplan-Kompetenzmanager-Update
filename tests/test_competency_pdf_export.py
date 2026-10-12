@@ -160,3 +160,18 @@ def test_all_four_plants_keep_transparency_in_actual_pdf():
         alpha = image['/SMask'].get_object().get_data()
         assert min(alpha) == 0
         assert max(alpha) == 255
+
+
+@pytest.mark.parametrize('profile,expected,excluded', [
+    ('standard', 'Du hast erste Erfahrungen gesammelt.', 'Kaum vorhanden'),
+    ('social', 'Kaum vorhanden', 'Du hast erste Erfahrungen gesammelt.'),
+    ('sport', 'Du hast erste Übungen gemacht.', 'Du hast erste Erfahrungen gesammelt.'),
+])
+def test_pdf_legend_uses_the_development_book_area(profile, expected, excluded):
+    from dataclasses import replace
+    prepared = model(status())
+    subject = replace(prepared.subjects[0], rating_profile=profile)
+    prepared = replace(prepared, subjects=(subject,))
+    text = ' '.join(page.extract_text() for page in PdfReader(BytesIO(render_competency_pdf(prepared))).pages)
+    assert expected in text
+    assert excluded not in text

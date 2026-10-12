@@ -1,5 +1,7 @@
 # View Data Ownership
 
+App-Chips, Profilanzeigen und PDF-Ergänzung projizieren bestehendes Kompetenzprofil über gemeinsame bereichsspezifische Labels. PDF-Legende nutzt dieselben Profile mit vollständigen Originalerklärungen. Keine neue Ansicht.
+
 RatingBadgeButton besitzt zustandsunabhängige feste Höhe von 32 Pixeln; ObservationRatingSelector behält exklusive Auswahl und vorhandenen Tokenvertrag.
 
 Kompetenzbewertungen beziehen sichtbare Labels und PDF-Legenden aus gemeinsamer Pflanzenbeschreibung. TabletCompetencyPdfCompletionDialog ersetzt nur Fachnavigation; vorhandener CompetencyPdfCompletionDialog bleibt Owner der Eingaben und bestehenden Application-Speicherverträge.

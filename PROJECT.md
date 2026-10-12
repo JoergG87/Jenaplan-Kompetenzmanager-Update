@@ -1,5 +1,11 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Bereichsgerechte Entwicklungsbuch-Bezeichnungen – 12.10.2026
+
+PO korrigiert die zuvor gewünschte Vereinheitlichung: Bewertungsbezeichnungen wieder entsprechend dem Bereich anzeigen. Standardfächer behalten die kurzen fachlichen Pflanzenbeschreibungen; Selbst-/Sozialkompetenz zeigt Kaum vorhanden / Teilweise / Gut / Ausgeprägt; Sport Erste Übungen / Übt noch / Meist / Sicher. Gemeinsame Präsentationsquelle definiert alle drei Profile. PDF-Legenden verwenden die jeweiligen vollständigen Originalerklärungen des Entwicklungsbuchs. Kompakte Chips umbrechen den tatsächlichen Bereichstext, statt allein anhand desselben Tokens irrtümlich Standardtexte einzusetzen. Feste 32-Pixel-Höhe, Tokenwerte, Farben, Defaultauswahl, Berechnung und Speicherverträge bleiben unverändert. Kein Datenmodellwechsel.
+
+Validierung: 75 Katalog-/Tablet-/Beobachtungs-/PDF-Prüfungen bestanden; drei umgebungsabhängige Cipherprüfungen übersprungen. Prüft alle drei Profile im kompakten Zustand, Profilwechsel ohne Änderung des gewählten Tokens, 32-Pixel-Größe, PDF-Legenden ohne fremde Bereichstexte und PDF-Ergänzungsdialog mit zwölf Fachseiten. Geräte- und Simulatorbuild erfolgreich; alle vier geänderten Quellen bytegleich in beiden Paketen nachgewiesen. Beide Pakete tief/strikt signaturgeprüft und installiert; Simulator gestartet. Hardwarestart durch Gerätesperre blockiert, Nachtest durch PO offen. Keine Produktions-/Veröffentlichungsfreigabe.
+
 ## Bewertungsbuttons fest 32 Pixel hoch – 12.10.2026
 
 PO meldet größere Bewertungsbuttons vor der Auswahl und präzisiert ausdrücklich feste 32 Pixel Höhe. Ursache reproduziert: generische Tablet-Touchanpassung setzt zunächst 44 Pixel, während die Auswahlzustandsanzeige im breiten Modus auf 32 Pixel zurücksetzt. RatingBadgeButton erhält einmalig feste 32 Pixel; Umschalten ändert nur Text/Häkchen und Auswahlzustand. Allgemeine Tablet-Touchanpassung und dynamische Bewertungszeilen respektieren diese bewusst freigegebene feste Größe. Pflanzenbezeichnungen, Ratingtokens und Speichercommands unverändert.

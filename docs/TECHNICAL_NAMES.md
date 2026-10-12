@@ -1,5 +1,7 @@
 # Technical Naming Registry
 
+Registriert im bestehenden competency_development_levels: DEVELOPMENT_LEVEL_LABELS_BY_PROFILE, DEVELOPMENT_LEVEL_DESCRIPTIONS_BY_PROFILE und compact_development_level_label. Reine bereichsspezifische Texte; kompakte Darstellung bindet den tatsächlichen Ratingtext statt ausschließlich den Token. Standard-Aliase bleiben erhalten.
+
 RatingBadgeButton legt seine Höhe einmalig fest auf 32 Pixel; _sync_selection_state verändert keine Geometriegrenzen beim Umschalten. Keine neuen technischen Namen.
 
 Registriert: src/application/competency_development_levels.py mit DEVELOPMENT_LEVEL_LABELS, DEVELOPMENT_LEVEL_DESCRIPTIONS und DEVELOPMENT_LEVEL_COMPACT_LABELS als gemeinsame reine Präsentationstexte. TabletCompetencyPdfCompletionDialog besitzt subject_picker und subject_tabs; synchronisiert ausschließlich bestehenden Tabindex, keine Fachlogik.
