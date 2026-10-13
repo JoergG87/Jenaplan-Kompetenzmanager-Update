@@ -12,6 +12,7 @@ OBSERVATION_CONTEXT_OPTIONS = (
     "Einzelgespräch",
     "Partnerarbeit",
     "Gruppenarbeit",
+    "Sitzkreis",
     "Leseübung",
 )
 

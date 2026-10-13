@@ -3005,6 +3005,10 @@ Betroffene Datenquellen:
 
 Regel: Defaults fuer Stammgruppen, Kurse und `Mathe/Deutsch Kursverbund A` werden nur erzeugt, wenn der jeweilige Stammdaten-Scope leer ist. Bestehende produktive Stammdaten werden nicht ueberschrieben.
 
+## Beobachtungssituation Sitzkreis – 13.10.2026
+
+Implementiert, unveröffentlicht nach Build 404. `Sitzkreis` nutzt die vorhandenen Create-/Update-Commands und die Textpersistenz von `observations.context`. Keine neue Datenquelle, Domain-Enum, Spalte oder Migration; keine Änderung der atomaren Beobachtungstransaktion. Unbekannte historische und leere Kontextwerte bleiben bei Bearbeitung erhalten, solange keine andere Situation bewusst gewählt wird. Bestehende Beobachtungen werden nicht automatisch verändert.
+
 ## Beobachtung erfassen
 
 `Speichern & weitere` steht ausschließlich beim Anlegen bereit und verwendet

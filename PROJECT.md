@@ -1,5 +1,9 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Sitzkreis – implementiert, unveröffentlicht nach Build 404
+
+13.10.2026: Zentrale Beobachtungssituationsauswahl um `Sitzkreis` ergänzt; normale und schnelle Erfassung, Bearbeitung, Verlauf und Berichtbelege nutzen den bestehenden Textvertrag. Keine Migration oder Änderung bestehender Beobachtungen. macOS 0.4.4 / Build 404 bleibt unverändert; kein Build und keine Veröffentlichung.
+
 ## Mac-Pilot 0.4.4 / Build 404 veröffentlicht – 13.10.2026
 
 Veröffentlicht aus 79d59591344397fdc462f40e1c0335c75066463e im bestehenden Pilotkanal. GitHub-Pre-Release v0.4.4-build404 und signierter Pilot-Appcast öffentlich verifiziert; Feed-Commit 942087e0325b4b417738ba70b55a2148e011091b. Kein Stable-Wechsel, keine Developer-ID-/Notarisierungsbehauptung. Die installierte produktive Mac-App wurde weder gestartet noch aktualisiert; vorhandene Produktdaten und Produktschlüssel blieben unberührt.

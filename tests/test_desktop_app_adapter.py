@@ -4439,6 +4439,89 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertIn("Partnerarbeit", OBSERVATION_CONTEXT_OPTIONS)
 
+    def test_sitzkreis_is_selectable_for_normal_and_quick_observation(self) -> None:
+        for quick in (False, True):
+            with self.subTest(quick=quick):
+                dialog = self._observation_dialog_with_hierarchy()
+                dialog.quick_observation_checkbox.setChecked(quick)
+                self.assertEqual(dialog.context_select.findText("Sitzkreis"), 5)
+                self.assertEqual(
+                    sum(dialog.context_select.itemText(i) == "Sitzkreis"
+                        for i in range(dialog.context_select.count())),
+                    1,
+                )
+                dialog.context_select.setCurrentText("Sitzkreis")
+                self.assertEqual(dialog.create_draft().context, "Sitzkreis")
+                self.assertEqual(dialog.create_draft().is_quick_observation, quick)
+
+    def test_context_roundtrip_preserves_other_fields_for_normal_and_quick(self) -> None:
+        # Includes every existing option, an unknown historical value and an empty value.
+        for context in (*OBSERVATION_CONTEXT_OPTIONS, "Historischer Testkontext", ""):
+            for quick in (False, True):
+                with self.subTest(context=context, quick=quick):
+                    original = self._sample_observation_draft(
+                        context=context,
+                        is_quick_observation=quick,
+                        competency_ratings=() if quick else None,
+                    )
+                    result = self.adapter.save_observation(original)
+                    self.assertIsInstance(result, SuccessResult)
+                    observation_id = result.value.observation_id
+                    repository = SQLiteObservationRepository(self.database)
+                    before = repository.get_observation(observation_id)
+                    self.assertEqual(before.context, context)
+                    loaded = self.adapter.observation_draft_for_edit(observation_id)
+                    dialog = self._observation_dialog_with_hierarchy(loaded)
+                    if context in OBSERVATION_CONTEXT_OPTIONS:
+                        self.assertEqual(dialog.context_select.currentText(), context)
+                    else:
+                        self.assertEqual(dialog.context_select.currentData(), context)
+                    self.assertEqual(dialog.create_draft().context, context)
+                    self.assertIsInstance(
+                        self.adapter.update_observation(dialog.create_draft()), SuccessResult
+                    )
+                    after = repository.get_observation(observation_id)
+                    # updated_at is the only technical field permitted to change on save.
+                    self.assertEqual(replace(after, updated_at=before.updated_at), before)
+                    reopened = self.adapter.observation_draft_for_edit(observation_id)
+                    self.assertEqual(reopened.context, context)
+                    dialog = self._observation_dialog_with_hierarchy(reopened)
+                    dialog.note_input.setPlainText("Synthetisch bearbeitete Notiz.")
+                    self.assertIsInstance(
+                        self.adapter.update_observation(dialog.create_draft()), SuccessResult
+                    )
+                    edited = repository.get_observation(observation_id)
+                    self.assertEqual(edited.note, "Synthetisch bearbeitete Notiz.")
+                    self.assertEqual(
+                        replace(edited, note=before.note, updated_at=before.updated_at), before
+                    )
+
+    def test_sitzkreis_flows_to_observation_history_and_report_evidence(self) -> None:
+        original = self._sample_observation_draft(context="Sitzkreis")
+        result = self.adapter.save_observation(original)
+        self.assertIsInstance(result, SuccessResult)
+        listed = self.adapter.list_observations_for_student(original.student_id)
+        self.assertEqual(listed[0].context, "Sitzkreis")
+        app = QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        screen.set_student(self.adapter.get_student_profile(original.student_id), listed)
+        self.assertTrue(any("Sitzkreis" in label.text()
+                            for label in screen.findChildren(QLabel)))
+        self.assertIsNotNone(app)
+        statuses = self.adapter.list_competency_status_projection_for_student(original.student_id)
+        status = next(item for item in statuses
+                      if item.competency_id == self.german_listening_competency_id)
+        self.assertEqual(status.evidence[0].context, "Sitzkreis")
+        preview = self.adapter.get_report_preview_for_student(original.student_id)
+        evidence = next(item for section in preview.subject_sections
+                        for item in section.example_observations
+                        if item.observation_id == result.value.observation_id)
+        self.assertEqual(evidence.context, "Sitzkreis")
+        self.assertIn("Sitzkreis", evidence.display_label)
+        self.assertIn("Sitzkreis", format_student_report_preview_text(
+            self.adapter.get_student_profile(original.student_id), preview, "2026-07-03"
+        ))
+
     def test_edit_save_preserves_legacy_context_and_all_other_observation_fields(
         self,
     ) -> None:
@@ -5543,6 +5626,7 @@ class DesktopAppAdapterTest(unittest.TestCase):
                 "Einzelgespräch",
                 "Partnerarbeit",
                 "Gruppenarbeit",
+                "Sitzkreis",
                 "Leseübung",
             ),
         )

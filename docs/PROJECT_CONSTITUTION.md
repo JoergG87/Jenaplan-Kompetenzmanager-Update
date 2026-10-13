@@ -26,6 +26,10 @@ PO-Auftrag 12.10.2026: Simulator-App vollständig auf bedienbare Tablet-Präsent
 
 PO-Präzisierung 12.10.2026: Bedienhilfen dürfen für den ersten iPad-Test zurückgestellt werden. Der nachgewiesen abstürzende Qt-iOS-Accessibility-Pfad bleibt ausschließlich im getrennten Testbuild deaktiviert; Touch, Layout und Fachabläufe haben zunächst Priorität. Das ist keine Accessibility- oder Produktionsfreigabe.
 
+## Sitzkreis – PO-Auftrag 13.10.2026
+
+Implementiert, unveröffentlicht nach Build 404: Die bestehende zentrale Beobachtungssituationsauswahl wird um `Sitzkreis` ergänzt. Normale Beobachtung, Schnellbeobachtung und Bearbeitung verwenden denselben Mechanismus. Textpersistenz, historische unbekannte/leere Werte, Ratingtokens, Fach-/Kompetenzzuordnungen, Transaktionsgrenzen und Verschlüsselung bleiben unverändert. Keine Migration, keine iPad-spezifische Codeänderung; macOS 0.4.4 / Build 404 bleibt unverändert.
+
 ## Gesamte App für iPad – PO-Auftrag 11.10.2026
 
 PO-Auftrag 11.10.2026: Die gesamte bestehende PySide-App im gleichen Design für iPad vorbereiten, zunächst im Simulator mit ausschließlich synthetischen Daten. Gemeinsame Fachlogik, Final-V4-Schema, ViewModels und Design-System bleiben verbindlich. Separater Tablet-Start statt Desktop-Security-/Sparkle-/Worker-Startup. Standard-SQLite ausschließlich im Testbuild; keine Freigabe für echte Schülerdaten. Touch-/Layoutanpassung freigegeben; kein Produktmodellwechsel. Eigene Daten pro Installation ohne Synchronisierung.

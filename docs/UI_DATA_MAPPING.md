@@ -24,6 +24,10 @@ Tablet-Dialogseiten 12.10.2026: AppShell._exec_dialog / _exec_workspace / _open_
 
 Tablet-PDF-Port 12.10.2026: Tablet-PDF-Aktion öffnet nach erforderlicher expliziter Ergänzung das native Teilen-Menü (z. B. In Dateien sichern). Rückmeldung benennt geöffnete Ausgabe, keine behauptete Speicherung. Fach-/Kompetenzauswahl und fachliche Persistenz bleiben bestehende Verträge.
 
+## Beobachtungssituation Sitzkreis – 13.10.2026
+
+Implementiert, unveröffentlicht nach Build 404. Das vorhandene Kontext-Auswahlfeld verwendet ausschließlich `OBSERVATION_CONTEXT_OPTIONS`, jetzt mit `Sitzkreis` nach `Gruppenarbeit`, für normale und schnelle Beobachtung sowie Bearbeitung. Gespeichert wird unverändert `observations.context` als Text. Unbekannte und leere Altwerte behalten im Bearbeitungsdialog ihren ursprünglichen Datenwert; der Hinweistext wird nicht gespeichert. Verlauf und Berichtbelege zeigen den vorhandenen Kontexttext.
+
 ## iPad-UX-Präzisierung – PO-Auftrag 12.10.2026
 
 Tablet-Bedienung folgt dem Arbeitsablauf: Kind → Kontext → Kompetenzen/Bewertungen → Notiz → Speichern. Beobachtungsdialog komponiert dieselben vorhandenen Felder in drei direkt wechselbare Bereiche; keine Daten-/Validierungsänderung; bestehende Bewertungsdefaults bleiben unverändert. Speichern und Abbrechen bleiben dauerhaft sichtbar. Bildschirmtastatur reserviert unteren Raum, Schrittfelder sind scrollbar; dynamische Bewertungsflächen mindestens 44 Pixel hoch. Hauptnavigation im Hochformat als Menü, kompakte zweizeilige Profilaktionen, Kompetenzlisten mit natürlicher Zeilenhöhe statt verteilter Vollbildfelder. Desktop bleibt unverändert. Breite Arbeitsschritte müssen innerhalb der Tabletbreite umbrechen; globales horizontales Scrollen ist kein fertiges Tablet-Design.

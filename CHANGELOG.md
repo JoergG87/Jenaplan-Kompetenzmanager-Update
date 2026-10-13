@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Sitzkreis – implementiert, unveröffentlicht nach Build 404 – 13.10.2026
+
+Zentrale Beobachtungssituationsauswahl um `Sitzkreis` nach `Gruppenarbeit` erweitert. Normale Beobachtung, Schnellbeobachtung und Bearbeitung verwenden dieselbe Auswahl; Verlauf und Berichtbelege übernehmen den gespeicherten Text unverändert. Regressionen prüfen Auswahl, Textpersistenz, erneutes Öffnen, Bearbeitung, bestehende Situationen, unbekannte/leere Altwerte sowie unveränderte andere Beobachtungsfelder. Keine Migration, Rating-/Zuordnungs-/Transaktions-/Verschlüsselungsänderung oder iPad-spezifische Codeänderung. Version 0.4.4 / Build 404 unverändert; diese Funktion ist kein Bestandteil des veröffentlichten Build 404.
+
+Validierung: Gezielter Lauf mit 34 bestandenen Tests und 24 bestandenen Unterprüfungen. Vollständige Produkttestsuite (`python3 -m pytest tests -q`): 2542 bestanden, 104 vorhandene umgebungs-/Gate-Skips, 120 Unterprüfungen bestanden; Exit 0. Der unbeschränkte Rootlauf brach zuvor bei der Sammlung fremder Python-/Tkinter-Tests aus einem vorhandenen iPad-Buildartefakt unter `output/` mit Signal 6 ab. Keine Testausnahmen oder Umgehungen ergänzt; Produktprüfungen vollständig aus `tests/` ausgeführt. Ausschließlich synthetische Testdaten.
+
 ## Mac-Pilot 0.4.4 / Build 404 veröffentlicht – 13.10.2026
 
 Veröffentlicht aus 79d59591344397fdc462f40e1c0335c75066463e im bestehenden Pilotkanal. GitHub-Pre-Release v0.4.4-build404 und signierter Pilot-Appcast öffentlich verifiziert; Feed-Commit 942087e0325b4b417738ba70b55a2148e011091b. Kein Stable-Wechsel, keine Developer-ID-/Notarisierungsbehauptung. Die installierte produktive Mac-App wurde weder gestartet noch aktualisiert; vorhandene Produktdaten und Produktschlüssel blieben unberührt.
