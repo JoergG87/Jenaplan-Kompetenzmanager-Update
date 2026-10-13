@@ -248,9 +248,9 @@ class AuthenticatedMigrationJournalRepository:
     def _encode(
         cls, state: MigrationJournalState, auth_key: DerivedDomainKey
     ) -> bytes:
-        validate_migration_journal(state)
+        cls._validate_state(state)
         cls._validate_auth_key(auth_key)
-        payload = _state_payload(state)
+        payload = cls._payload(state)
         authenticated = _canonical_json(payload)
         tag = hmac.new(auth_key.key_material, authenticated, hashlib.sha256).digest()
         encoded = _canonical_json({**payload, "auth_tag": _b64_encode(tag)})
@@ -278,10 +278,22 @@ class AuthenticatedMigrationJournalRepository:
         ).digest()
         if not hmac.compare_digest(tag, expected):
             raise MigrationJournalError("migration_journal_authentication_failed")
-        state = _state_from_payload(payload)
+        state = cls._restore_payload(payload)
         if cls._encode(state, auth_key) != value:
             raise MigrationJournalError("migration_journal_not_canonical")
         return state
+
+    @staticmethod
+    def _validate_state(state: MigrationJournalState) -> None:
+        validate_migration_journal(state)
+
+    @staticmethod
+    def _payload(state: MigrationJournalState) -> dict[str, object]:
+        return _state_payload(state)
+
+    @staticmethod
+    def _restore_payload(payload: object) -> MigrationJournalState:
+        return _state_from_payload(payload)
 
     @staticmethod
     def _validate_auth_key(auth_key: DerivedDomainKey) -> None:

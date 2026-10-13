@@ -1,5 +1,13 @@
 # UI Data Mapping
 
+## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
+
+PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
+die leere produktive Upgradekantenmenge bleiben unverändert. Keine Migration,
+Aktivierung, neue Version oder Produkt-Startup-Integration.
+
+Keine neuen UI-Felder, Statusanzeigen oder Upgradeaktionen.
+
 ## Isolierte Schema-Registry – unveröffentlicht nach Build 404
 
 Keine neuen UI-Felder, Aktionen oder Upgradeanzeigen. Registryzulassungen sind

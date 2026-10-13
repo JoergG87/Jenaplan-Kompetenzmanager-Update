@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
+
+PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
+die leere produktive Upgradekantenmenge bleiben unverändert. Keine Migration,
+Aktivierung, neue Version oder Produkt-Startup-Integration.
+
+Implementiert: typisierter Schema-Upgrade-Maintenancezweck; vorhandene Runtime-
+und Writer-Locks mit synthetischer Root-/Prozess-/Operationsbindung; reine
+Zustandsmaschine; getrennte Quelle-/Ziel-/Backup-/Kandidatenevidenz; authentisiertes
+Upgradejournal über bestehende HMAC-/CAS-/fsync-/Publikationsmechanismen;
+Recovery-Klassifikation grundsätzlich ohne Aktivierungs-/Runtimefreigabe.
+Keine neue globale Lockdatei, keine Produktintegration oder Kryptografie.
+
+Validierung: gezielte Foundation-/Registry-/Maintenance-/Journal-/Lock-/Startup-/
+Restoreprüfungen 252 bestanden, keine Skips. Echte Prozesse prüfen Konkurrenz,
+Kernel-Lockfreigabe nach Abbruch und unterbrochenen Journal-Tempwrite. HMAC und
+bestehende Schlüsselableitung tatsächlich ausgeführt, keine Kryptografie-Mocks.
+Produktsuite (`python3 -m pytest tests -q`): 2600 bestanden, 104 bestehende
+umgebungs-/Gate-Skips, 120 Unterprüfungen bestanden, Exit 0. Keine neuen Skipregeln.
+Zwei anfängliche Sammelaufrufe scheiterten an einem korrigierten Importpfad bzw.
+einem korrigierten Testdateinamen. Ein erster vollständiger Lauf bestand mit
+2599 Tests; ein Wiederholungslauf wurde vor der zusätzlichen Prüfung widersprüchlicher
+Evidenz kontrolliert unterbrochen (Exit 130). Abschließende Läufe mit ausdrücklich
+aufgelisteten Übergängen und zusätzlichem Regressionstest vollständig erfolgreich.
+Architekturreview P0=0/P1=0, `git diff --check` bestanden. Native Keychain-/SQLCipher-
+und Paketgates sind keine neue Sicherheitsabnahme dieses Auftrags. Replayanker,
+produktive Quellen-/Zielprüfung, Upgradebackup/Staging, Aktivierung und produktive
+Recovery bleiben offen. Produktdaten nicht geöffnet oder verändert; Build 404,
+Final-V4-Identität und produktive Upgradekantenmenge unverändert.
+
 ## Schema-Registry – unveröffentlicht nach Build 404 – 13.10.2026
 
 Isolierte unveränderliche Core-Registry für exakte Version/Fingerprint/Verfahrens-

@@ -1,5 +1,22 @@
 # Data Registry
 
+## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
+
+PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
+die leere produktive Upgradekantenmenge bleiben unverändert. Keine Migration,
+Aktivierung, neue Version oder Produkt-Startup-Integration.
+
+Foundation-Pfad ausschließlich im synthetisch autorisierten Runtime-Root:
+`schema-upgrade-foundation/journal.json` (Format `schema-upgrade-v1`). Keine
+produktive Datenquelle oder neue Lockdatei. Temporäre Publikationsdateien liegen
+im selben Verzeichnis und blockieren bei unvollständiger Publikation die Prüfung.
+
+Das Upgradejournal enthält nur Operation-/Installations-/Database-Context-
+und Schlüsselidentitäten, Quelle-/Zielidentitäten, Transformationskennung,
+Phasen, Revisionen und technische Artefaktevidenz. Keine Schlüsselbytes,
+Fachtexte oder Klartextdatenbank. Testkontexte sind vollständig synthetisch.
+Registry ist die einzige Zulassungsquelle; produktiv weiterhin keine Kante.
+
 ## Isolierte Schema-Registry – unveröffentlicht nach Build 404
 
 `src/core/schema_registry.py` besitzt ausschließlich unveränderliche technische

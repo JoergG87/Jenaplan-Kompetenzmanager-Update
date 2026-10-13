@@ -1,5 +1,11 @@
 # Project Constitution
 
+## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
+
+PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
+die leere produktive Upgradekantenmenge bleiben unverändert. Keine Migration,
+Aktivierung, neue Version oder Produkt-Startup-Integration.
+
 ## Schema-Registry – PO-Auftrag 13.10.2026
 
 Freigegeben ist ausschließlich ein isolierter technischer Registry-Unterbau,

@@ -1,5 +1,19 @@
 # Architekturentscheidungen
 
+## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
+
+PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
+die leere produktive Upgradekantenmenge bleiben unverändert. Keine Migration,
+Aktivierung, neue Version oder Produkt-Startup-Integration.
+
+Bestehende Runtime-/Observation-Prozesslocks werden verwendet; keine neue
+Sperrdatei. Das Migrationjournal-Repository erhält Payload-Hooks; sein bisheriger
+Codec, HMAC und Publikationsvertrag bleiben unverändert. Separates typisiertes
+Upgradepayload verhindert Vermischung mit Restore oder Klartextprototypen.
+Native Keychain/SQLCipher, Worker-/Restart-Handoff, Replayanker und echte
+Dateisystem-/Schema-Verifikation bleiben gesonderte spätere Sicherheitsgates.
+Testreceipts sind strukturelle Evidenz, keine Produktionsvalidierung.
+
 ## 13.10.2026 – Isolierte exakte Schema-Registry
 
 PO-freigegebener Unterbau, unveröffentlicht nach Build 404. Eine Qt-/Security-freie

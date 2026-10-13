@@ -1,5 +1,16 @@
 # View Data Ownership
 
+## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
+
+PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
+die leere produktive Upgradekantenmenge bleiben unverändert. Keine Migration,
+Aktivierung, neue Version oder Produkt-Startup-Integration.
+
+Core besitzt Zustands-/Evidenzregeln ohne Dateisystem oder Qt. Application
+koordiniert Maintenance über einen injizierten Prozesslease-Port. Security-
+Infrastructure besitzt Lockadapter und authentisierte Journalpersistenz.
+Kein neuer View, Launcher oder Restart; keine Imports der Desktop-UI in Security.
+
 ## Isolierte Schema-Registry – unveröffentlicht nach Build 404
 
 Core besitzt technische Registryabfragen; kein Widget oder Adapter besitzt

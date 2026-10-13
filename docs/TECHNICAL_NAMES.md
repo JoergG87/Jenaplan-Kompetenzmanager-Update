@@ -1,5 +1,23 @@
 # Technical Naming Registry
 
+## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
+
+PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
+die leere produktive Upgradekantenmenge bleiben unverändert. Keine Migration,
+Aktivierung, neue Version oder Produkt-Startup-Integration.
+
+Technische Namen: `MaintenancePurpose.SCHEMA_UPGRADE`; `UpgradeError`, `UpgradePhase`,
+`UpgradeContext`, `UpgradeArtifact`, `UpgradeEvidence`, `UpgradeState`, `UpgradeRecoveryStatus`,
+`UpgradeRecoveryDecision`, `new_upgrade_state`, `advance_upgrade`,
+`classify_upgrade`, `validate_upgrade_state`, `validate_upgrade_structure` (Core); `UpgradeMaintenance`, `UpgradeLeasePort` (Application);
+`UpgradeProcessLease`, `AuthenticatedUpgradeJournalRepository` (Security
+Infrastructure). Journalformat `schema-upgrade-v1`, Phase-/Revision-CAS und
+exakte Kontextbindung. Keine neuen fachlichen Felder oder Schemata.
+
+`AuthenticatedMigrationJournalRepository._validate_state`, `_payload` und
+`_restore_payload` sind eng begrenzte Payload-Hooks; der bestehende
+Migrationscodec bleibt ihre unveränderte Standardimplementierung.
+
 ## Isolierte Schema-Registry – unveröffentlicht nach Build 404
 
 | Technischer Name | Bedeutung | Eigentümer |

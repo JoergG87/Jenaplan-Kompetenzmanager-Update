@@ -1,5 +1,53 @@
 # Data Lifecycle
 
+## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
+
+PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
+die leere produktive Upgradekantenmenge bleiben unverändert. Keine Migration,
+Aktivierung, neue Version oder Produkt-Startup-Integration.
+
+Zustandsfolge: PREFLIGHT → EXCLUSIVE → SOURCE_VERIFIED → BACKUP_VERIFIED →
+STAGED → MIGRATED → TARGET_VERIFIED → ACTIVATION_PREPARED → ACTIVATING →
+RUNTIME_VERIFIED → COMPLETED. Vor ACTIVATING ist ABORTED möglich; danach
+nur RECOVERY_REQUIRED bei Fehlern. Exakte Wiederholung des letzten Receipts ist
+idempotent, Phasensprünge und Kontextwechsel sind unzulässig. Jede neue Phase
+benötigt ein kontextgebundenes Receipt; Quellen-/Backup-/Kandidaten-/Livebelege
+tragen passende Schemaidentität, technische Dateiidentität, UUID und SHA-256.
+Ab MIGRATED bleibt der Kandidat unverändert; Livebeleg muss exakt zum Kandidaten
+passen. Diese typisierten Belege ersetzen noch keine echten Verifier.
+
+Klassifikationen: NO_OPERATION, ABORTED, NOT_ACTIVATED, VERIFY_CANDIDATE,
+RECOVERY_REQUIRED, COMPLETED. Vollständiges Inventar, authentisierter Zustand,
+erwarteter Kontext und unabhängige aktuelle Artefaktevidenz sind Voraussetzung;
+fehlende Quellen-/Ziel-/Backupbelege blockieren. Alle Entscheidungen haben
+`activation_allowed=False` und `normal_runtime_allowed=False`.
+
+Lockreihenfolge: bereits gehaltener `RuntimeInstanceLock` → typisierte
+Maintenance-Capability → vollständiger Writer-Drain → vorhandener
+`ObservationWriterLock` → Journalpersistenz. Freigabe in umgekehrter Reihenfolge;
+der injizierte Runtime-Lock bleibt Eigentum des Aufrufers. Kein Warten auf Drain
+unter Writer-Lock; Eintritt bei aktiven Writern scheitert kontrolliert. Gleiche
+Reihenfolge wie Backup/Restore; kein neuer globaler Lock. Fehler geben Leases frei;
+unklare Aktivierungszustände müssen später Maintenance RECOVERY_REQUIRED setzen.
+Kernel-Lockfreigabe nach Crash ist kein Journalabschluss.
+
+Der Foundation-Lockadapter verlangt ausdrücklich einen bestehenden
+`synthetic_test`-Rootmarker. Produktroots und unmarkierte Roots werden abgewiesen.
+
+Journal: bestehende HMAC-Authentisierung, restriktive Rechte, no-clobber Create,
+Tempwrite mit fsync, CAS und atomarer Rename mit Verzeichnis-fsync. Zugriff nur
+unter gemeinsamem Prozess-/Writer-Lock. Abgebrochene Temp-Publikation blockiert.
+Vollständig authentisierte alte Journalbytes sind ohne externen Replayanker nicht
+als frisch beweisbar; dessen Produktintegration bleibt verpflichtend offen.
+
+Künftiger Startupvertrag: vor Datenöffnung/First Run Journalinventar vollständig
+prüfen; unbekannte/mehrere/temporäre/unlesbare Journale und fehlende unabhängige
+Evidenz blockieren. Abwesenheit muss durch vollständiges Inventar bestätigt sein.
+COMPLETED allein genügt nie. Die isolierte Klassifikation erlaubt grundsätzlich
+weder Aktivierung noch normale Runtime. Quelle-/Ziel-/Schlüssel-/Dateisystemprüfung,
+Backupbindung, Staging, Migration, Aktivierung, Replayanker und produktive Recovery
+sind weiterhin nicht angeschlossen. Keine Wiederherstellung wird ausgeführt.
+
 ## Isolierte Schema-Registry – unveröffentlicht nach Build 404
 
 Die Registry führt ausschließlich reine Identitäts-/Zulassungsabfragen im Speicher

@@ -1,5 +1,18 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
+
+PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
+die leere produktive Upgradekantenmenge bleiben unverändert. Keine Migration,
+Aktivierung, neue Version oder Produkt-Startup-Integration.
+
+Implementiert: separater Maintenance-Zweck, synthetisch rootgebundener Adapter
+für vorhandene Prozess-/Writer-Locks, reine Zustandsmaschine, authentisierte
+atomare Journalpersistenz und fail-closed Recovery-Klassifikation ohne Freigabe.
+Nicht implementiert: Quellen-/Zielverifier, Upgrade-Backup/Staging, Migration,
+Aktivierung, Replayanker, Produkt-Startup und Recoveryausführung. Keine produktive
+Upgradekante; keine Änderung an Final V4, Cipherkonfiguration oder Keychain.
+
 ## Schema-Registry – unveröffentlicht nach Build 404 – 13.10.2026
 
 Isolierter technischer Unterbau für exakte Schemaidentitäten mit getrennten

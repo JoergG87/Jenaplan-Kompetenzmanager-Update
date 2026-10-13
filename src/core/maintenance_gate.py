@@ -20,6 +20,7 @@ class MaintenanceState(str, Enum):
 class MaintenancePurpose(str, Enum):
     SCHOOL_YEAR_TRANSITION = "school_year_transition"
     BACKUP_RESTORE = "backup_restore"
+    SCHEMA_UPGRADE = "schema_upgrade"
 
 
 class MaintenanceGateError(RuntimeError):
