@@ -1,5 +1,17 @@
 # Data Lifecycle
 
+## Isolierte Schema-Registry – unveröffentlicht nach Build 404
+
+Die Registry führt ausschließlich reine Identitäts-/Zulassungsabfragen im Speicher
+aus. Sie öffnet keine Dateien oder Datenbanken und besitzt keinen Schreibprozess.
+Historische Prüfzulassung erlaubt ausschließlich einen später separat kontrollierten
+isolierten Prüfkontext; sie erlaubt weder Runtimeöffnung noch Restoreaktivierung.
+Upgradezulassung setzt eine exakt registrierte gerichtete Quelle-Ziel-Beziehung
+voraus und führt selbst nichts aus. Das Produktregister besitzt keine solche Kante.
+Upgrade-spezifische Backupbindung, Migrationsstaging, Migration, Aktivierung,
+Rollback und Upgrade-Recovery sind weiterhin nicht implementiert. Bestehender
+V4-Startup und V4-Backup/Restore bleiben unverändert.
+
 Release-404-Abnahme: WAL-Aktivierung vor Sicherheits-Schreibtransaktionen darf bei parallel öffnenden Verbindungen ausschließlich vorübergehende SQLite-Sperren bis fünf Sekunden abwarten. Recovery-Code-Verbrauch bleibt atomar mit genau einem Gewinner; keine Änderung von Schlüssel-, Konto-, Schema- oder Persistenzverträgen. Prüfungen ausschließlich synthetisch.
 
 SQLCipher-Neubuild unter SDK 27 verändert keine Daten, Schlüssel oder Migrationen. Prüfung ausschließlich in neuen synthetischen Tempbeständen; Produktroot und vorhandene Produktkeys bleiben unberührt.

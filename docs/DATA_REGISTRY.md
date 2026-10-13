@@ -1,5 +1,16 @@
 # Data Registry
 
+## Isolierte Schema-Registry – unveröffentlicht nach Build 404
+
+`src/core/schema_registry.py` besitzt ausschließlich unveränderliche technische
+In-Memory-Registrierungen. Keine neue Datenbank oder fachliche Datenquelle.
+Final-V4-Version und Fingerprint werden aus `database_compatibility.py` importiert;
+das bestehende DDL und Fingerprintverfahren bleiben einzige bestehende Quellen.
+Identität ist das exakte Tripel Version/Fingerprint/Verfahren; einzelne passende
+Bestandteile genügen nie. Produktregistry: nur Final V4 mit Runtime- und
+historischer Prüfzulassung; keine Upgradebeziehung. Synthetische Registrierungen
+existieren ausschließlich in lokalen Testinstanzen, nicht im Produktregister.
+
 Release 404 verwendet unveränderte hashgebundene SQLCipher-4.17-/sqlcipher3-0.6.2-Quellen, mit erneut auditiertem SDK-27-Wheel. Neue Wheelbytes sind Buildartefakt, keine neue Produktdatenquelle.
 
 Bewertungstexte wieder entsprechend den drei bestehenden Entwicklungsbuchprofilen standard/social/sport; gemeinsame Präsentationsquelle competency_development_levels. Frühere Vereinheitlichung durch aktuelle PO-Korrektur aufgehoben. Keine neue Datenquelle oder Schemaänderung.

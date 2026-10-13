@@ -1,5 +1,21 @@
 # Architekturentscheidungen
 
+## 13.10.2026 – Isolierte exakte Schema-Registry
+
+PO-freigegebener Unterbau, unveröffentlicht nach Build 404. Eine Qt-/Security-freie
+Core-Registry importiert die bestehenden V4-Konstanten, ohne das Fingerprintverfahren
+zu ändern. Identität: Version, vollständiger Fingerprint, Verfahrensname.
+Runtime- und historische Prüfzulassungen sind explizite unabhängige Kategorien;
+Upgrades sind ausschließlich gerichtete registrierte Beziehungen. Produktregister:
+nur Final V4, keine Kante. Doppelte Namen/Identitäten und widersprüchliche
+Fingerprintzuordnungen sowie unbekannte Kantenendpunkte werden abgelehnt.
+
+Bewusst keine direkte Gateumstellung: Zuerst müssen Startup, keyed Inspector,
+Backupmanifest, Restore-READY und Rollback für getrennte Quelle-/Zielvalidatoren
+entworfen und freigegeben werden. Das Register ersetzt keine Integritäts-, Schlüssel-,
+Root-, Maintenance- oder Recoveryprüfung. Keine produktive Migration, Aktivierung
+oder neue Schemaversion; keine Änderungen an Worker, Cipherparametern oder Schlüsseln.
+
 ## Release 404: SQLCipher-Buildbasis unter SDK 27 neu qualifizieren
 
 Die bisherige SDK-26.5-Wheeldatei ist nach der Xcode-Einrichtung nicht mehr lokal verfügbar. Unveränderte hashgebundene Quellen, Python 3.14.6, SQLCipher 4.17.0, sqlcipher3 0.6.2 und CommonCrypto bleiben verbindlich. Zwei unabhängige Builds unter SDK 27 müssen identische Wheelbytes liefern; native Abhängigkeiten, Runtimeversionen, Cipher-Roundtrip und vollständige Paketgates vor Veröffentlichung prüfen. Kein Überspringen des Wheelhash-Gates, kein Wechsel zu Stock-SQLCipher und kein Datenmodell-/Schlüsselwechsel.

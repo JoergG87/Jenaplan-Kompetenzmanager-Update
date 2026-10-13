@@ -1,5 +1,14 @@
 # Project Constitution
 
+## Schema-Registry – PO-Auftrag 13.10.2026
+
+Freigegeben ist ausschließlich ein isolierter technischer Registry-Unterbau,
+unveröffentlicht nach Build 404. Exakte Identität umfasst Schemaversion,
+vollständigen Fingerprint und benanntes Fingerprintverfahren. Runtimezulassung,
+historische Prüfzulassung und explizite Quelle-Ziel-Upgradezulassung sind getrennt.
+Nur Final V4 ist produktiv registriert; keine Upgradekante, kein neues Schema,
+keine Migration oder Recoveryaktivierung. Bestehende Sicherheitsgates bleiben bestehen.
+
 Release 404: Nach Xcode-/SDK-Wechsel muss die unveränderte SQLCipher-4.17/CommonCrypto-Basis unter SDK 27 neu reproduziert und auditiert werden. Keine Änderung von Cipheralgorithmen, Parametern, Final-V4 oder Schlüsselverträgen. Hashgebundener neuer Buildinput erst nach zweimal identischem Build und Audit zulässig.
 
 PO-Releaseauftrag 12.10.2026: Mac-Version 0.4.4 / Build 404 nach vollständigen Paketgates im bestehenden Pilotkanal veröffentlichen. Build 403 unverändert; kein Stable-Wechsel, keine produktive App starten und keine Produktdaten/-schlüssel verändern.

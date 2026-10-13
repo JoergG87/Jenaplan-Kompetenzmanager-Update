@@ -1,5 +1,12 @@
 # View Data Ownership
 
+## Isolierte Schema-Registry – unveröffentlicht nach Build 404
+
+Core besitzt technische Registryabfragen; kein Widget oder Adapter besitzt
+Schemaentscheidungen. Keine neue Ansicht. Die Registry ist noch nicht in Startup,
+keyed Runtime, Backup oder Restore eingebunden. Deren bestehende Validatoren
+behalten ihre Zulassungsverantwortung und vollständigen Sicherheitsprüfungen.
+
 SDK-27-Neuqualifizierung betrifft ausschließlich native Packagingbasis; vorhandene Ansichten und ihre Datenowner unverändert.
 
 App-Chips, Profilanzeigen und PDF-Ergänzung projizieren bestehendes Kompetenzprofil über gemeinsame bereichsspezifische Labels. PDF-Legende nutzt dieselben Profile mit vollständigen Originalerklärungen. Keine neue Ansicht.

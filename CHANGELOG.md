@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Schema-Registry – unveröffentlicht nach Build 404 – 13.10.2026
+
+Isolierte unveränderliche Core-Registry für exakte Version/Fingerprint/Verfahrens-
+Identitäten, getrennte Runtime-/historische Prüfzulassungen und explizite gerichtete
+Upgradebeziehungen. Nur bestehendes Final V4 registriert; keine Produktkante,
+Schemaänderung, Migration, Gateumstellung oder neue Version. Konfigurationskonflikte
+und unbekannte Zulassungen scheitern fail-closed. Gezielte Registry- und bestehende
+V4-/Startup-/Securityregressionen sowie reguläre Produktsuite unter `tests/` bestanden.
+
+Validierung: gezielter Lauf 83 bestanden / 57 bestehende umgebungs-/Gate-Skips;
+Produktsuite (`python3 -m pytest tests -q`) 2562 bestanden / 104 bestehende
+umgebungs-/Gate-Skips / 120 Unterprüfungen bestanden, Exit 0. Keine neuen
+Skipregeln oder Testausnahmen. Exakte SQLCipher-4.17-Prüfungen sind teilweise
+umgebungsbedingt übersprungen; keine neue Paket-/macOS-Abnahme behauptet.
+Architekturreview: P0=0, P1=0; bestehende V4-Gatequellen unverändert.
+`git diff --check` bestanden. Keine Produktdaten geöffnet oder verändert.
+
 ## Sitzkreis – implementiert, unveröffentlicht nach Build 404 – 13.10.2026
 
 Zentrale Beobachtungssituationsauswahl um `Sitzkreis` nach `Gruppenarbeit` erweitert. Normale Beobachtung, Schnellbeobachtung und Bearbeitung verwenden dieselbe Auswahl; Verlauf und Berichtbelege übernehmen den gespeicherten Text unverändert. Regressionen prüfen Auswahl, Textpersistenz, erneutes Öffnen, Bearbeitung, bestehende Situationen, unbekannte/leere Altwerte sowie unveränderte andere Beobachtungsfelder. Keine Migration, Rating-/Zuordnungs-/Transaktions-/Verschlüsselungsänderung oder iPad-spezifische Codeänderung. Version 0.4.4 / Build 404 unverändert; diese Funktion ist kein Bestandteil des veröffentlichten Build 404.

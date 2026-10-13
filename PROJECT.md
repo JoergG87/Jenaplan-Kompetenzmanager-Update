@@ -1,5 +1,14 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Schema-Registry – unveröffentlicht nach Build 404 – 13.10.2026
+
+Isolierter technischer Unterbau für exakte Schemaidentitäten mit getrennten
+Runtime-/historischen Prüfzulassungen und ausschließlich expliziten Upgradekanten.
+Nur bestehendes Final V4 produktiv registriert, keine Upgradekante. Bestehende
+Compatibility-, Startup-, Security-, Backup- und Restoreverträge bleiben unverändert.
+Produktive Migration und Upgrade-Recovery fehlen weiterhin; Integration benötigt
+einen gesondert freigegebenen Quelle-/Zielvertrag. macOS 0.4.4 / Build 404 unverändert.
+
 ## Sitzkreis – implementiert, unveröffentlicht nach Build 404
 
 13.10.2026: Zentrale Beobachtungssituationsauswahl um `Sitzkreis` ergänzt; normale und schnelle Erfassung, Bearbeitung, Verlauf und Berichtbelege nutzen den bestehenden Textvertrag. Keine Migration oder Änderung bestehender Beobachtungen. macOS 0.4.4 / Build 404 bleibt unverändert; kein Build und keine Veröffentlichung.

@@ -1,5 +1,24 @@
 # Technical Naming Registry
 
+## Isolierte Schema-Registry – unveröffentlicht nach Build 404
+
+| Technischer Name | Bedeutung | Eigentümer |
+|---|---|---|
+| `SCHEMA_FINGERPRINT_ALGORITHM` | Name `sqlite-schema-canonical-json-sha256-v1` für das unveränderte Verfahren in Database Compatibility | Core Schema Registry |
+| `RegisteredSchemaIdentity` | unveränderliches Tripel aus `schema_version`, `fingerprint`, `fingerprint_algorithm` | Core Schema Registry |
+| `SchemaAdmission` | getrennte Kategorien `RUNTIME` und `HISTORICAL_INSPECTION`; keine Upgradeimplikation | Core Schema Registry |
+| `SchemaRegistration` | benannte exakte Identität und unveränderliche explizite Zulassungsmenge | Core Schema Registry |
+| `SchemaUpgradeRelation` | ausschließlich explizite gerichtete Quelle-Ziel-Beziehung; keine Ausführung | Core Schema Registry |
+| `DatabaseSchemaRegistry` | unveränderliche Registry mit exakter Suche und fail-closed `require_admission` / `require_upgrade` | Core Schema Registry |
+| `SchemaRegistryError` | kontrollierter Konfigurations-/Zulassungsfehler mit sanitisiertem Code | Core Schema Registry |
+| `FINAL_V4_SCHEMA_REGISTRATION` | einzige Produktregistrierung, abgeleitet aus bestehenden V4-Konstanten | Core Schema Registry |
+| `PRODUCT_SCHEMA_REGISTRY` | ausschließlich Final V4, Runtime- und isolierte Prüfzulassung, keine Upgradekanten | Core Schema Registry |
+
+Das benannte Verfahren ist exakt das vorhandene `_compatibility_schema` →
+kanonisches UTF-8-JSON → SHA-256 aus `database_compatibility.py`, einschließlich
+bestehender SQL-Normalisierung und Objektinventarisierung. Die Registry berechnet
+keinen zweiten Fingerprint und akzeptiert kein unbekanntes Verfahren.
+
 TabletAppShell._present_dialog_page berücksichtigt vorhandene QBoxLayout-/QGridLayout-Owner: Zurück-Aktion im Boxlayout oben, in nativen Meldungs-Grids in einer eigenen abschließenden Zeile. Keine neue Action oder Eingabe; Qt darf die native QMessageBox-Struktur beim Einbetten erneuern.
 
 Vorhandene verzögerte UI-Aufrufe in NewObservationDialog, LearningReportDialog, LearningConferenceDialog, OverviewScreen, StudentProfileScreen und SchoolYearTransitionPreviewDialog erhalten ihren jeweiligen QObject-Kontext. Damit keine nachträglichen Fokus-/Scroll-/Beschriftungs-/Vorschauaktionen nach Löschung des Owners. Keine neuen Namen oder Fachcommands.

@@ -1,5 +1,11 @@
 # UI Data Mapping
 
+## Isolierte Schema-Registry – unveröffentlicht nach Build 404
+
+Keine neuen UI-Felder, Aktionen oder Upgradeanzeigen. Registryzulassungen sind
+technische Metadaten und keine sichtbare Freigabe zur Migration oder Aktivierung.
+Bestehende Startup-/Backup-/Restoreprojektionen bleiben unverändert.
+
 SDK-27-Neuqualifizierung führt keine UI-Felder ein; Produktzugang und Ratingfelder unverändert.
 
 Vier unveränderte Tokens --/-/+/++: standard Erste Erfahrungen/Mit Unterstützung/Kenntnisse meist anwenden/Eigenständig und sicher; social Kaum vorhanden/Teilweise/Gut/Ausgeprägt; sport Erste Übungen/Übt noch/Meist/Sicher. Kompakte Labels behalten genau den Bereichstext. PDF-Legenden entsprechend Entwicklungsbuch; alle Buttons weiter 32 Pixel.
