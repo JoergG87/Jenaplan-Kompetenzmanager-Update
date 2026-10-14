@@ -7,6 +7,11 @@ import json
 from pathlib import Path
 import plistlib
 import subprocess
+import sys
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from scripts.macos_package_profile import load_profile, profile_digest
 
 
 APP_NAME = "Jenaplan-Kompetenzmanager"
@@ -64,21 +69,38 @@ def audit_bundle(
     *,
     expected_version: str,
     expected_build: str,
+    test_profile: Path | None = None,
 ) -> dict[str, object]:
     app_path = Path(app_path).resolve()
-    if not app_path.is_dir() or app_path.name != f"{APP_NAME}.app":
+    profile = load_profile(test_profile, before_build=False) if test_profile is not None else None
+    app_name = profile.app_name if profile is not None else APP_NAME
+    if not app_path.is_dir() or app_path.name != f"{app_name}.app":
         raise RuntimeError("App-Bundle fehlt oder ist falsch benannt.")
     plist_path = app_path / "Contents" / "Info.plist"
     with plist_path.open("rb") as source:
         plist = plistlib.load(source)
     expected_plist = {
-        "CFBundleIdentifier": "de.jenaplan.kompetenzmanager",
+        "CFBundleIdentifier": profile.bundle_id if profile is not None else "de.jenaplan.kompetenzmanager",
         "CFBundleShortVersionString": expected_version,
         "CFBundleVersion": expected_build,
         "LSMinimumSystemVersion": "13.0",
     }
     if any(plist.get(key) != value for key, value in expected_plist.items()):
         raise RuntimeError("Bundle-Metadaten sind inkonsistent.")
+    if profile is not None:
+        if (app_path != Path(profile.dist_root) / f"{app_name}.app"
+                or plist.get("CFBundleExecutable") != app_name
+                or plist.get("JKMInternalTestProfileSHA256") != profile_digest(profile)
+                or any(key.startswith("SU") for key in plist)):
+            raise RuntimeError("test_profile_invalid")
+        config = app_path / "Contents/Resources/internal_test_profile.json"
+        if config.is_symlink() or json.loads(config.read_text()) != profile.as_dict():
+            raise RuntimeError("test_profile_invalid")
+        result = subprocess.run([str(app_path / "Contents/MacOS" / app_name),
+                                 "--packaged-test-profile-audit"],
+                                capture_output=True, text=True, timeout=30)
+        if result.returncode != 0 or json.loads(result.stdout.strip().splitlines()[-1]) != profile.as_dict():
+            raise RuntimeError("test_profile_invalid")
 
     files = tuple(
         item
@@ -99,6 +121,13 @@ def audit_bundle(
     upstream_build_path_references = 0
     for path in files:
         payload = path.read_bytes()
+        if profile is not None:
+            # These exact sealed non-secret identity paths are intentional.
+            # Other developer/build references retain the same rejection policy.
+            for value in (profile.runtime_root, profile.build_root, profile.dist_root):
+                payload = payload.replace(value.encode(), b"<sealed-test-path>")
+            if "Sparkle" in path.name or "sparkle" in path.name:
+                raise RuntimeError("test_profile_invalid")
         relative = path.relative_to(app_path).as_posix()
         user_path_references = payload.count(b"/Users/")
         if LOCAL_DEVELOPER_PATH_PREFIX in payload:
@@ -191,7 +220,7 @@ def audit_bundle(
         != REQUIRED_SUBJECT_VIGNETTES
     ):
         raise RuntimeError("Fachillustrationsassets fehlen oder sind unerwartet.")
-    runtime = _audit_packaged_runtime(app_path)
+    runtime = _audit_packaged_runtime(app_path, app_name=app_name)
     return {
         "bundle_id": plist["CFBundleIdentifier"],
         "build": plist["CFBundleVersion"],
@@ -268,8 +297,8 @@ def _rpaths(path: Path) -> tuple[str, ...]:
     return tuple(values)
 
 
-def _audit_packaged_runtime(app_path: Path) -> dict[str, object]:
-    executable = app_path / "Contents" / "MacOS" / APP_NAME
+def _audit_packaged_runtime(app_path: Path, *, app_name=APP_NAME) -> dict[str, object]:
+    executable = app_path / "Contents" / "MacOS" / app_name
     result = subprocess.run(
         [str(executable), "--packaged-runtime-audit"],
         check=False,
@@ -297,6 +326,7 @@ def main() -> int:
     parser.add_argument("app", type=Path)
     parser.add_argument("--expected-version", required=True)
     parser.add_argument("--expected-build", required=True)
+    parser.add_argument("--test-profile", type=Path)
     args = parser.parse_args()
     print(
         json.dumps(
@@ -304,6 +334,7 @@ def main() -> int:
                 args.app,
                 expected_version=args.expected_version,
                 expected_build=args.expected_build,
+                test_profile=args.test_profile,
             ),
             ensure_ascii=False,
             indent=2,

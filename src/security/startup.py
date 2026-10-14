@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Protocol
 
 from src.core.app_preferences import AppPreferencesFile
+from src.core.macos_test_package_profile import test_identity
 
 from .application import SecurityApplicationService, SecurityStateResult
 from .domain import SecurityStoreError, SecurityStoreState
@@ -107,6 +108,9 @@ def build_security_runtime(paths: SecurityRuntimePaths) -> SecurityRuntime:
         utc_clock=clock,
         monotonic_clock=clock,
         permissions=permissions,
+        installation_id_factory=(
+            (lambda: test_identity().installation_id) if test_identity() is not None else None
+        ),
     )
     secret_store, local_authenticator = build_platform_authentication_adapters()
     device_credentials = DeviceCredentialService(

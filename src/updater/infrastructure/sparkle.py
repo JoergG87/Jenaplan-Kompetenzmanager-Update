@@ -6,6 +6,7 @@ import ctypes
 import os
 from pathlib import Path
 import sys
+from src.core.macos_test_package_profile import test_identity
 
 
 class UnsupportedUpdateAdapter:
@@ -28,6 +29,8 @@ class MacOSSparkleAdapter:
     """Own one process-local Sparkle controller through a stable C ABI."""
 
     def __init__(self, bridge_path: Path | None = None) -> None:
+        if test_identity() is not None:
+            raise RuntimeError("updates_unavailable")
         path = bridge_path or self._default_bridge_path()
         self._library = ctypes.CDLL(str(path))
         self._library.jkm_sparkle_start.argtypes = []
@@ -85,7 +88,7 @@ class MacOSSparkleAdapter:
 
 def build_native_update_adapter():
     """Fail closed outside a correctly packaged macOS build."""
-    if sys.platform != "darwin" or not getattr(sys, "frozen", False):
+    if test_identity() is not None or sys.platform != "darwin" or not getattr(sys, "frozen", False):
         return UnsupportedUpdateAdapter()
     try:
         return MacOSSparkleAdapter()

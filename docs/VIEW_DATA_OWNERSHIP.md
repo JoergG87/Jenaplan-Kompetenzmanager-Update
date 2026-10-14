@@ -1607,3 +1607,8 @@ Sie besitzt weder Produktfenster noch Zugriff auf App-Datenordner.
 Der vorhandene Shell-Toast besitzt die Export-Rückmeldung; der native Plattformdialog besitzt ausschließlich Zielauswahl. Kein neuer View-State.
 
 Owner der neuen Ausgabe ist die Kompetenz-PDF-Projektion. Der Adapter liest ausschließlich das bestehende Schülerprofil-Bundle. Export enthält alle aktuellen Kompetenzen je effektivem Fach sowie die beiden überfachlichen Bereiche; ein Fachfilter verkürzt die Ausgabe niemals. Such-/Dokumentationsfilter und eingeklappte Themen verkürzen den Export nicht. Renderer kennt weder Repository noch SQLite, Widgets enthalten ausschließlich Interaktions-/Dialoglogik.
+
+
+## Isoliertes internes macOS-Testpaketprofil – 14.10.2026
+
+Keine neue Ansicht. Core besitzt reine technische Identitätsprojektion; bestehender Builder/Spec besitzt Paketwahl und versiegelten Hook. Desktop projiziert Name/Root und Prozesskontext. Security Infrastructure projiziert ausschließlich getrennte Keychainnamespaces und Accountbindung ohne Desktop-/Qtimporte. Security-Enrollment erhält optionalen ID-Fabrikport; übrige Schlüssel und Fachlogik unverändert.

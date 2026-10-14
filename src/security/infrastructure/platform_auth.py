@@ -6,6 +6,7 @@ import ctypes
 import os
 from pathlib import Path
 import sys
+from src.core.macos_test_package_profile import keychain_account, keychain_service, test_identity
 
 from ..domain import (
     DEVICE_CREDENTIAL_SECRET_BYTES,
@@ -28,9 +29,7 @@ _ERR_SEC_USER_CANCELED = -128
 
 
 def _account(installation_id: str, credential_id: str) -> bytes:
-    return f"v1:{validate_uuid4(installation_id)}:{validate_uuid4(credential_id)}".encode(
-        "ascii"
-    )
+    return keychain_account(validate_uuid4(installation_id), validate_uuid4(credential_id))
 
 
 class UnsupportedDeviceSecretStore:
@@ -91,6 +90,11 @@ class _MacOSSecurityBridge:
 
     @staticmethod
     def _default_path() -> Path:
+        if test_identity() is not None:
+            packaged = Path(sys._MEIPASS) / "libjkm_macos_security.dylib"
+            if not packaged.is_file() or not packaged.resolve().is_relative_to(Path(test_identity().dist_root) / f"{test_identity().app_name}.app"):
+                raise SecurityStoreError("macos_security_bridge_unavailable")
+            return packaged
         override = os.environ.get("JKM_MACOS_SECURITY_BRIDGE", "").strip()
         if override:
             return Path(override)
@@ -119,7 +123,7 @@ class MacOSKeychainSecretStore:
         buffer = (ctypes.c_uint8 * len(secret)).from_buffer_copy(secret)
         status = int(
             self._bridge.library.jkm_keychain_create(
-                _SERVICE.encode("ascii"),
+                keychain_service(_SERVICE),
                 _account(installation_id, credential_id),
                 buffer,
                 len(secret),
@@ -136,7 +140,7 @@ class MacOSKeychainSecretStore:
         length = ctypes.c_size_t()
         status = int(
             self._bridge.library.jkm_keychain_read(
-                _SERVICE.encode("ascii"),
+                keychain_service(_SERVICE),
                 _account(installation_id, credential_id),
                 ctypes.byref(pointer),
                 ctypes.byref(length),
@@ -163,7 +167,7 @@ class MacOSKeychainSecretStore:
     def delete(self, *, installation_id: str, credential_id: str) -> bool:
         status = int(
             self._bridge.library.jkm_keychain_delete(
-                _SERVICE.encode("ascii"), _account(installation_id, credential_id)
+                keychain_service(_SERVICE), _account(installation_id, credential_id)
             )
         )
         if status == _ERR_SEC_ITEM_NOT_FOUND:

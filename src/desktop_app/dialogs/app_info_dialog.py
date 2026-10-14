@@ -18,7 +18,11 @@ from src.version import APP_BUILD_VERSION, APP_VERSION
 
 
 APP_INFO_TITLE = "Über Jenaplan-Kompetenzmanager"
+from src.desktop_app.runtime import APP_NAME
+
 APP_INFO_APP_NAME = "Jenaplan-Kompetenzmanager"
+if APP_NAME != APP_INFO_APP_NAME:
+    APP_INFO_APP_NAME = APP_NAME
 APP_INFO_MODE = "Lokale Desktop-App"
 APP_INFO_VERSION = f"Version {APP_VERSION} · Build {APP_BUILD_VERSION}"
 APP_INFO_DEVELOPER_NAME = "Jörg Gehrke"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ctypes
 import sys
+from src.core.macos_test_package_profile import keychain_account, keychain_service
 
 from ..data_keys import (
     DATA_MASTER_KEY_BYTES,
@@ -25,9 +26,7 @@ _ERR_SEC_DECODE = -26275
 
 
 def _data_master_key_account(installation_id: str, key_id: str) -> bytes:
-    return f"v1:{validate_uuid4(installation_id)}:{validate_uuid4(key_id)}".encode(
-        "ascii"
-    )
+    return keychain_account(validate_uuid4(installation_id), validate_uuid4(key_id))
 
 
 class UnsupportedDataMasterKeyStore:
@@ -70,7 +69,7 @@ class MacOSDataMasterKeyStore:
         try:
             status = int(
                 self._bridge.library.jkm_keychain_create(
-                    _DATA_MASTER_KEY_SERVICE.encode("ascii"),
+                    keychain_service(_DATA_MASTER_KEY_SERVICE),
                     _data_master_key_account(installation_id, key_id),
                     buffer,
                     len(key_material),
@@ -96,7 +95,7 @@ class MacOSDataMasterKeyStore:
         length = ctypes.c_size_t()
         status = int(
             self._bridge.library.jkm_keychain_read(
-                _DATA_MASTER_KEY_SERVICE.encode("ascii"),
+                keychain_service(_DATA_MASTER_KEY_SERVICE),
                 _data_master_key_account(installation_id, key_id),
                 ctypes.byref(pointer),
                 ctypes.byref(length),
@@ -127,7 +126,7 @@ class MacOSDataMasterKeyStore:
     def delete(self, *, installation_id: str, key_id: str) -> bool:
         status = int(
             self._bridge.library.jkm_keychain_delete(
-                _DATA_MASTER_KEY_SERVICE.encode("ascii"),
+                keychain_service(_DATA_MASTER_KEY_SERVICE),
                 _data_master_key_account(installation_id, key_id),
             )
         )

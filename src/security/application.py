@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from collections.abc import Callable
 import hmac
 import math
 
@@ -98,6 +99,7 @@ class SecurityApplicationService:
         monotonic_clock: MonotonicClock,
         permissions: FilePermissionManager,
         password_policy: PasswordPolicy | None = None,
+        installation_id_factory: Callable[[], str] | None = None,
     ) -> None:
         self._repository = repository
         self._marker = marker
@@ -107,6 +109,9 @@ class SecurityApplicationService:
         self._monotonic_clock = monotonic_clock
         self._permissions = permissions
         self._password_policy = password_policy or PasswordPolicy()
+        self._installation_id_factory = (
+            self._new_uuid4 if installation_id_factory is None else installation_id_factory
+        )
         self._login_monotonic_deadline: float | None = None
         self._recovery_monotonic_deadline: float | None = None
 
@@ -145,7 +150,7 @@ class SecurityApplicationService:
             raise SecurityStateError("security_store_not_uninitialized")
         self._password_policy.validate(password)
         now = self._now()
-        installation_id = self._new_uuid4()
+        installation_id = validate_uuid4(self._installation_id_factory())
         marker_reference = self._new_uuid4()
         user_id = self._new_uuid4()
         recovery_set_id = self._new_uuid4()
@@ -182,7 +187,7 @@ class SecurityApplicationService:
             raise SecurityStateError("security_store_not_uninitialized")
         self._password_policy.validate(password)
         now = self._now()
-        installation_id = self._new_uuid4()
+        installation_id = validate_uuid4(self._installation_id_factory())
         marker_reference = self._new_uuid4()
         user_id = self._new_uuid4()
         recovery_set_id = self._new_uuid4()

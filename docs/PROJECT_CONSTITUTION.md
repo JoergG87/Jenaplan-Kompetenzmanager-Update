@@ -1590,3 +1590,8 @@ Nicht erlaubt sind:
 Der externe Kompetenzexport verwendet den nativen macOS-Speicherdialog für frei wählbaren Dateinamen und Ordner. Vorhandene Dateien werden weiterhin abgewiesen.
 
 Der PO gibt einen bewussten PDF-Export aus dem Kompetenz-Cockpit frei. Präzisierung: Der Export umfasst immer alle aktuell relevanten Fächer und überfachlichen Bereiche, unabhängig von Ansichtsfiltern. Ausschließlich diese Exportprojektion verwendet vier transparente Pflanzenzeichnungen mit den Entwicklungsstufen des Entwicklungsbuchs in der Reihenfolge Samen, Keimling, Knospe, Blüte. Gespeicherte Ratings, Widgetdarstellung und Schulbesuchsjahr-Farben bleiben unverändert. Der Balken zeigt ausschließlich den kanonischen bestätigten Wert, keine Vorschläge, Scores oder pädagogischen Ableitungen. Unbestätigte, undokumentierte und unklare Stände sperren die Ausgabe bis zur ausdrücklichen Auswahl sämtlicher offener Kompetenzen im vorgelagerten Dialog. Der Export ist eine bewusst gewählte unverschlüsselte externe Datei und keine finale RPA-/LCA-Ausgabe.
+
+
+## Isoliertes internes macOS-Testpaketprofil – 14.10.2026
+
+PO-Auftrag: bestehende macOS-Pipeline ausschließlich um bewusst ausgewähltes internal-test-Profil erweitern. Vor allen Buildwrites vollständige Identitätsprüfung; kein App-/DMG-Bau in diesem Auftrag. Keine Fach-/Schema-/Cipheränderung. Produktprofil bleibt Default. Native A2-Abnahme bleibt separater Auftrag.

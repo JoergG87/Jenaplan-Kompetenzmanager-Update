@@ -6,6 +6,7 @@ import ctypes
 import hashlib
 import threading
 from typing import Callable
+from src.core.macos_test_package_profile import keychain_account, keychain_service
 
 from ..domain import SecurityStoreError, validate_uuid4
 from ..monotonic_anchor import (
@@ -400,15 +401,11 @@ class MacOSMonotonicSecurityAnchorStore:
 
     @property
     def _service(self) -> bytes:
-        return MACOS_MONOTONIC_SECURITY_ANCHOR_SERVICE.encode("ascii")
+        return keychain_service(MACOS_MONOTONIC_SECURITY_ANCHOR_SERVICE)
 
     @property
     def _account(self) -> bytes:
-        return (
-            f"v1:{self._installation_id}:{self._database_context_id}".encode(
-                "ascii"
-            )
-        )
+        return keychain_account(self._installation_id, self._database_context_id)
 
     def _create(self, encoded: bytes) -> int:
         payload = (ctypes.c_uint8 * len(encoded)).from_buffer_copy(encoded)

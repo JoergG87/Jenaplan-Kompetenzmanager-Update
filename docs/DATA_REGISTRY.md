@@ -2604,3 +2604,8 @@ Statusreport enthält nur Rückgabecodes und Gleichheitsprüfung, keine Secrets.
 Dateiname und Zielordner sind ausschließlich flüchtige Nutzerangaben des nativen Speicherdialogs; die Erfolgsmeldung verwendet ausschließlich den publizierten Dateinamen.
 
 Keine neue Tabelle, Datenquelle oder Schemaänderung. Die flüchtige Exportprojektion verwendet das transaktionskonsistente Schülerprofil-Bundle: Schülername aus `students`, Schuljahr/Fachrelevanz aus bestehender Schuljahr-/Fachprojektion, Texte und Reihenfolge aus aktuellen aktiven `competencies`, bestätigter Stand und Frische aus kanonischer Kompetenzstatusprojektion. Nur `confirmed` und `newer_observations` mit gültigem `confirmed_rating` füllen den Balken. `confirmation_unknown` sperrt die Ausgabe bis zur expliziten erneuten Auswahl. Interne Datums-, Frische- und Quelleninformationen werden nicht gedruckt. Historische/nicht relevante Fächer sind nicht Bestandteil dieses aktuellen Exports. Alle aktuellen effektiven Fächer werden immer exportiert; UI-Filter sind keine Exportquelle.
+
+
+## Isoliertes internes macOS-Testpaketprofil – 14.10.2026
+
+Neue nicht geheime Buildquelle: explizite JSON-Testprofilkonfiguration mit UUID4-Test-/Installations-ID, abgeleiteter Bundle-/App-/Keychain-/Accountidentität, festen privaten synthetischen Root-/Build-/Distpfaden, deaktivierten Updates, gleichen Worker-/Restartidentitäten, Ad-hoc-Signierung ohne Entitlements. Validiertes Profil wird als Literal im PyInstaller-Runtimehook versiegelt; keine Runtime-Env-Fallbacks. DMK/Database-Key-Kontexte bleiben unabhängige bestehende Zufallsidentitäten und unverändert authentisiert.

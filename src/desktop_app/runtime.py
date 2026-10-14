@@ -11,10 +11,14 @@ from dataclasses import dataclass
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Mapping
+from src.core.macos_test_package_profile import test_identity
 
 
 APP_NAME = "Jenaplan-Kompetenzmanager"
 APP_BUNDLE_ID = "de.jenaplan.kompetenzmanager"
+if test_identity() is not None:
+    APP_NAME = test_identity().app_name
+    APP_BUNDLE_ID = test_identity().bundle_id
 APP_DATA_DIR_ENV = "JENAPLAN_APP_DATA_DIR"
 DATABASE_FILENAME = "kompetenzmanager.sqlite"
 SECURITY_DIRECTORY = "security"
@@ -154,6 +158,8 @@ def application_data_root(
 ) -> Path:
     """Return the mutable data root without creating it."""
     environment = os.environ if environ is None else environ
+    if test_identity() is not None:
+        return Path(test_identity().runtime_root)
     override = environment.get(APP_DATA_DIR_ENV, "").strip()
     if override:
         return Path(override).expanduser()

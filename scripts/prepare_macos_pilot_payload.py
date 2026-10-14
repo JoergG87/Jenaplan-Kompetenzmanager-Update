@@ -28,9 +28,16 @@ def prepare_payload(
     git_commit: str,
     source_tree_state: str,
     architecture: str,
+    test_profile: Path | None = None,
 ) -> Path:
     """Create build metadata and optional explicitly fictional initial data."""
     output_dir = Path(output_dir)
+    profile = None
+    if test_profile is not None:
+        from scripts.macos_package_profile import load_profile
+        profile = load_profile(test_profile, before_build=False)
+        if data_mode != "empty" or output_dir != Path(profile.build_root) / "payload":
+            raise ValueError("test_profile_invalid")
     require_unprotected_output_path(output_dir)
     if output_dir.exists() or output_dir.is_symlink():
         raise ValueError("Das Payload-Ziel muss vollständig neu sein.")
@@ -51,6 +58,13 @@ def prepare_payload(
         "pilot_features": ["guided_testdata_restore", "sparkle_updates"],
         "source_tree_state": source_tree_state,
     }
+    if profile is not None:
+        build_info.update(
+            app_name=profile.app_name, bundle_id=profile.bundle_id,
+            installation_id=profile.installation_id, package_profile="internal-test",
+            release_channel="internal-test", pilot_features=[],
+            pilot_data_label="Internes synthetisches Testpaket – nicht zur Verteilung",
+        )
     (output_dir / BUILD_INFO_FILENAME).write_text(
         json.dumps(build_info, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -102,6 +116,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--git-commit", required=True)
     parser.add_argument("--source-tree-state", choices=("clean", "dirty"), required=True)
     parser.add_argument("--architecture", required=True)
+    parser.add_argument("--test-profile", type=Path)
     return parser.parse_args()
 
 
@@ -114,6 +129,7 @@ def main() -> int:
         git_commit=args.git_commit,
         source_tree_state=args.source_tree_state,
         architecture=args.architecture,
+        test_profile=args.test_profile,
     )
     return 0
 

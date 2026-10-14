@@ -1121,3 +1121,8 @@ Delete-Statuscodes des neu erzeugten Testschlüssels; keine Produktfelder.
 Zielauswahl erfolgt im nativen Speicherdialog. Erfolgstext `PDF gespeichert: <Dateiname>` verwendet ausschließlich `exported.name` und bleibt sieben Sekunden lesbar; kein voller Datenpfad.
 
 Aktion im Profilreiter `Kompetenzen`: `Kompetenzen als PDF exportieren`. Die Aktion exportiert immer alle aktuellen Bereiche, unabhängig von Fach-, Such- oder Dokumentationsfilter. Jede PDF-Zeile nutzt `competency_text`, Lernbereich und Thema aus Cockpit; Balken aus gültigem `confirmed_rating` und sicherem `documentation_state`; keine gedruckte Quelle oder Bestätigungsdaten. Namen und Schuljahr kommen aus demselben frischen Profil-Bundle. Unbestätigte, undokumentierte und unklare Kompetenzen werden vor der Ausgabe im Ergänzungsdialog ausdrücklich gewählt. Keine implizite Vorschlagsübernahme.
+
+
+## Isoliertes internes macOS-Testpaketprofil – 14.10.2026
+
+Keine neuen Fachfelder. Testprofil projiziert unterscheidbaren technischen Appnamen und deaktivierten vorhandenen Updateadapter. Bestehende Startup-/Auth-/Fehlerdarstellung bleibt; kein Authbypass und keine native Abnahmebehauptung.

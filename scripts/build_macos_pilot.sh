@@ -5,6 +5,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 DATA_MODE="empty"
+PACKAGE_PROFILE="product"
+TEST_PROFILE=""
+VALIDATE_PROFILE_ONLY="0"
 BUILD_LAURA_PACKAGE="0"
 DEFER_PACKAGE_TESTS="0"
 DMG_LAYOUT_MODE="${JENAPLAN_DMG_LAYOUT_MODE:-automatic}"
@@ -14,6 +17,18 @@ case "$DMG_LAYOUT_MODE" in
 esac
 while [ "$#" -gt 0 ]; do
     case "$1" in
+        --package-profile)
+            PACKAGE_PROFILE="${2:-}"
+            shift 2
+            ;;
+        --test-profile)
+            TEST_PROFILE="${2:-}"
+            shift 2
+            ;;
+        --validate-profile-only)
+            VALIDATE_PROFILE_ONLY="1"
+            shift
+            ;;
         --data-mode)
             DATA_MODE="${2:-}"
             shift 2
@@ -39,6 +54,29 @@ if { [ "$DATA_MODE" != "empty" ] && [ "$DATA_MODE" != "release" ]; } \
     exit 2
 fi
 
+# Pure fail-closed profile gate before tools, signing lookup or any build write.
+PROFILE_ARGS=(--package-profile "$PACKAGE_PROFILE")
+if [ -n "$TEST_PROFILE" ]; then
+    PROFILE_ARGS+=(--test-profile "$TEST_PROFILE")
+fi
+PROFILE_REPORT="$(python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}")"
+printf '%s\n' "$PROFILE_REPORT"
+if [ "$PACKAGE_PROFILE" = "internal-test" ] && { [ "$DATA_MODE" != "empty" ] || [ "$BUILD_LAURA_PACKAGE" != "0" ]; }; then
+    echo "test_profile_invalid" >&2
+    exit 2
+fi
+if [ "$VALIDATE_PROFILE_ONLY" = "1" ]; then
+    exit 0
+fi
+export JENAPLAN_PACKAGE_PROFILE="$PACKAGE_PROFILE"
+unset JENAPLAN_INTERNAL_TEST_PROFILE JENAPLAN_INTERNAL_TEST_PROFILE_DIGEST
+if [ "$PACKAGE_PROFILE" = "internal-test" ]; then
+    JENAPLAN_INTERNAL_TEST_PROFILE="$(python3 -c 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).resolve(strict=True))' "$TEST_PROFILE")"
+    export JENAPLAN_INTERNAL_TEST_PROFILE
+    JENAPLAN_INTERNAL_TEST_PROFILE_DIGEST="$(printf '%s' "$PROFILE_REPORT" | python3 -c 'import hashlib,json,sys; print(hashlib.sha256(json.dumps(json.load(sys.stdin),sort_keys=True).encode()).hexdigest())')"
+    export JENAPLAN_INTERNAL_TEST_PROFILE_DIGEST
+fi
+
 if [ "$(uname -s)" != "Darwin" ]; then
     echo "Der macOS-Pilotbuild muss auf macOS ausgeführt werden." >&2
     exit 1
@@ -48,13 +86,17 @@ if [ "$ARCHITECTURE" != "arm64" ]; then
     echo "Dieser Pilotbuild ist für arm64 konfiguriert; gefunden: $ARCHITECTURE" >&2
     exit 1
 fi
-for tool in python3 hdiutil codesign ditto sips iconutil security xcrun file lipo; do
+BUILD_TOOLS=(python3 codesign ditto sips iconutil xcrun file lipo)
+if [ "$PACKAGE_PROFILE" = "product" ]; then
+    BUILD_TOOLS+=(hdiutil security)
+fi
+for tool in "${BUILD_TOOLS[@]}"; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "Benötigtes Build-Werkzeug fehlt: $tool" >&2
         exit 1
     fi
 done
-if [ "$DMG_LAYOUT_MODE" = "automatic" ] && ! command -v osascript >/dev/null 2>&1; then
+if [ "$PACKAGE_PROFILE" = "product" ] && [ "$DMG_LAYOUT_MODE" = "automatic" ] && ! command -v osascript >/dev/null 2>&1; then
     echo "Benötigtes Build-Werkzeug fehlt: osascript" >&2
     exit 1
 fi
@@ -84,6 +126,18 @@ SPARKLE_VENDOR="$BUILD_ROOT/sparkle"
 PYI_DIST="$BUILD_ROOT/pyinstaller-dist"
 PYI_WORK="$BUILD_ROOT/pyinstaller-work"
 DIST_ROOT="${JENAPLAN_MACOS_DIST_ROOT:-$ROOT/dist/macos}"
+if [ "$PACKAGE_PROFILE" = "internal-test" ]; then
+    APP_NAME="$(python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}" --field app_name)"
+    BUILD_ROOT="$(python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}" --field build_root)"
+    DIST_ROOT="$(python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}" --field dist_root)"
+    VENV="$BUILD_ROOT/venv"
+    PAYLOAD="$BUILD_ROOT/payload"
+    ICONSET="$BUILD_ROOT/AppIcon.iconset"
+    ICON="$BUILD_ROOT/AppIcon.icns"
+    SECURITY_BRIDGE="$BUILD_ROOT/libjkm_macos_security.dylib"
+    PYI_DIST="$BUILD_ROOT/pyinstaller-dist"
+    PYI_WORK="$BUILD_ROOT/pyinstaller-work"
+fi
 APP_PATH="$DIST_ROOT/$APP_NAME.app"
 if [ "$DATA_MODE" = "release" ]; then
     DMG_NAME="$APP_NAME-$VERSION-macOS-$ARCHITECTURE.dmg"
@@ -156,7 +210,15 @@ if [ -e "$BUILD_ROOT" ] || [ -L "$BUILD_ROOT" ] \
     echo "Abbruch: Build- und Distributionsziele müssen vollständig neu sein." >&2
     exit 2
 fi
+# Revalidate immediately before the first build artifact, not only at CLI parsing.
+python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}"
+if [ "$PACKAGE_PROFILE" = "internal-test" ]; then
+    umask 077
+fi
 mkdir -p "$BUILD_ROOT" "$DIST_ROOT"
+if [ "$PACKAGE_PROFILE" = "internal-test" ]; then
+    python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}" --prepare-hook
+fi
 
 python3 -m venv "$VENV"
 "$VENV/bin/python" -m pip install --disable-pip-version-check -r requirements-macos-build.txt
@@ -174,14 +236,19 @@ fi
 "$VENV/bin/python" -m pip install --disable-pip-version-check --no-index --no-deps "$SQLCIPHER_417_WHEEL"
 "$VENV/bin/python" scripts/audit_macos_security_runtime.py
 
+PAYLOAD_PROFILE_ARGS=()
+if [ "$PACKAGE_PROFILE" = "internal-test" ]; then
+    PAYLOAD_PROFILE_ARGS=(--test-profile "$TEST_PROFILE")
+fi
 "$VENV/bin/python" scripts/prepare_macos_pilot_payload.py \
     --output "$PAYLOAD" \
     --data-mode "$DATA_MODE" \
     --version "$VERSION" \
     --git-commit "$GIT_COMMIT" \
     --source-tree-state "$SOURCE_TREE_STATE" \
-    --architecture "$ARCHITECTURE"
+    --architecture "$ARCHITECTURE" "${PAYLOAD_PROFILE_ARGS[@]}"
 
+if [ "$PACKAGE_PROFILE" = "product" ]; then
 "$VENV/bin/python" scripts/build_pilot_documents.py \
     --version "$VERSION" \
     --build-version "$BUILD_VERSION" \
@@ -195,6 +262,7 @@ fi
     --icon assets/app_icon.png
 cp scripts/backup_macos_pilot.sh "$BACKUP_SCRIPT"
 chmod +x "$BACKUP_SCRIPT"
+fi
 
 mkdir -p "$ICONSET"
 for size in 16 32 128 256 512; do
@@ -208,6 +276,7 @@ iconutil -c icns "$ICONSET" -o "$ICON"
 
 scripts/build_macos_security_bridge.sh "$SECURITY_BRIDGE"
 
+if [ "$PACKAGE_PROFILE" = "product" ]; then
 SPARKLE_FETCH_ARGS=(--output "$SPARKLE_VENDOR")
 if [ -n "${JENAPLAN_SPARKLE_ARCHIVE:-}" ]; then
     SPARKLE_FETCH_ARGS+=(--archive "$JENAPLAN_SPARKLE_ARCHIVE")
@@ -223,16 +292,20 @@ if [[ "$PILOT_APPCAST_URL" != https://* ]]; then
     exit 2
 fi
 
+fi
+
 export JENAPLAN_PILOT_PAYLOAD_DIR="$PAYLOAD"
 export JENAPLAN_MACOS_ICON="$ICON"
 export JENAPLAN_MACOS_SECURITY_BRIDGE="$SECURITY_BRIDGE"
+if [ "$PACKAGE_PROFILE" = "product" ]; then
 export JENAPLAN_MACOS_SPARKLE_BRIDGE="$SPARKLE_BRIDGE"
 export JENAPLAN_SPARKLE_FRAMEWORK="$SPARKLE_SOURCE/Sparkle.framework"
 export JENAPLAN_SPARKLE_LICENSE="$SPARKLE_LICENSE"
 export JENAPLAN_PILOT_APPCAST_URL="$PILOT_APPCAST_URL"
+fi
 export JENAPLAN_PILOT_FIRST_STEPS_PDF="$FIRST_STEPS_PDF"
 export MACOSX_DEPLOYMENT_TARGET="13.0"
-export DYLD_FRAMEWORK_PATH="$SPARKLE_SOURCE"
+export DYLD_FRAMEWORK_PATH="${SPARKLE_SOURCE:-}"
 "$VENV/bin/python" -m PyInstaller \
     --noconfirm \
     --clean \
@@ -241,8 +314,10 @@ export DYLD_FRAMEWORK_PATH="$SPARKLE_SOURCE"
     packaging/macos_pilot.spec
 
 ditto "$PYI_DIST/$APP_NAME.app" "$APP_PATH"
+if [ "$PACKAGE_PROFILE" = "product" ]; then
 rm -rf "$APP_PATH/Contents/Frameworks/Sparkle.framework"
 ditto "$SPARKLE_SOURCE/Sparkle.framework" "$APP_PATH/Contents/Frameworks/Sparkle.framework"
+fi
 SQLCIPHER_DIRECT_URL="$APP_PATH/Contents/Resources/sqlcipher3-0.6.2+jkm.sqlcipher4170.1.dist-info/direct_url.json"
 if [ ! -f "$SQLCIPHER_DIRECT_URL" ]; then
     echo "Abbruch: SQLCipher-Buildquellennachweis ist vor der Bundle-Bereinigung nicht eindeutig." >&2
@@ -260,6 +335,17 @@ if [ "$DATA_MODE" = "laura" ]; then
         echo "Abbruch: Die Laura-Variante ist nicht eindeutig als fiktiv gekennzeichnet." >&2
         exit 1
     fi
+fi
+
+if [ "$PACKAGE_PROFILE" = "internal-test" ]; then
+    # No identity lookup, timestamp, entitlements, installation, DMG or release path.
+    codesign --force --deep --sign - "$APP_PATH"
+    codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+    "$VENV/bin/python" scripts/audit_macos_app_bundle.py "$APP_PATH" \
+        --expected-version "$VERSION" --expected-build "$BUILD_VERSION" \
+        --test-profile "$TEST_PROFILE"
+    echo "Internes Testartefakt (nicht zur Verteilung): $APP_PATH"
+    exit 0
 fi
 
 SIGNING_IDENTITY="${MACOS_SIGN_IDENTITY:-}"

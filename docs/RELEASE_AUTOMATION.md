@@ -306,3 +306,71 @@ Implementierung und Version sind lokal committed (`bfe7c5b`, danach Versionscomm
 - Alle vier Releaseartefakte erneut gegen Manifestgröße und SHA-256 geprüft. Lokales Manifest: `release/output/0.4.2-build402-2ac4e28ca5ea/release-manifest.json`, Phase `package_verified`, kein Fehler, Restore `passed`.
 
 Technische Quell- und Paketvorbereitung ist abgeschlossen. Offen bleiben die letzte reale PO-Bedienabnahme und die getrennte bewusste Veröffentlichung im Pilotkanal. Vollständiger Restore, Developer ID, Notarisierung, Stable- und schulische Betriebsfreigabe werden durch diese technischen Prüfungen nicht erteilt. Der frühere Fehler von Build 401 trat weder in den erneuten Originalpaketprüfungen noch in der aktuellen nativen Prüfung außerhalb der Sandbox auf; seine ursprüngliche Ursache bleibt ungeklärt.
+
+## A2 – native macOS-Paketabnahme angehalten – 14.10.2026
+
+Status: NO-GO; unveröffentlicht nach 0.4.4 / Build 404. Geprüfter Entwicklungsstand: 3ad1c0ff7e83c13a6df87d53c713264bed760246, Branch spike/python-gui. Arbeitsbaum und Staging zu Beginn leer. Kein Paketbau, kein Appstart, keine Installation, kein Keychainzugriff und keine Produktcodeänderung in diesem Auftrag.
+
+Phase-3-Stop-Blocker: packaging/macos_pilot.spec setzt BUNDLE_ID fest auf de.jenaplan.kompetenzmanager; scripts/build_macos_pilot.sh bietet getrennte Build-/Dist-Roots, aber keine getrennte Bundleidentität. scripts/audit_macos_app_bundle.py verlangt ebenfalls die Produkt-ID. scripts/create_isolated_macos_test_app.py akzeptiert ausschließlich eine bereits mit Produkt-ID erzeugte Quell-App und vergibt erst danach eine UUID-Bundle-ID. Der Auftrag untersagt ausdrücklich das Fortfahren, wenn die vorhandene Pipeline zwingend produktive Bundleidentitäten benötigt. Die nachgelagerte Testkopie genügt deshalb diesem Testvertrag nicht. Kein unsicherer Ersatz und keine zweite Paketpipeline entwickelt.
+
+Durchgeführt: read-only Quellprüfung von Startupkomposition, A2-Guard, A1-Inventar, Existing-only-Keyport, Restore-/Worker-/Confirm-/Restartpfad und vorhandenen Paket-/Securitywerkzeugen; unabhängiges technisches Quellreview. Beobachtete Reihenfolge: Root-/Artefaktpreflight, Runtime-Lock, A2-Veto vor Rootpublikation/Restore, erneutes Inventar nach Recovery, danach First-Run-Kandidatur und Security/Auth/Cipher. Existing-only-Port verwendet direkte DMK-Lesung und authentisiertes Envelope, keinen Create-/Delete-Lifecycle. Diese Quellbefunde sind keine native ACL-/Paketnachweise.
+
+Aktueller Testlauf: rtk proxy python3 -m pytest tests/test_isolated_macos_test_app.py tests/test_security_release_packaging_sprint12.py::test_044_release_versions_and_security_dependencies_are_pinned -q: 24 bestanden, 0 Skips, 0.35 s, Exit 0. Das sind synthetische Launcherprüfungen mit gemocktem execve und statische Paketkonfigurationsprüfungen; kein eingefrorener/native paketierter A2-Produktstart. Die vorher dokumentierten 93 gezielten Tests, 2897 Produkttests, 104 bestehenden Skips und 120 Unterprüfungen wurden in diesem Auftrag nicht erneut ausgeführt und bleiben historische A2-Nachweise.
+
+Offen/nicht ausgeführt: alle 20 paketierten Startupfälle des Auftrags, native Existing-only-Keychain-/ACL-/Locked-Keychainprüfungen, paketierte SQLCipher-4.17/CommonCrypto-Provideridentität und Cipherparameter, Dateizugriffs-/Eigentümer-/Pfadgates am neuen Paket, Bundle-/Signaturintegrität, Restore-Koexistenz und Worker-/Restart-Handoff samt realen Parent-/Workerabbrüchen, parallelem Start und Recoveryneustart sowie manuelle sichere Fehlerdarstellung. Keine Testinstallation, keine synthetische Installations-/Keychainidentität und kein internes App-/DMG-Testartefakt erzeugt. Keine Stromausfallschutzbehauptung.
+
+Bewertung: kein neuer P0-Produktfehler nachgewiesen; ein P1-Abnahmeblocker wegen fehlender auftragskonformer Paketidentität. Produkt-P0/P1 im nativen Kontext mangels Paket nicht abschließend bewertbar. Bestehende P2-Grenzen (konsistenter lokaler Rollback/Evidenzentfernung, alter Build-404-Code, gleichbenutzerprivilegierte TOCTOU-/ABA-Grenzen, externer Interpreter der Testkopie) bleiben offen. Keine Paketfreigabe, kein Staging und kein Commit bei diesem Blocker.
+
+Unveränderlichkeit read-only verifiziert: assets/competency_plants/Pflanzenbilder-transparent.zip: 439602 Bytes, fünf Einträge, ZIP-Integritätsprüfung ohne Fehler, SHA256 ef06e04c4bbc4803fb036f8dfa61151f8556a2a3f647c89b5fbe9d7dec9a31d4. Vorhandene veröffentlichte Build-404-DMG: SHA256 d55c21c35509a034b3b249450478dc82514f7f296ab5e494799dae0fd93f311e. Beide stimmen mit den bisherigen Registern überein. Produktinstallation, Produktdaten und Produktschlüssel wurden nicht geöffnet oder verändert; src/version.py, Releaseartefakte und Pilotfeed wurden nicht verändert. Kein Push, Tag, Release, Build 405 oder Folgepaket.
+
+## Isolierte macOS-Testpaketpipeline vorbereitet – 14.10.2026
+
+PO-Auftrag: ausschließlich Voraussetzungen und automatisierte Vorabprüfung für ein internes Testpaket; keine App-/DMG-Erstellung oder native A2-Abnahme. Baseline 3ad1c0ff7e83c13a6df87d53c713264bed760246 / spike/python-gui; genau die vier vorhandenen NO-GO-Dokumentänderungen geprüft und als sachlich korrekter historischer Nachweis unverändert erhalten. Der vorstehende Paket-NO-GO beschreibt die damalige unparametrisierte Pipeline, nicht eine native Prüfung der neuen Implementierung.
+
+Bestehender Builder und Spec besitzen jetzt das explizite Profil internal-test. Default product behält Bundle-ID, Appname, UUID4-Enrollment, drei Keychain-Services/Accountformat, Sparkle-Feed, Version 0.4.4/404, Securitybasis und Releasepfade. Testprofil bindet vor Buildwrites UUID4-Test-/Installations-ID, abgeleitete Bundle-/App-/Service-/Accountidentitäten, eigenen privaten synthetischen Root sowie neue Build-/Artefaktziele. Vollständiger Snapshotdigest und exakter versiegelter Hook/Config werden vor Analysis geprüft. Keine Auswahl zur Laufzeit durch Environment, keine Produktfallbacks, keine größeren Architekturänderungen.
+
+Jeder eingefrorene Normal-/Worker-/Restartprozess prüft vor main den gleichen Root, Executablepfad, Bundle/Config/Digest und CLI-Kontext. Keychainadapter verwenden getrennte DMK-, Device-Credential- und Monotonic-Anchor-Services sowie test-v1:<TestUUID>:<InstallationUUID>:<ItemUUID>; eine fremde Installations-ID sperrt vor Keychainaufruf. Nur der Enrollment-Installations-ID-Fabrikport ist im Testkontext gebunden; weitere Schlüssel-/Database-Context-UUIDs, KDFs, Cipherparameter und Final-V4-Schema bleiben unverändert. Keine Auth-/Recovery-/Runtimefreigabe aus einem Paketprofil.
+
+Im Testprofil keine Sparkle-Bridge/Framework oder SU*-Plisteinträge, kein nativer Updateadapter, keine Signierungsidentitätssuche, keine Developer-ID, Timestamp-/Notarisierung-/Entitlements-/Installations-/DMG-/Releasezweige. Ausschließlich spätere Ad-hoc-Testsignierung innerhalb des bestehenden Builders; kein neues Signingversprechen. Das vorhandene Bundleaudit erwartet explizit die versiegelte Testidentität, behält alle Security-/Provider-/Architekturprüfungen; nur die exakt gebundenen nicht geheimen Identitätspfade werden bei der Prüfung auf unerwartete Entwicklerpfade normalisiert.
+
+Native A2-Abnahme bleibt offen: alle 20 Startupfälle, tatsächlich eingefrorene Hookreihenfolge, native Bundle-/Signatur-/ACL-/Keychain-/SQLCipher-Identität, Restore-/Worker-/Restart-/Crash- und manuelle Fehlerprüfungen. Profilprüfung ist keine native Paketfreigabe. Bekannte P2-Grenzen: kooperative Prozess-/Rootgrenzen statt OS-Sandbox, keine Abwehr beliebiger gleichbenutzerprivilegierter Code-/Loader-/TOCTOU-Manipulation, kein Stromausfallschutzbeweis; bestehende A2-Rollback-/Evidenzgrenzen bleiben. Das Testpaket wäre lokal root-/pfadgebunden und darf nicht als Build 404 verteilt werden.
+
+Kein Produktdaten-/Produktschlüsselzugriff, kein App-/DMG-Bau, kein Push/Tag/Release/Feed-/Versionswechsel. Pflanzen-ZIP 439602 Bytes/fünf valide Einträge/SHA256 ef06e04c4bbc4803fb036f8dfa61151f8556a2a3f647c89b5fbe9d7dec9a31d4 und veröffentlichte 404-DMG SHA256 d55c21c35509a034b3b249450478dc82514f7f296ab5e494799dae0fd93f311e read-only bestätigt.
+
+### Identitätsannahmen und Codebelege
+
+| Identität/Vertrag | Produktdefault und isolierte Projektion |
+| --- | --- |
+| Bundle, Appname, Executable, Info.plist | packaging/macos_pilot.spec vor Analysis; src/desktop_app/runtime.py APP_NAME/APP_BUNDLE_ID; Appinfo übernimmt Testnamen nur nach Bindung |
+| Produktroot | runtime.application_data_root: produktiv Application Support/APP_NAME bzw. bestehender Override; Testprofil ausschließlich festes data unter eigenem privaten systemtemporären Container |
+| Installations-ID | security.application Enrollment: normale UUID4-Fabrik; security.startup injiziert ausschließlich im Testprofil die vorgeprüfte Installations-ID |
+| DMK-Service/Account | security.infrastructure.data_master_key_store: unveränderter Produktservice, keychain_service/keychain_account projizieren Testnamespace und verweigern fremde Installation |
+| Gerätecredential | security.infrastructure.platform_auth: eigener Service und gleicher Accountbindungsvertrag, bestehende native ACL/LocalAuthentication unverändert |
+| Sicherheitsanker | security.infrastructure.monotonic_anchor_store: eigener monotonic-security-anchor-Service; Installations-/Database-Context-Accountbindung bleibt |
+| SQLCipher/DMK/DB-Context | bestehender qualifizierter Wheelhash, unveränderte Binding-/Engine-/CommonCrypto- und Cipherverträge; Schlüssel und DB-Context entstehen weiterhin im bestehenden First Run innerhalb gebundener Testinstallation |
+| Worker/Restart | restore_worker.resolve_restore_worker_launch und final_v4_runtime_adapters.DesktopFinalV4RestartLauncher: dasselbe frozen sys.executable; jeder Prozess durch denselben versiegelten Hook, fremde Handoff-/Rootpfade gesperrt |
+| Rechte/Signatur | bestehende PyInstaller EXE ohne zusätzliche Entitlements; Testzweig nur codesign --sign -, keine Security-Identitätssuche, Developer-ID oder Notarisierung |
+| Updates | Produkt-Sparkle unverändert; Test-Spec ohne Bridge/Framework/SU*, nativer Adapter blockiert auch direkte Konstruktion |
+| Releasepfade/Version | Testartefakte ausschließlich im eigenen artifacts-Root; Builder endet vor DMG/Release. src/version.py bleibt 0.4.4/404; kein Testpaket als neuer 404-Release |
+
+### Reine Vorabprüfung – erzeugt keine App
+
+Explizite Profilwahl und vollständig vorhandene private synthetische Rootautorität sind erforderlich. Eine vorhandene leere Testwurzel wird nicht still als Produktwurzel angelegt. JSON hat exakt diese Felder, keine weiteren: profile, test_id, installation_id, bundle_id, app_name, runtime_root, build_root, dist_root, keychain_services, account_prefix, worker_bundle_id, restart_bundle_id, updates, signing, entitlements. Doppelte JSON-Schlüssel sind unzulässig. UUID4-Test-ID und UUID4-Installations-ID müssen verschieden sein. Bundle: de.jenaplan.kompetenzmanager.internaltest.t<UUIDhex>; App: JKM-Interner-Test-<UUIDhex>. Drei Services sind Bundle + .data-master-key/.device-credential/.monotonic-security-anchor. Accountpräfix test-v1:<TestUUID>. Worker-/Restart-Bundle gleich Testbundle, updates=false, signing=ad-hoc, entitlements=null.
+
+Container: <kanonischer Systemtemp>/jkm-internal-test-<UUIDhex>, privat 0700/eigener Owner/keine Pfadlinks. runtime_root=data mit bestehendem synthetic_test-Marker; vor Build keine weiteren Runtimeartefakte. build_root=build und dist_root=artifacts dürfen noch nicht existieren. Fehlende, beschädigte, produktive, unbekannte oder widersprüchliche Identitäten/Roots sowie fremde Signing-/Feed-/Outputoverrides führen vor Buildwrites zu test_profile_invalid. Die rein lesende Prüfung lautet:
+
+```bash
+rtk proxy bash scripts/build_macos_pilot.sh --package-profile internal-test --test-profile /absoluter/pfad/testprofil.json --validate-profile-only
+```
+
+Produktdefault read-only prüfen:
+
+```bash
+rtk proxy bash scripts/build_macos_pilot.sh --validate-profile-only
+```
+
+Die Profile werden ausschließlich für einen später ausdrücklich beauftragten nativen Paketlauf vorbereitet. Ein tatsächlicher Build würde dieselbe Pipeline mit denselben Eingaben verwenden, mit Snapshotdigest vor erster Artefakterzeugung, neu erzeugtem versiegeltem Hook, unverändertem qualifiziertem SQLCipher-Wheel und vollständigem Bundleaudit. Dieser Auftrag hat keinen solchen Lauf ausgeführt. Die historische create_isolated_macos_test_app-Kopie ersetzt weder dieses Profil noch dessen native Gates.
+
+Abschlussprüfung dieses Vorbereitungsauftrags: 65 neue gezielte Tests ohne Skip bestanden (rtk proxy python3 -m pytest tests/test_macos_test_package_profile.py -q, 3.82 s, Exit 0). Erweiterter gezielter Zwischenstand: 201 bestanden / ein bestehender qualifizierter Runtime-Skip (25.88 s). Erster vollständiger Lauf: 2954 bestanden / ein Appinfo-Quellregressionstest fehlgeschlagen / 104 bestehende Skips / 120 bestandene Unterprüfungen (354.50 s, Exit 1); kein Abnahmenachweis. Explizite produktive Appinfo-Namenskonstante erhalten und nur im gebundenen Testprofil überlagert, bestehender Einzeltest grün. Ein folgender Zwischenlauf wurde vor Abnahme für die letzte Pfadhärtung beendet (Exit 130). Finaler regulärer Lauf am endgültigen Code: rtk proxy python3 -m pytest tests -q -rs → 2962 bestanden, 104 unveränderte bestehende Skips, 120 bestandene Unterprüfungen, 354.19 s, Exit 0. Keine neue Skipregel, Sicherheitsausnahme oder Lockerung bestehender Tests.
+
+Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse ausschließlich mit Vorabprüfung oder ungültigem Profil vor Build sowie Spec-/Hookprüfungen mit inerten Konstruktoren/Bundle-Reads. Kein nativer eingefrorener App-/SQLCipher-/Keychain-/Signingnachweis aus diesem Auftrag. Unabhängiger Architektur-/Diff-/Technical-Review einschließlich letzter Pfadhärtung: P0 = 0, P1 = 0, keine neue offene P2-Implementierungslücke; dokumentierte Sicherheitsgrenzen bleiben. Historischer NO-GO in allen vier bisherigen Dokumenten identisch und unverändert erhalten. Shellsyntax- und Diffprüfung erfolgreich. Damit Commit-Gate für die vorbereitete Testpipeline erfüllt; native A2-Paketabnahme weiterhin offen. Kein Testpaket gebaut und keine Veröffentlichung erfolgt.

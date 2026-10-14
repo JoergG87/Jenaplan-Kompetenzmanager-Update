@@ -15,19 +15,31 @@ VERSION = VERSION_DATA["APP_VERSION"]
 BUILD_VERSION = VERSION_DATA["APP_BUILD_VERSION"]
 APP_NAME = "Jenaplan-Kompetenzmanager"
 BUNDLE_ID = "de.jenaplan.kompetenzmanager"
+import sys
+sys.path.insert(0, str(PROJECT_ROOT))
+from scripts.macos_package_profile import validate_build_selection, profile_digest, verify_prepared_hook
+PACKAGE_PROFILE = os.environ.get("JENAPLAN_PACKAGE_PROFILE", "product")
+TEST_PROFILE = validate_build_selection(
+    PACKAGE_PROFILE, os.environ.get("JENAPLAN_INTERNAL_TEST_PROFILE"), before_build=False,
+)
+if TEST_PROFILE is not None:
+    if os.environ.get("JENAPLAN_INTERNAL_TEST_PROFILE_DIGEST") != profile_digest(TEST_PROFILE):
+        raise RuntimeError("test_profile_invalid")
+    verify_prepared_hook(TEST_PROFILE)
+    APP_NAME = TEST_PROFILE.app_name
+    BUNDLE_ID = TEST_PROFILE.bundle_id
 PAYLOAD_ROOT = Path(os.environ["JENAPLAN_PILOT_PAYLOAD_DIR"])
 ICON_PATH = Path(os.environ["JENAPLAN_MACOS_ICON"])
 SECURITY_BRIDGE = Path(os.environ["JENAPLAN_MACOS_SECURITY_BRIDGE"])
-SPARKLE_BRIDGE = Path(os.environ["JENAPLAN_MACOS_SPARKLE_BRIDGE"])
-SPARKLE_FRAMEWORK = Path(os.environ["JENAPLAN_SPARKLE_FRAMEWORK"])
-SPARKLE_LICENSE = Path(os.environ["JENAPLAN_SPARKLE_LICENSE"])
-SPARKLE_PUBLIC_KEY = (
-    PROJECT_ROOT / "packaging" / "sparkle_pilot_public_key.txt"
-).read_text(encoding="utf-8").strip()
-PILOT_APPCAST_URL = os.environ["JENAPLAN_PILOT_APPCAST_URL"].strip()
 PILOT_FIRST_STEPS_PDF = Path(os.environ["JENAPLAN_PILOT_FIRST_STEPS_PDF"])
-if not PILOT_APPCAST_URL.startswith("https://"):
-    raise RuntimeError("Der Pilot-Appcast muss eine feste HTTPS-URL verwenden.")
+if TEST_PROFILE is None:
+    SPARKLE_BRIDGE = Path(os.environ["JENAPLAN_MACOS_SPARKLE_BRIDGE"])
+    SPARKLE_FRAMEWORK = Path(os.environ["JENAPLAN_SPARKLE_FRAMEWORK"])
+    SPARKLE_LICENSE = Path(os.environ["JENAPLAN_SPARKLE_LICENSE"])
+    SPARKLE_PUBLIC_KEY = (PROJECT_ROOT / "packaging" / "sparkle_pilot_public_key.txt").read_text().strip()
+    PILOT_APPCAST_URL = os.environ["JENAPLAN_PILOT_APPCAST_URL"].strip()
+    if not PILOT_APPCAST_URL.startswith("https://"):
+        raise RuntimeError("Der Pilot-Appcast muss eine feste HTTPS-URL verwenden.")
 
 
 def distribution_file(distribution_name, suffix):
@@ -48,8 +60,6 @@ datas = [
     (str(PROJECT_ROOT / "assets"), "assets"),
     (str(PROJECT_ROOT / "data" / "curriculum_catalog_v1.csv"), "data"),
     (str(PAYLOAD_ROOT / "pilot_build_info.json"), "."),
-    (str(PILOT_FIRST_STEPS_PDF), "pilot_guides"),
-    (str(SPARKLE_LICENSE), "third_party_licenses"),
     (
         str(distribution_file("PyNaCl", "licenses/LICENSE")),
         "third_party_licenses/PyNaCl",
@@ -92,6 +102,11 @@ datas = [
         "third_party_licenses",
     ),
 ]
+if TEST_PROFILE is None:
+    datas.append((str(PILOT_FIRST_STEPS_PDF), "pilot_guides"))
+    datas.append((str(SPARKLE_LICENSE), "third_party_licenses"))
+else:
+    datas.append((str(Path(TEST_PROFILE.build_root) / "internal_test_profile.json"), "."))
 initial_data = PAYLOAD_ROOT / "pilot_initial"
 if initial_data.is_dir():
     datas.append((str(initial_data), "pilot_initial"))
@@ -100,14 +115,10 @@ if initial_data.is_dir():
 a = Analysis(
     [str(PROJECT_ROOT / "src" / "desktop_app" / "main.py")],
     pathex=[str(PROJECT_ROOT)],
-    binaries=[
-        (str(SECURITY_BRIDGE), "."),
+    binaries=[(str(SECURITY_BRIDGE), ".")] + ([
         (str(SPARKLE_BRIDGE), "."),
-        (
-            str(SPARKLE_FRAMEWORK / "Versions" / "B" / "Sparkle"),
-            "Sparkle.framework/Versions/B",
-        ),
-    ],
+        (str(SPARKLE_FRAMEWORK / "Versions" / "B" / "Sparkle"), "Sparkle.framework/Versions/B"),
+    ] if TEST_PROFILE is None else []),
     datas=datas,
     hiddenimports=[
         "PySide6.QtSvg",
@@ -124,6 +135,7 @@ a = Analysis(
         "prototypes.pdf_engine.output_models",
         "prototypes.pdf_engine.renderer",
         "src.core.restore_runtime",
+        "src.core.macos_test_package_profile",
         "src.desktop_app.restore_worker",
         "src.security.application",
         "src.security.device_credentials",
@@ -165,7 +177,8 @@ a = Analysis(
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=([str(Path(TEST_PROFILE.build_root) / "internal_test_hook.py")]
+                   if TEST_PROFILE is not None else []),
     excludes=[
         "numpy",
         "pandas",
@@ -230,12 +243,16 @@ app = BUNDLE(
         "LSApplicationCategoryType": "public.app-category.education",
         "NSHighResolutionCapable": True,
         "NSRequiresAquaSystemAppearance": False,
-        "SUFeedURL": PILOT_APPCAST_URL,
-        "SUPublicEDKey": SPARKLE_PUBLIC_KEY,
-        "SURequireSignedFeed": True,
-        "SUVerifyUpdateBeforeExtraction": True,
-        "SUEnableAutomaticChecks": False,
-        "SUAllowsAutomaticUpdates": False,
-        "SUAutomaticallyUpdate": False,
+        **({
+            "SUFeedURL": PILOT_APPCAST_URL,
+            "SUPublicEDKey": SPARKLE_PUBLIC_KEY,
+            "SURequireSignedFeed": True,
+            "SUVerifyUpdateBeforeExtraction": True,
+            "SUEnableAutomaticChecks": False,
+            "SUAllowsAutomaticUpdates": False,
+            "SUAutomaticallyUpdate": False,
+        } if TEST_PROFILE is None else {
+            "JKMInternalTestProfileSHA256": profile_digest(TEST_PROFILE),
+        }),
     },
 )
