@@ -1,5 +1,24 @@
 # Data Lifecycle
 
+## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
+
+Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.
+Keine Migration, Aktivierung, neue Produktkante oder Runtime-/Restorefreigabe.
+
+Runtime-Lock → Upgrade-Maintenance/Drain → gemeinsamer Writer-Lock →
+exklusiver Maintenance-Writer-Scope → Quelle → Backup → unabhängiger
+Backup-Snapshot → private verschlüsselte Kopie → Close/Reopen/Vollvergleich → STAGED.
+Vor immutable Reads werden Main-/Companion-WAL/SHM/Journal-Sidecars abgewiesen;
+kein stilles Checkpoint oder Kopieren offener Sidecars. Keysetmetadaten verwenden
+weiterhin ihren vorhandenen SQLite-Snapshotvertrag.
+
+Wiederholung eines STAGED-Vorgangs erfordert vollständig neue keyed Prüfungen
+von Quelle, Backup und Kandidat sowie Übereinstimmung mit den gespeicherten
+Artefaktidentitäten. Dateien ohne Journalbeleg werden niemals übernommen.
+Fehler markieren RECOVERY_REQUIRED; keine automatische Bereinigung fremder
+Artefakte oder Wiederaufnahme. Replayanker bleibt ein späteres Produktgate;
+kein Ergebnis dieses synthetischen Vorbereiters erlaubt Aktivierung/Runtime.
+
 ## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
 
 PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und

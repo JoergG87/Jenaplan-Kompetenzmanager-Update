@@ -1,5 +1,12 @@
 # UI Data Mapping
 
+## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
+
+Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.
+Keine Migration, Aktivierung, neue Produktkante oder Runtime-/Restorefreigabe.
+
+Keine neuen UI-Felder, Upgradeaktionen oder Restorefreigaben.
+
 ## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
 
 PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und

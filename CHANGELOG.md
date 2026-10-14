@@ -1,5 +1,43 @@
 # CHANGELOG
 
+## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
+
+Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.
+Keine Migration, Aktivierung, neue Produktkante oder Runtime-/Restorefreigabe.
+
+Implementiert: exakte native V4-Quellenprüfung mit bestehendem keyed Inspector,
+Installations-/Database-/DMK-/Database-Key-Bindung, FK-/Stundenplan-/Snapshot- und
+Dokumentprüfung; Wiederverwendung des vollständigen Cipherbackups; unabhängig
+geprüfter Backup-Snapshot ohne RESTORE_READY; private no-clobber Cipherkopie,
+Close/Reopen und typisierter Vollvergleich von Main und Companion. Journal
+schaltet nur nach bestandener Prüfung bis STAGED. Wiederholungen prüfen alle
+Artefakte erneut; Fehler, Teilstände und manipulierte Evidenz blockieren.
+Keine fachliche Klartext-Zwischendatenbank im neuen Vorbereitungsweg.
+
+Qualifikation: vorhandenes Build-404-Wheel SHA256
+9ce432941a45f28af3877192149ab2583ae22f466e3b22c2a7323c5a84c577f9; native Extension
+mit Wheelbytes identisch; Binding 0.6.2+jkm.sqlcipher4170.1, SQLCipher 4.17.0
+community, SQLite 3.53.3/CommonCrypto tatsächlich keyed geprüft. Testprovider-
+Isolation verwendet echte Wheel-Metadaten und unveränderte native Bibliothek
+über vorhandene Ports; kein Mockdriver und keine globale Installation.
+
+Ergebnisse: neue Testdatei 33 Prüfungen (Unit-Vollvergleich, tatsächliche native
+Quellen-/Backup-/Stagingintegration sowie echte Prozess-/Crash-/Recoveryprüfungen).
+Abschließender gezielter Lauf 197 bestanden / 0 Skips. Bestehender nativer
+Backup-/Restore-/Runtime-Regressionslauf 77 bestanden / 6 bestehende ausdrücklich
+gegatede Keychain-Abnahmen übersprungen. Reguläre Produktsuite
+`python3 -m pytest tests -q -rs`: 2633 bestanden / 104 bestehende Skips /
+120 Unterprüfungen bestanden, Exit 0. Keine neuen Skipregeln oder Testausnahmen.
+
+Anfängliche Testsyntax-/Import-/Fixturefehler wurden korrigiert. Eine globale
+4.17-Providerumschaltung ließ ältere Prototypprüfungen mit
+sqlcipher_binding_version_incompatible scheitern; der Gesamtlauf wurde
+kontrolliert abgebrochen (Exit 130). Nach expliziter Providerisolation bestehen
+alte und neue Prüfungen gemeinsam. Native Paket-/Keychainabnahme, Replayanker,
+Migration, Aktivierung, produktive Startup-Recovery und historische Restorefreigabe
+bleiben offen. Architekturreview P0=0/P1=0 und Diffprüfung bestanden. Build 404,
+Final V4, Produktdaten und Produktschlüssel unverändert; kein Build oder Release.
+
 ## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
 
 PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und

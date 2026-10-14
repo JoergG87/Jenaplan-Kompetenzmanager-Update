@@ -1,5 +1,26 @@
 # Technical Naming Registry
 
+## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
+
+Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.
+Keine Migration, Aktivierung, neue Produktkante oder Runtime-/Restorefreigabe.
+
+`FinalV4VerifiedBackupSnapshot` / `FinalV4EncryptedBackupService.verified_snapshot`:
+expliziter temporärer, vollständig geprüfter Sicherungsbestand ohne RESTORE_READY.
+`qualified_sqlcipher_test_provider` (Test Support): explizite native Bibliotheks-
+isolation über vorhandene Driver-/Binding-Metadaten-Ports. Liest und prüft das
+qualifizierte Wheel und dessen echte METADATA; lädt die unveränderte native
+Extension in einem getrennten Testnamespace, ohne den Stock-Provider zu ersetzen.
+Keine Mockversion, neue Skipregel oder globale Installation.
+`DatabaseContentEvidence` / `UpgradeSourceVerification` / `database_content_evidence` / `require_same_content`:
+typisierter deterministischer Vollvergleich über alle Tabellen/Datensätze.
+`EncryptedUpgradeSourceAdapter`: Security-Adapter für keyed Quellenprüfung,
+vorhandenes verschlüsseltes Backup und private Cipher-Stagingkopie.
+`PrepareEncryptedUpgradeSource` / `UpgradeSourcePreparationPort`: Application-
+Koordination bis STAGED mit bestehendem Maintenance-/Journalvertrag.
+`AuthenticatedUpgradeJournalRepository.exists`: leasegebundene Inventarprüfung
+mit Ablehnung unvollständiger Temp-Publikation vor Initialanlage.
+
 ## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
 
 PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und

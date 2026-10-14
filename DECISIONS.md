@@ -1,5 +1,26 @@
 # Architekturentscheidungen
 
+## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
+
+Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.
+Keine Migration, Aktivierung, neue Produktkante oder Runtime-/Restorefreigabe.
+
+Vorhandenen Final-V4-Backupservice wiederverwenden. Ein expliziter
+Verified-Snapshot-Kontext hält dessen bereits geprüfte Extraktion für read-only
+Vergleich verfügbar; keine zweite Containerimplementierung und kein RESTORE_READY.
+Cipher-Staging entsteht durch no-clobber Kopie der geschlossenen, keyed geprüften
+verschlüsselten Main-Datei des Backups; alle Vergleiche erfolgen nach keyed Reopen.
+Installations-/Database-/DMK-/Database-Key-Bindungen bleiben unverändert.
+Kontextziel und Kante müssen in der injizierten Registry bekannt sein; ausschließlich
+testlokale Kanten sind nutzbar, Produktregistry bleibt leer. Dies erteilt keine
+Transformations- oder Schemafreigabe. Historische Live-Restorepfade bleiben gesperrt.
+
+Testproviderentscheidung: globale Provider-Umschaltung ist für die Gesamtsuite
+ungeeignet, da bestehende Prototypen ausdrücklich SQLCipher 4.12/Stock erwarten.
+Die neuen Tests laden deshalb ausschließlich die reale, audit-hashgeprüfte
+4.17-Extension und tatsächliche Wheel-Metadaten über bestehende injizierbare Ports.
+Stock-Driver und globale Distribution bleiben unverändert; keine Testausnahmen.
+
 ## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
 
 PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und

@@ -29,6 +29,11 @@ class AuthenticatedUpgradeJournalRepository(AuthenticatedMigrationJournalReposit
                 raise UpgradeError("upgrade_journal_context_mismatch")
             validate_upgrade_state(state, self.registry)
 
+    def exists(self) -> bool:
+        self._require()
+        self._require_clean_directory(prepare=False)
+        return self.path.exists() or self.path.is_symlink()
+
     def create(self, state, auth_key):
         self._require(state)
         if state.phase is not UpgradePhase.PREFLIGHT or state.revision != 0:

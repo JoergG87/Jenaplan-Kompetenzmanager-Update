@@ -8,7 +8,7 @@ verifier for gated tests and the activated same-installation product path.
 
 from __future__ import annotations
 
-from contextlib import closing
+from contextlib import closing, contextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import StrEnum
@@ -343,6 +343,15 @@ class FinalV4EncryptedBackupResult:
     container_size: int
     container_sha256: str
     manifest: FinalV4EncryptedBackupManifestV1 = field(repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class FinalV4VerifiedBackupSnapshot:
+    """Valid only within verified_snapshot; grants no restore/activation authority."""
+    result: FinalV4EncryptedBackupResult
+    database_path: Path
+    companion_path: Path
+    staging_root: Path
 
 
 @dataclass(frozen=True, slots=True)
@@ -717,6 +726,11 @@ class FinalV4EncryptedBackupService:
             _remove_owned_workspace(workspace, expected_parent=destination.parent)
 
     def verify(self, container: Path) -> FinalV4EncryptedBackupResult:
+        with self.verified_snapshot(container) as snapshot:
+            return snapshot.result
+
+    @contextmanager
+    def verified_snapshot(self, container: Path):
         path = _validate_existing_backup(container)
         verification = self._container_service().verify_path(
             container=path,
@@ -731,12 +745,19 @@ class FinalV4EncryptedBackupService:
                 dmk=self.loaded.dmk,
                 context=self.context,
             )
+            if (extraction.verification.container_sha256 != verification.container_sha256
+                    or extraction.verification.container_size != verification.container_size):
+                raise FinalV4EncryptedBackupError("backup_changed_during_verification")
             materialized = self._materialize_and_validate(extraction)
-            return FinalV4EncryptedBackupResult(
+            result = FinalV4EncryptedBackupResult(
                 path=path,
                 container_size=verification.container_size,
                 container_sha256=verification.container_sha256,
                 manifest=materialized.manifest,
+            )
+            yield FinalV4VerifiedBackupSnapshot(
+                result, materialized.paths.final_v4.database,
+                materialized.paths.database, staging,
             )
         finally:
             _remove_owned_workspace(staging, expected_parent=path.parent)

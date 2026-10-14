@@ -1,5 +1,19 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
+
+Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.
+Keine Migration, Aktivierung, neue Produktkante oder Runtime-/Restorefreigabe.
+
+Implementiert sind exakte keyed V4-Quellenprüfung, Installations-/Database-/
+Schlüsselbindung, vorhandenes vollständiges Cipherbackup mit unabhängiger
+Sicherungsbestandsprüfung sowie private verschlüsselte Kopie bis STAGED.
+Datenerhalt wird typisiert über alle tatsächlichen Datensätze von Main und
+Companion geprüft; kein ausschließlicher Zeilenzahlvergleich. Snapshot-Hashes,
+FKs, Stundenplanreferenzen und Dokumentcrossbindings werden geprüft.
+Keine Migration, Aktivierung, historische Restorefreigabe oder Startupintegration.
+Replayanker sowie produktive Wiederaufnahme und Paketabnahme bleiben offen.
+
 ## Upgrade-Maintenance-Grundlagen – unveröffentlicht nach Build 404 – 13.10.2026
 
 PO-freigegeben sind ausschließlich isolierte technische Grundlagen. Final V4 und
