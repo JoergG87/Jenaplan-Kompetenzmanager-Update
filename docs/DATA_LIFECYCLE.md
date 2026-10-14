@@ -1,5 +1,10 @@
 # Data Lifecycle
 
+## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+Unter vorhandenem Runtime-/Writer-Lease: initial nur bei vollständig abwesenden Upgradeverzeichnissen; Anker atomar und dauerhaft vor Journal publizieren. Fortschreibung nur nach authentisiertem Gleichstand und exaktem Zustandsübergang. Jede Diskrepanz, fehlender Anker, Temp-Rest oder verwaistes Verzeichnis sperrt; keine Rekonstruktion, Bereinigung oder Reparatur. Dateirechte 0600, Verzeichnisse 0700, fsync Datei und Verzeichnis einschließlich Root nach Erstverzeichnisanlage. Identischer Aufruf prüft Gleichstand ohne Write.
+
+
 ## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
 
 Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.

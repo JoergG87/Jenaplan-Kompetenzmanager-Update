@@ -362,3 +362,43 @@ def test_qualified_provider_keeps_stock_driver_and_metadata_unchanged():
     connection=stock.connect(':memory:')
     assert connection.execute('PRAGMA cipher_version').fetchone()==original; connection.close()
     assert importlib.metadata.version('sqlcipher3')==before
+
+
+@pytest.mark.parametrize("rollback_candidate", [False, True])
+def test_real_cipher_old_valid_journal_cannot_resume(case, rollback_candidate):
+    _, service, lock, ctx = case
+    runner, adapter, journal, key = _runner(service, lock, ctx)
+    state = runner.execute()
+    old = replace(state, phase=UpgradePhase.BACKUP_VERIFIED, revision=3,
+                  evidence=state.evidence[:3])
+    journal.path.write_bytes(journal._encode(old, key))  # genuinely valid old HMAC
+    if rollback_candidate:
+        # A prior valid encrypted candidate from this unchanged V4 source.
+        with service.verified_snapshot(adapter.backup_path) as snapshot:
+            adapter.candidate_path.write_bytes(snapshot.database_path.read_bytes())
+    with pytest.raises(UpgradeError, match="generation_conflict"):
+        runner.execute()
+
+
+@pytest.mark.parametrize("missing", [None, "backup", "candidate"])
+def test_isolated_guard_with_real_keyed_evidence(case, missing):
+    from src.application.commands.upgrade_startup_guard import UpgradeStartupGuard
+    _, service, lock, ctx = case
+    runner, adapter, journal, key = _runner(service, lock, ctx)
+    runner.execute()
+    with UpgradeMaintenance(service._gate, journal.lease, ctx):
+        source = adapter.verify_source()
+        backup = adapter.verify_backup(source)
+        candidate = adapter.verify_staging(source)
+        observed = (source.artifact, backup, candidate)
+        if missing:
+            path = adapter.backup_path if missing == "backup" else adapter.candidate_path
+            path.unlink()  # synthetic evidence loss
+            with pytest.raises(Exception):
+                adapter.verify_backup(source) if missing == "backup" else adapter.verify_staging(source)
+        result = UpgradeStartupGuard(journal).evaluate(key, observed=observed,
+            inventory_complete=missing is None, live_schema=ctx.source, restore_clear=True)
+        assert result.status is (UpgradeRecoveryStatus.RECOVERY_REQUIRED if missing
+                                 else UpgradeRecoveryStatus.VERIFY_CANDIDATE)
+        assert not result.continue_existing_startup
+        assert not result.first_run_allowed and not result.activation_allowed

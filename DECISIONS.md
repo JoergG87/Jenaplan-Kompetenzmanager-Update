@@ -1,5 +1,168 @@
 # Architekturentscheidungen
 
+## Upgrade-Replayanker und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+PO-Auftrag: begrenzte Replayabwehr und fail-closed Startup-Klassifikation ohne
+Migration oder Aktivierung. Reviewfolge: Vision/Discovery (gültiger HMAC ist
+nicht frisch), Produktentscheidung (synthetischer Unterbau), Datenmodellreview
+(keine Änderung an Final V4), Architekturreview (Journal bleibt Operationswahrheit;
+Anker ist ausschließlich High-Water-Mark), UX-/Promptreview (keine neue Ansicht,
+keine implizite Freigabe), Implementierung, Technical Review und Tests.
+
+### Vertrauensgrenze und Threat Model
+
+Der vorhandene `MacOSMonotonicSecurityAnchorStore` ist ein isolierter Keychain-
+Adapter mit Prozessserialisierung, Digest-CAS und committed/pending-Protokoll für
+Registry/Migrationsjournal. Sein fixes Format und sein Installation/Database-
+Namespace sind keine freie Upgradeablage. Er wird weder überschrieben noch als
+Upgradefreigabe verwendet. Eine produktive Erweiterung verlangt einen eigenen
+geprüften Plattform-/Schlüsselvertrag. Der neue lokale Dateianker verwendet
+bestehende HMAC-/kanonische Atomarpersistenz mit eigener authentisierter
+Protokollkennung `schema-upgrade-replay-v1`. Der flüchtige, pro Operation aus
+synthetischem DMK abgeleitete Journal-Key wird wiederverwendet; die verschiedenen
+Protokollpayloads trennen die authentisierten Nachrichten. Kein Keychainzugriff.
+
+Der Anker enthält vollständigen Kontext-SHA256 (Installation, Database-Context,
+Database-Key-ID/-Generation, DMK-ID/-Generation, Operation, exakte Quelle/Ziel-
+Schemaidentität, Transformation), Journalrevision und Digest des authentisierten
+Journals. Er enthält keine Phase, Schlüsselbytes oder fachlichen Klartextdaten.
+Journal bleibt einzige Operationshistorie. Es gibt keine zweite Restorewahrheit.
+
+| Angriff / Fehler | Behandlung |
+|---|---|
+| Älteres gültiges HMAC-Journal; gültige Operation mit alter Phase | Digest/Revision unterscheiden sich vom erhaltenen Anker: gesperrt |
+| Nur Journal oder nur Anker zurückgerollt | Diskrepanz: gesperrt |
+| Journal und Kandidat zurückgerollt, aktueller Anker erhalten | Journalvergleich sperrt vor weiterer Vorbereitung |
+| Gleiche Revision mit anderem gültigem Payload | Exakter Digestvergleich sperrt |
+| Andere Operation, Installation, Database-/Key-/DMK-Kontexte oder Generationen | Lease-/Kontextprüfung und vollständige Kontextdigestbindung sperren |
+| Unbekannte Quelle/Zielidentität | Exakte Registry/Upgradekante erforderlich; produktiv weiterhin keine Kante |
+| Manipulierte, unvollständige oder widersprüchliche Evidenz | HMAC, Struktur, Inventar, unabhängige Artefaktprüfung und Rollenabgleich; sonst Recovery |
+| Fehlender/beschädigter Anker bei Journal, Restverzeichnis oder Workspace | Gesperrt, niemals neu verankern oder First Run |
+| Zwei Upgradeprozesse | Vorhandener RuntimeInstanceLock und Writer-Lease serialisieren; kein zweiter Lockvertrag |
+| Neustart | Frischer Lease, authentisiertes Journal und Anker exakt vergleichen; keine gespeicherte In-Memory-Freigabe |
+| Alle lokalen Artefakte einschließlich Anker konsistent zurückgerollt oder restlos entfernt | Nicht zuverlässig erkennbar; keine uneingeschränkte Anti-Rollback-Garantie |
+| Alter veröffentlichter Build 404 | Kennt neuen Guard nicht; daraus folgt kein Schutz vor altem Anwendungscode |
+
+Angreifer mit Zugriff auf den flüchtigen HMAC-Key bzw. laufenden Prozess liegen
+außerhalb dieser Datei-Replayabwehr. Auch Dateirechte ersetzen keine externe
+monotone Vertrauensinstanz. Tests belegen ausdrücklich die Nichterkennung eines
+vollständigen konsistenten Rollbacks; es gibt keine Hardwarezählerbehauptung.
+
+### Crashvertrag
+
+Ausschließlich unter synthetischem Root und gehaltenem Runtime-/Writer-Lease:
+1. Vor Erstinitialisierung müssen alle drei Upgradeverzeichnisse abwesend sein.
+   Auch ein leeres Verzeichnis gilt als erhaltene unklare Evidenz.
+2. Privates Ankerverzeichnis anlegen und Root fsync; Anker über fsyncte 0600-
+   Tempdatei und No-Clobber-Publikation erzeugen; Verzeichnis fsync.
+3. Journalverzeichnis anlegen und Root fsync; Journal atomar publizieren und prüfen.
+4. Bei Fortschreibung zunächst aktuellen HMAC-/Kontext-/Ankergleichstand und
+   exakten nächsten Zustandsübergang prüfen. Dann Anker per CAS/atomarem Replace
+   um eine Revision vorziehen und fsync; danach Journal per bestehendem CAS/
+   atomarem Replace vorziehen und fsync. Identischer Retry verifiziert ohne Write.
+
+Vor Beginn der ersten Verzeichnisanlage bleibt der bisherige Zustand unverändert.
+Ein Crash bei der ersten Ankererstellung hinterlässt entweder keine Operation
+oder retained Directory/Temp-/Ankerevidenz: letztere sperrt. Nach Ankerwrite und
+vor dauerhaftem Journalwrite besteht absichtlich eine blockierende Diskrepanz.
+Es gibt keine automatische Crashreparatur oder Rücknahme des High-Water-Marks.
+Ein Crash während Tempwrite kann einen Temp-Rest hinterlassen: gesperrt. Nach
+vollständig durablem Journalwrite ist das Paar konsistent und klassifizierbar.
+Vor der Ankerfortschreibung kann die unveränderte alte Generation weiter gültig
+sein, da die neue Operation noch nicht zugesagt ist. Fehler nach Ankerwrite
+sperren auch dann, wenn das alte Journal unverändert lesbar geblieben ist.
+
+Das ist fail-closed Crashkonsistenz, keine Zwei-Dateien-Atomarität und kein
+Crash-Recovery-Ausführer. Anders als beim bestehenden Registry-/Keychain-
+pending-Protokoll wird hier keine Wiederaufnahme eines Mischstands freigegeben.
+Prozessabbrüche belegen Dateisystem-/Prozessgrenzen; Stromausfall und native
+paketierte Persistenz-/Keychaingrenzen sind damit nicht qualifiziert.
+
+### Isolierter Guard und künftiger Integrationsport
+
+`UpgradeStartupGuard.evaluate` wird NICHT aus `desktop_app.main`, Security-
+Startup oder Cipher-Runtime aufgerufen. Er verlangt gehaltenen Lease,
+`inventory_complete is True`, `restore_clear is True`, frisch ermittelte exakte
+Live-Schemaidentität und unabhängig geprüfte Artefaktbelege. Bei Abwesenheit muss
+das Live-Schema Final V4 entsprechen; bei vorhandener Operation exakt der
+registrierten Quelle, bei COMPLETED exakt dem registrierten Ziel und Livebeleg.
+Auch ein bekannter synthetischer Zielabschluss gewährt keine Runtimezulassung. Inventarvollständigkeit
+ist ein expliziter Adaptervertrag, keine Behauptung aus bloßer Journalexistenz:
+Workspacebestand, ungebundene Dateien, Backupcontainer, Kandidat, Source,
+Companion-/Dokumentcrossbindings sowie sämtliche Restoreevidenz sind einzubeziehen.
+Der Guard selbst prüft die bekannten Upgradeverzeichnisse und die Journal-/Anker-
+Verzeichnisbelegung ohne Schreibzugriff. Unlesbare, symlinkbehaftete oder
+kontextfremde Journal-/Ankerevidenz sperrt.
+
+Nur vollständiges konsistentes Inventar ohne Journal-, Anker-, Workspace- oder
+Restverzeichnisse und ohne beobachtete Upgrade-Artefakte ergibt NO_OPERATION.
+Dies erlaubt ausschließlich die Fortsetzung des bestehenden Startup-Vertrags;
+`normal_runtime_allowed`, `first_run_allowed` und `activation_allowed` bleiben
+immer False. Unvollständige Frühphasen ohne erforderliche Sourceevidenz sperren.
+Vorbereitete Operationen sind NOT_ACTIVATED/VERIFY_CANDIDATE; vollständig belegte
+COMPLETED/ABORTED werden als solche klassifiziert und halten den Startup trotzdem
+an. RECOVERY_REQUIRED, fehlende Backups/Kandidaten, unbekanntes Schema,
+Konkurrenz ohne Lease oder unvollständiges Inventar sperren. Keine automatische
+Kandidatenauswahl, Journalbereinigung, Reparatur, Migration oder Aktivierung.
+
+Tatsächlicher Produktablauf heute: Rootpreflight → RuntimeInstanceLock → bestehende
+Restore-Recovery/Bestätigung → First-Run-Kandidatur → Security-Startup/Anmeldung →
+Cipher-Keyruntime → keyed Final-V4-Inspektion bzw. gesondert bestätigter First Run
+→ Dokumentruntime und Adapter. Die frühe Root-/First-Run-Entscheidung liegt vor
+verfügbarem authentisiertem Upgrade-Keykontext. Deshalb keine halbe Integration.
+Künftige erforderliche Reihenfolge: Rootpreflight/Runtime-Lock → read-only
+Upgrade-/Restoreinventar vor jeglicher Restoremutation, Security-Erstanlage oder
+First-Run-Kandidatur → bestehende Installation read-only authentisieren und
+Schlüsselkontext ohne Erstellung laden → unabhängige Evidenz-/Schemaprüfung →
+Guard unter exklusivem Lease → erst bei NO_OPERATION bestehende Startupgates
+weiterführen. Ein sicherer getrennter Empty-Installationsvertrag und produktive
+Read-only-Inventar-/Kontextports fehlen noch. Unklare Evidenz darf niemals in
+First Run fallen. Keine neuen Journal-/Anker-/Keypflichten für bestehende Build-
+404-Installationen ohne Upgradeoperation; ihr Produktstartup bleibt unverändert.
+
+### Koexistenz und offene Gates
+
+Restorejournal, RESTORE_READY, Handoff/Nonce und Cipherzulassung bleiben
+unverändert. `restore_clear=False/unknown` sperrt den isolierten Guard, auch bei
+COMPLETED. Kein Ergebnis ersetzt Restoreprüfung oder historische Restorefreigabe.
+Backup-Maintenance und Schuljahreswechsel bleiben durch bestehende Maintenance-
+Zwecke ausgeschlossen; keine neue Schreibcapability. Dokumentcontainer und
+Crossbindings werden durch bestehenden keyed Source-/Backupverifier geprüft.
+Runtime-Prozesslock und Keychain-/Schlüsselverträge bleiben unverändert.
+
+Produktive Migration, Upgradeaktivierung, historische Restorefreigaben, externe
+rollbackresistente Upgradeanker und produktive Startupintegration fehlen weiter.
+Ausstehend vor späterer Produktfreigabe: native/paketierte Startup-/First-Run-,
+Keychain-/Anker-, Crash-/Recovery-, Restore-Worker-, Signatur- und alte-App-/
+Downgrade-Gates. Kein Build, Tag, Push oder Versionswechsel in diesem Auftrag.
+
+
+### Abnahme dieses begrenzten Bausteins
+
+Eigener Architektur-/Technical Review: P0 = 0, P1 = 0. Bekannte P2-Grenzen:
+vollständiger lokaler Rollback nicht erkennbar; produktive Startupintegration
+und native Paketqualifizierung weiterhin offen. Diese Grenzen sind ausdrücklich
+keine Produktfreigabe. Keine vorhandene Sicherheitszulassung oder Skipregel
+wurde gelockert. Pflanzenbilder-ZIP unverändert und valide (439602 Bytes,
+fünf Einträge; SHA256 ef06e04c4bbc4803fb036f8dfa61151f8556a2a3f647c89b5fbe9d7dec9a31d4).
+
+Finaler gezielter Lauf: `rtk python3 -m pytest` mit Upgrade-Replay-Guard,
+Schema-Upgrade-Foundation, Encrypted-Upgrade-Source, Schema-Registry,
+Database-/Security-Startup, Restore-Runtime, verschlüsseltem Live-Restore und
+Backup-/Restore-Aktivierungsprüfungen: **254 passed, 21 bestehende skipped**
+in 46,54 s. Enthält 12 echte Prozessabbruchfälle an Erstanker-, Anker- und
+Journalgrenzen, echte konkurrierende Prozesse aus der Foundation sowie native
+qualifizierte SQLCipher-4.17-Quellen-/Backup-/Stagingprüfungen. Vollständiger
+lokaler Rollback wird als bewusst nichterkennbarer Fall getestet. Separate
+Schema-/Livebeleg-Regression prüft widersprüchliche Abschlussidentitäten.
+
+Danach final `rtk python3 -m pytest tests -q`: **2687 passed, 104 bestehende
+skipped, 120 subtests passed** in 308,59 s; Exit 0. Zwei frühere Gesamtläufe
+wurden für Reviewkorrekturen abgebrochen und sind keine Abnahmen. Kein Zugriff
+auf Produktdaten oder Produktschlüssel; alle neuen Nachweise verwenden
+synthetische Roots/Schlüssel. Keine native Keychain-, Stromausfall- oder
+Paketqualifizierung aus Mocks oder diesen Prozessprüfungen abgeleitet.
+
 ## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
 
 Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.

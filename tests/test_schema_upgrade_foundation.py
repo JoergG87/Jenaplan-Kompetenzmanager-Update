@@ -217,7 +217,9 @@ def test_failed_tempwrite_preserves_old_authenticated_state(tmp_path, monkeypatc
             updated=advance_upgrade(state,receipt(ctx,UpgradePhase.EXCLUSIVE),registry())
             with pytest.raises(OSError):
                 repo.save(state,updated,key)
-            assert repo.path.read_bytes()==old and repo.load(key)==state
+            assert repo.path.read_bytes()==old
+            with pytest.raises(UpgradeError, match="generation_conflict"):
+                repo.load(key)
     finally:
         lock.release()
 

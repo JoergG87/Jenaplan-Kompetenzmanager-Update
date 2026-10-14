@@ -1,5 +1,10 @@
 # Technical Naming Registry
 
+## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+`UpgradeReplayAnchor`, `UpgradeReplayAnchorRepository` (Security Infrastructure), Format `schema-upgrade-replay-v1`; `UpgradeStartupGuard`, `UpgradeStartupDecision` (Application). Anker bindet vollständigen Kontextdigest, Journalrevision und authentisierten Journaldigest; keine zweite Phasenwahrheit. `UpgradeStartupGuard.evaluate` verlangt unabhängige Inventar-/Artefakt- und Live-Schemabelege. `UpgradeStartupDecision.continue_existing_startup` bedeutet ausschließlich NO_OPERATION; `normal_runtime_allowed`, `first_run_allowed` und `activation_allowed` bleiben False. `AuthenticatedUpgradeJournalRepository.exists` behandelt auch leere Upgrade-/Anker-/Workspaceverzeichnisse als Evidenz; `load_with_digest` prüft Ankerfrische.
+
+
 ## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
 
 Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.

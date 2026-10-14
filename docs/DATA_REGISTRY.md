@@ -1,5 +1,10 @@
 # Data Registry
 
+## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+`schema-upgrade-replay/anchor.json`: HMAC-authentisierter technischer High-Water-Mark im synthetischen Runtime-Root. Enthält nur Kontext-SHA256, Revision, Journal-SHA256. Keine Schlüsselbytes oder fachlichen Daten. Vorhandener Keychain-Security-Anker bleibt unverändert und ist nicht der Upgradeanker.
+
+
 ## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
 
 Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.

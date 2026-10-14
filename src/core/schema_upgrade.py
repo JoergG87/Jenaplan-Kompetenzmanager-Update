@@ -254,7 +254,8 @@ def classify_upgrade(state: UpgradeState | None, *, expected_context: UpgradeCon
     """Classification only. Authentication/fresh observations are caller obligations.
 
     No result is a startup, restore or activation capability. Replay freshness
-    requires a future external anchor, not an authenticated phase alone.
+    is enforced separately by the upgrade journal repository high-water mark;
+    authentication alone is insufficient. Full local rollback remains undetectable.
     """
     blocked = UpgradeRecoveryDecision(UpgradeRecoveryStatus.RECOVERY_REQUIRED, "upgrade_evidence_required")
     if inventory_complete is not True:

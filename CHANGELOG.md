@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Upgrade-Replay und isolierter Startup-Guard – 14.10.2026
+
+Unveröffentlicht nach macOS 0.4.4 / Build 404: Upgradejournal mit authentisiertem, vollständig kontextgebundenem lokalem Replayanker abgesichert. Monotone Anker-vor-Journal-Fortschreibung, gesperrte Crashmischstände, keine Rekonstruktion fehlender Anker. Isolierter Startup-Guard klassifiziert nur bei vollständiger Evidenz; keine Runtime-, First-Run-, Restore- oder Aktivierungsfreigabe und keine Produktintegration. Keine Garantie gegen vollständigen lokalen Rollback oder alten Build-404-Code. Reale synthetische Prozessabbrüche und qualifizierte SQLCipherprüfungen; native Paketgates weiter offen. Abnahme: 254 gezielte Tests bestanden; finale Produktsuite 2687 bestanden, 104 bestehende Skips und 120 bestandene Unterprüfungen. Keine Migration, Versionsänderung oder Veröffentlichung.
+
+
 ## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
 
 Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.

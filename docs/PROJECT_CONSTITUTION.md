@@ -1,5 +1,10 @@
 # Project Constitution
 
+## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+Freigegeben: isolierter synthetischer Replayanker und Startup-Guard; keine Änderung des fachlichen Datenmodells. Alle Ergebnisse sind Klassifikation ohne Runtime-, First-Run-, Restore- oder Aktivierungsfreigabe. Keine produktive Upgradekante.
+
+
 ## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
 
 Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.

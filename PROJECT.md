@@ -1,5 +1,10 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Upgrade-Replay und isolierter Startup-Guard – 14.10.2026
+
+Implementiert: HMAC-authentisierter kontextgebundener Upgrade-High-Water-Mark, Anker-vor-Journal-CAS und isolierter fail-closed Startup-Guard. Kein Produkt-Startup-Aufruf, keine Migration/Aktivierung, keine neue Runtime-/First-Run-/Restorefreigabe. Erhaltene Anker erkennen Journal-Replay; vollständiger lokaler Rollback bleibt unerkennbar. Crashmischstände sperren ohne Reparatur. Details und Integrationsport in DECISIONS.md. Abnahme: 254 gezielte Tests bestanden, 21 bestehende Skips; Produktsuite 2687 bestanden, 104 bestehende Skips und 120 bestandene Unterprüfungen. Eigener Architektur-/Technical Review: P0/P1 = 0. Bestehende Build-404-Starts und Final-V4-Zulassung unverändert. Native/paketierte Gates bleiben offen.
+
+
 ## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
 
 Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.

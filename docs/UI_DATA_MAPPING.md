@@ -1,5 +1,10 @@
 # UI Data Mapping
 
+## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+Keine neuen UI-Felder oder Aktionen. Guard-Status ist keine Runtime-, First-Run-, Restore- oder Aktivierungscapability.
+
+
 ## Verschlüsselte Upgradequelle und Staging – unveröffentlicht nach Build 404 – 14.10.2026
 
 Freigegeben ist ausschließlich synthetische Final-V4-Quellenvorbereitung bis STAGED.
