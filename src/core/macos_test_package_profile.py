@@ -21,6 +21,71 @@ def _reject():
     raise ValueError("test_profile_invalid")
 
 
+def _directory_identity(path):
+    """Walk canonical absolute directories without following any path links."""
+    path = Path(path)
+    if not path.is_absolute() or ".." in path.parts:
+        _reject()
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    fd = os.open("/", flags)
+    identities = []
+    try:
+        for component in path.parts[1:]:
+            next_fd = os.open(component, flags, dir_fd=fd)
+            os.close(fd)
+            fd = next_fd
+            value = os.fstat(fd)
+            identities.append((value.st_dev, value.st_ino))
+        value = os.fstat(fd)
+        if (not stat.S_ISDIR(value.st_mode) or value.st_uid != os.getuid()
+                or value.st_mode & 0o077):
+            _reject()
+        return identities
+    finally:
+        os.close(fd)
+
+
+def canonical_test_temp_root():
+    """Resolve only the OS temp authority, never an untrusted profile path.
+
+    The OS /var alias is verified by file identity. Canonical descendants are
+    still opened with NOFOLLOW; this grants no authority to arbitrary links.
+    """
+    raw = Path(tempfile.gettempdir())
+    if not raw.is_absolute() or ".." in raw.parts:
+        _reject()
+    canonical = raw.resolve(strict=True)
+    if raw != canonical:
+        # Only root-owned macOS system aliases may spell the OS temp authority
+        # differently. Do not authorize a user-created temp/parent symlink.
+        aliases = {"/var": "/private/var", "/tmp": "/private/tmp"}
+        alias = Path("/" + raw.parts[1])
+        target = aliases.get(str(alias))
+        metadata = alias.lstat()
+        if (target is None or not stat.S_ISLNK(metadata.st_mode)
+                or metadata.st_uid != 0 or str(alias.parent / os.readlink(alias)) != target
+                or Path(target).joinpath(*raw.parts[2:]) != canonical):
+            _reject()
+    if not raw.samefile(canonical):
+        _reject()
+    _directory_identity(canonical)
+    return canonical
+
+
+def test_build_path_identity(profile):
+    """Ephemeral ancestor identities, separate from the sealed profile format.
+
+    Rechecks detect observed replacement, not arbitrary same-user ABA or a
+    race after the last check; they are not an OS sandbox or a write lease.
+    """
+    temp = canonical_test_temp_root()
+    container = Path(profile.runtime_root).parent
+    if container.parent != temp:
+        _reject()
+    return [_directory_identity(path) for path in
+            (temp, container, Path(profile.runtime_root))]
+
+
 def _uuid(value):
     try:
         parsed = UUID(value)
@@ -66,7 +131,7 @@ def validate_test_profile(payload, *, before_build=True):
             _reject()
         bundle = f"{PRODUCT_BUNDLE_ID}.internaltest.t{token}"
         container = Path(payload["runtime_root"]).parent
-        if container.parent != Path(tempfile.gettempdir()).resolve():
+        if container.parent != canonical_test_temp_root():
             _reject()
         if container.name != f"jkm-internal-test-{token}":
             _reject()
@@ -78,6 +143,7 @@ def validate_test_profile(payload, *, before_build=True):
         import json
         if json.dumps(payload, sort_keys=True) != json.dumps(expected.as_dict(), sort_keys=True):
             _reject()
+        test_build_path_identity(expected)
         for path in (container, Path(expected.runtime_root)):
             value = path.lstat()
             if (path.resolve(strict=True) != path or not stat.S_ISDIR(value.st_mode)

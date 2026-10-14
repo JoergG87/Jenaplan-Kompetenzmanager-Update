@@ -355,3 +355,122 @@ def test_spec_product_and_test_profile_use_same_security_basis(tmp_path, profile
     assert bundle["info_plist"]["CFBundleShortVersionString"] == "0.4.4"
     assert "sqlcipher3._sqlite3" in analysis["hiddenimports"]
     assert product["TEST_PROFILE"] is None
+
+
+# Path acceptance tests use real filesystem identities, never a packaged app.
+def checked_paths(profile, snapshot=None, digest=None):
+    from scripts.macos_package_profile import validate_test_build_paths
+    validated = identity.validate_test_profile(profile)
+    validate_test_build_paths(
+        validated,
+        expected_identity=identity.test_build_path_identity(validated) if snapshot is None else snapshot,
+        expected_digest=profile_digest(validated) if digest is None else digest,
+    )
+
+
+def test_system_temp_alias_is_same_directory_and_preserves_sealed_digest(profile, monkeypatch):
+    canonical = Path(tempfile.gettempdir()).resolve()
+    raw = Path(tempfile.gettempdir())
+    assert raw.samefile(canonical)
+    assert (raw.stat().st_dev, raw.stat().st_ino) == (canonical.stat().st_dev, canonical.stat().st_ino)
+    validated = identity.validate_test_profile(profile)
+    digest = profile_digest(validated)
+    snapshot = identity.test_build_path_identity(validated)
+    for spelling in (str(raw), str(canonical)):
+        monkeypatch.setattr(identity.tempfile, "gettempdir", lambda: spelling)
+        checked_paths(profile, snapshot, digest)
+        assert profile_digest(identity.validate_test_profile(profile)) == digest
+    assert not Path(profile["build_root"]).exists()
+
+
+@pytest.mark.parametrize("damage", ["different", "missing", "file", "relative", "symlink", "permissions"])
+def test_temp_authority_and_existing_directory_identity_fail_closed(tmp_path, profile, monkeypatch, damage):
+    target = tmp_path / "authority"
+    if damage in {"different", "permissions"}:
+        target.mkdir(mode=0o700)
+        if damage == "permissions": target.chmod(0o777)
+    elif damage == "file":
+        target.write_text("file")
+    elif damage == "relative":
+        target = Path("relative")
+    elif damage == "symlink":
+        target.symlink_to(Path(tempfile.gettempdir()).resolve(), target_is_directory=True)
+    monkeypatch.setattr(identity.tempfile, "gettempdir", lambda: str(target))
+    with pytest.raises((ValueError, OSError)):
+        checked_paths(profile)
+    assert not Path(profile["build_root"]).exists()
+
+
+@pytest.mark.parametrize("target", ["container", "data"])
+def test_replaced_real_directory_identity_is_detected(profile, target):
+    validated = identity.validate_test_profile(profile)
+    snapshot = identity.test_build_path_identity(validated)
+    path = Path(profile["runtime_root"])
+    if target == "container": path = path.parent
+    old = path.with_name(path.name + "-retained")
+    path.rename(old)
+    import shutil
+    try:
+        shutil.copytree(old, path)
+        path.chmod(0o700)
+        # Identical contents and strings are insufficient; real inode changed.
+        assert not path.samefile(old)
+        with pytest.raises(ValueError, match="test_profile_invalid"):
+            checked_paths(profile, snapshot)
+    finally:
+        shutil.rmtree(path)
+        old.rename(path)
+
+
+def test_parent_symlink_cannot_replace_private_container(profile):
+    container = Path(profile["runtime_root"]).parent
+    old = container.with_name(container.name + "-retained")
+    container.rename(old)
+    container.symlink_to(old, target_is_directory=True)
+    try:
+        with pytest.raises(ValueError): checked_paths(profile)
+    finally:
+        container.unlink()
+        old.rename(container)
+
+
+@pytest.mark.parametrize("entry", ["directory", "file", "symlink"])
+def test_existing_build_target_never_adopted(profile, entry):
+    path = Path(profile["build_root"])
+    if entry == "directory": path.mkdir(mode=0o700)
+    elif entry == "file": path.write_text("file")
+    else: path.symlink_to(Path(profile["runtime_root"]), target_is_directory=True)
+    with pytest.raises(ValueError): checked_paths(profile)
+    assert not Path(profile["dist_root"]).exists()
+
+
+@pytest.mark.parametrize("field,value", [
+    ("runtime_root", "/Applications/Jenaplan-Kompetenzmanager.app"),
+    ("build_root", str(Path("build/macos-pilot").resolve())),
+    ("dist_root", str(Path("dist/macos").resolve())),
+    ("runtime_root", "relative/data"),
+])
+def test_product_or_foreign_paths_cannot_enter_shared_gate(profile, field, value):
+    profile[field] = value
+    with pytest.raises(ValueError): checked_paths(profile)
+
+
+def test_shared_gate_rejects_digest_and_missing_snapshot(profile):
+    with pytest.raises(ValueError): checked_paths(profile, digest="tampered")
+    with pytest.raises(ValueError): checked_paths(profile, snapshot=[])
+
+
+def test_real_builder_negative_preflight_never_reaches_buildwrite(tmp_path, profile):
+    path = config(tmp_path, profile)
+    command = ["bash", "scripts/build_macos_pilot.sh", "--package-profile", "internal-test",
+               "--test-profile", str(path), "--validate-profile-only"]
+    environment = {k: v for k, v in os.environ.items() if not k.startswith(("JENAPLAN_", "MACOS_SIGN", "MACOS_NOTAR"))}
+    for changes in ({"dist_root": str(Path("dist/macos").resolve())}, {"runtime_root": "relative"}, {}):
+        path.write_text(json.dumps(dict(profile, **changes)))
+        env = dict(environment)
+        if not changes: env["JENAPLAN_INTERNAL_TEST_PROFILE_DIGEST"] = "tampered"
+        result = subprocess.run(command, env=env, text=True, capture_output=True)
+        assert result.returncode == 2 and "test_profile_invalid" in result.stderr
+    assert not Path(profile["build_root"]).exists()
+    assert not Path(profile["dist_root"]).exists()
+    assert sorted(p.name for p in Path(profile["runtime_root"]).iterdir()) == [".jkm-runtime-root-v1"]

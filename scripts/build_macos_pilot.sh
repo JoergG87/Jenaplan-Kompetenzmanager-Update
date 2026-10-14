@@ -65,6 +65,12 @@ if [ "$PACKAGE_PROFILE" = "internal-test" ] && { [ "$DATA_MODE" != "empty" ] || 
     echo "test_profile_invalid" >&2
     exit 2
 fi
+if [ "$PACKAGE_PROFILE" = "internal-test" ]; then
+    PROFILE_DIGEST="$(printf '%s' "$PROFILE_REPORT" | python3 -c 'import hashlib,json,sys; print(hashlib.sha256(json.dumps(json.load(sys.stdin),sort_keys=True).encode()).hexdigest())')"
+    PROFILE_PATH_IDENTITY="$(python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}" --field path_identity --expected-digest "$PROFILE_DIGEST")"
+    python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}" --check-build-paths \
+        --expected-path-identity "$PROFILE_PATH_IDENTITY" --expected-digest "$PROFILE_DIGEST"
+fi
 if [ "$VALIDATE_PROFILE_ONLY" = "1" ]; then
     exit 0
 fi
@@ -187,8 +193,13 @@ validate_output_root() {
             ;;
     esac
 }
-validate_output_root "$BUILD_ROOT" "Build-Ziel"
-validate_output_root "$DIST_ROOT" "Distributions-Ziel"
+if [ "$PACKAGE_PROFILE" = "product" ]; then
+    validate_output_root "$BUILD_ROOT" "Build-Ziel"
+    validate_output_root "$DIST_ROOT" "Distributions-Ziel"
+else
+    python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}" --check-build-paths \
+        --expected-path-identity "$PROFILE_PATH_IDENTITY" --expected-digest "$PROFILE_DIGEST"
+fi
 if ! python3 -c 'import sys; from pathlib import Path; from src.core.runtime_root_protection import require_unprotected_output_path; [require_unprotected_output_path(Path(value)) for value in sys.argv[1:]]' "$BUILD_ROOT" "$DIST_ROOT"; then
     echo "Abbruch: Build- oder Distributionsziel liegt in einem geschützten Produktroot." >&2
     exit 2
@@ -213,6 +224,8 @@ fi
 # Revalidate immediately before the first build artifact, not only at CLI parsing.
 python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}"
 if [ "$PACKAGE_PROFILE" = "internal-test" ]; then
+    python3 scripts/macos_package_profile.py "${PROFILE_ARGS[@]}" --check-build-paths \
+        --expected-path-identity "$PROFILE_PATH_IDENTITY" --expected-digest "$PROFILE_DIGEST"
     umask 077
 fi
 mkdir -p "$BUILD_ROOT" "$DIST_ROOT"

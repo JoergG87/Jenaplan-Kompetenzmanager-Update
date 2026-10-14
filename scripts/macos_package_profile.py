@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 
 from src.core.macos_test_package_profile import (
     PRODUCT_APP_NAME, PRODUCT_BUNDLE_ID, validate_test_profile,
+    test_build_path_identity,
 )
 
 
@@ -57,6 +58,22 @@ def profile_digest(profile):
     return hashlib.sha256(json.dumps(profile.as_dict(), sort_keys=True).encode()).hexdigest()
 
 
+def validate_test_build_paths(profile, *, expected_identity, expected_digest):
+    """Same identity contract as profile validation, immediately before writes."""
+    from src.core.runtime_root_protection import require_unprotected_output_path
+    current = validate_test_profile(profile.as_dict())
+    if expected_digest != profile_digest(current):
+        raise ValueError("test_profile_invalid")
+    observed = json.dumps(test_build_path_identity(current), sort_keys=True)
+    if observed != json.dumps(expected_identity, sort_keys=True):
+        raise ValueError("test_profile_invalid")
+    for name in (current.build_root, current.dist_root):
+        require_unprotected_output_path(Path(name))
+    # Check again after protected-parent inspection, without creating targets.
+    if observed != json.dumps(test_build_path_identity(current), sort_keys=True):
+        raise ValueError("test_profile_invalid")
+
+
 def prepare_hook(profile):
     """Only called after the pure gate, inside this profile's new buildroot."""
     root = Path(profile.build_root)
@@ -91,20 +108,33 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--package-profile", choices=("product", "internal-test"), default="product")
     parser.add_argument("--test-profile")
-    parser.add_argument("--field", choices=("app_name", "build_root", "dist_root", "digest"))
+    parser.add_argument("--field", choices=("app_name", "build_root", "dist_root", "digest", "path_identity"))
+    parser.add_argument("--check-build-paths", action="store_true")
+    parser.add_argument("--expected-path-identity")
+    parser.add_argument("--expected-digest")
     parser.add_argument("--prepare-hook", action="store_true")
     args = parser.parse_args()
     try:
         profile = validate_build_selection(args.package_profile, args.test_profile,
                                           before_build=not args.prepare_hook)
-        if args.prepare_hook:
+        if args.expected_digest is not None and (profile is None or args.expected_digest != profile_digest(profile)):
+            raise ValueError("test_profile_invalid")
+        if args.check_build_paths:
+            if profile is None:
+                raise ValueError("test_profile_invalid")
+            validate_test_build_paths(profile, expected_identity=json.loads(args.expected_path_identity),
+                                      expected_digest=args.expected_digest)
+        elif args.prepare_hook:
             if profile is None:
                 raise ValueError("test_profile_invalid")
             prepare_hook(profile)
         elif args.field:
             if profile is None:
                 raise ValueError("test_profile_invalid")
-            print(profile_digest(profile) if args.field == "digest" else getattr(profile, args.field))
+            if args.field == "path_identity":
+                print(json.dumps(test_build_path_identity(profile), sort_keys=True))
+            else:
+                print(profile_digest(profile) if args.field == "digest" else getattr(profile, args.field))
         else:
             print(json.dumps(profile.as_dict() if profile else {
                 "profile": "product", "bundle_id": PRODUCT_BUNDLE_ID, "app_name": PRODUCT_APP_NAME,

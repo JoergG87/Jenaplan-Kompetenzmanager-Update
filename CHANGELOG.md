@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Interne macOS-Testpaketierung – P1-Pfadkorrektur – unveröffentlicht nach Build 404
+
+- Historischen A2-NO-GO erhalten. Profil- und Buildzielgate nutzen jetzt denselben kanonischen Verzeichnisidentitätsvertrag: geprüfte root-eigene macOS-Systemaliases, descriptorrelative NOFOLLOW-Prüfung, private bestehende Parent-/Rootidentität und unverändert neue Artefaktziele. Keine pauschale Symlinkfreigabe.
+- Zusätzlicher flüchtiger Device/Inode-Snapshot erkennt beobachtete Pfadersetzung vor Buildwrites; versiegeltes Profil und Digestformat unverändert. Bestehende TOCTOU-/ABA-Grenzen bleiben ausdrücklich bestehen.
+- internal-test --validate-profile-only erreicht auch das Buildzielgate. Historisches Profil besteht Exit 0 ohne Buildwrites; negative Pfad-/Digestfälle sperren. Produktdefaults, Keychain-/Worker-/Restart-/Update-/Signingidentität und Version bleiben unverändert.
+- Gezielter Zwischenstand 84 bestanden ohne Skips; erweiterte Regression 196 bestanden, zwei bestehende Skips. Unabhängiges Review: P0=0, P1=0, keine neue offene P2-Implementierungslücke. Finale Produktsuite: 2981 bestanden, 104 unveränderte bestehende Skips, 120 bestandene Unterprüfungen, 356.18 s, Exit 0. Pre-Build-Pfadgate bestanden; A2-Nativabnahme bleibt offen.
+- Keine App/DMG-Erstellung, Produktdaten-/Schlüsselmutation, Migration, Aktivierung, Veröffentlichung oder Versionserhöhung. A2-Nativabnahme weiterhin offen. Details in docs/RELEASE_AUTOMATION.md.
+
+
+## Native A2-Paketabnahme – NO-GO vor Buildwrites – 14.10.2026
+
+- Explizites internal-test-Profil am HEAD 720c917 mit vollständigem Snapshot und unabhängig geprüftem Digest ausgewählt; 65 Profiltests bestanden, keine Skips. Qualifiziertes SQLCipher-4.17-Wheel stimmt mit dem Manifesthash überein.
+- Reale bestehende Paketpipeline stoppt Exit 2 vor allen Buildwrites: Profil verlangt kanonisches Systemtemp unter /private/var/folders, Shell-Zielprüfung akzeptiert hier nur den textuellen TMPDIR-Präfix /var/folders. validate-profile-only allein weist diese zusätzliche Grenze nicht nach.
+- Unabhängiges read-only Review bestätigt einen P1-Abnahmeblocker; kein P0 im ausgeführten Umfang. Keine Umgehung, Folgeimplementierung oder Freigabe. Keine App/DMG erzeugt; alle 20 nativen Startupfälle, Keychain/Cipher-, Restore/Worker/Restart/Crash- und manuellen UI-Gates bleiben offen. Erweiterte Regression und Produktsuite nach NO-GO nicht ausgeführt.
+- Nur dieser Nachweis und RELEASE_AUTOMATION aktualisiert, kein Staging/Commit. Produkt-App, produktive Daten/Schlüssel, Build 404, Pilotfeed, Version und Pflanzenbilder-ZIP unberührt. ZIP-Hash ef06e04c4bbc4803fb036f8dfa61151f8556a2a3f647c89b5fbe9d7dec9a31d4 bestätigt. Details und Abnahmegrenzen in docs/RELEASE_AUTOMATION.md.
+
+
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 - Produktiver fail-closed Upgrade-Startup-Guard vor Restore-Recovery, Rootmarker-/First-Run-Anlage, Security-Keyanlage und normaler Cipheröffnung.
