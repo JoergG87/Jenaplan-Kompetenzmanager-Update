@@ -1,5 +1,14 @@
 # Technical Naming Registry
 
+## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+`ProductUpgradeStartupGuard`, `ProductStartupInventory`, `ReadOnlyUpgradeEvidence`, `ExistingStartupAccountRepository`, `UpgradeStartupBlocked` bezeichnen den begrenzten read-only Produktadapter, Inventar, authentisierten Evidenzleser, immutable Accountleser im bestehenden Security-SQLite-Repository und sanitisierten Starthalt. Bestehender RuntimeInstanceLock ist alleinige Prozessautorität. Der synthetische UpgradeProcessLease bleibt unverändert. Der gemeinsame unveränderte `UpgradeStartupDecision`-DTO liegt ab A2 in Core/schema_upgrade; Application reexportiert ihn für den isolierten Guard. Security importiert weder Application noch Desktop/Qt.
+
+
+A2-Portmethoden: `ProductStartupInventory.before_lock` und `inspect`; `ProductUpgradeStartupGuard.evaluate`; `ReadOnlyUpgradeEvidence.load`; `ExistingStartupAccountRepository.load_bound_active_account`. In der A2-Komposition laufen Account-, Key-, Journal- und Ankerreads unter der vom Desktop gehaltenen Runtime-Lockautorität; Inventarpreflight allein erteilt keine Freigabe.
+
+A2 verwendet ausschließlich feste sanitisierte Diagnosecodes: `startup_security_binding_invalid`, `startup_security_identity_invalid`, `startup_security_snapshot_required`, `upgrade_evidence_incomplete`, `upgrade_evidence_unverified`, `upgrade_existing_key_unavailable`, `upgrade_installation_context_conflict`, `upgrade_installation_partial`, `upgrade_installation_unclear`, `upgrade_installation_unknown`, `upgrade_inventory_changed`, `upgrade_recovery_required`, `upgrade_replay_or_generation_conflict`, `upgrade_restore_conflict`, `upgrade_root_parent_unsafe`, `upgrade_root_path_unsafe`, `upgrade_runtime_lock_required`, `startup_security_read_only`. Sie liefern keine Autorität und enthalten weder Pfade noch Schlüsselmaterial.
+
 ## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
 
 `InstallationInventoryPort`, `InstallationInventory`, `InstallationArtifact`, `InstallationInventoryStatus` (Core); `ReadOnlyInstallationInventory` (Security Infrastructure); `ExistingInstallationKeyPort`, `ExistingInstallationKeys`, `ExistingInstallationKeyResult`, `ExistingInstallationKeyStatus` (Security). `V4_ARTIFACTS_PRESENT` bedeutet nur vollständigen kanonischen Dateibestand, keine geprüfte Final-V4-Schemaidentität. Alle Ergebnisse sind flüchtig und gewähren keine Runtime-/First-Run-/Recoveryautorität.

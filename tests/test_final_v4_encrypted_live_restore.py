@@ -129,15 +129,21 @@ def _prepare_restore(tmp_path: Path, *, include_bootstrap_context: bool = False)
     ) = _open_case(tmp_path)
     payloads = _add_all_document_classes(runtime)
     with runtime.final_v4.database.connect() as connection:
-        connection.execute(
-            """
+        existing_year = connection.execute(
+            "SELECT label, start_date, end_date, status FROM school_years WHERE school_year_id = 'SY-PILOT-2026-27'"
+        ).fetchone()
+        if existing_year is not None:
+            assert tuple(existing_year) == ("2026/27", "2026-08-01", "2027-07-31", "current")
+        else:
+            connection.execute(
+                """
             INSERT INTO school_years (
                 school_year_id, label, start_date, end_date,
                 status, created_at, closed_at
             ) VALUES ('SY-PILOT-2026-27', '2026/27', '2026-08-01',
                       '2027-07-31', 'current', '2026-08-09T10:00:00Z', NULL)
-            """
-        )
+                """
+            )
         connection.executemany(
             """
             INSERT INTO documentation_subject_settings (
@@ -868,10 +874,13 @@ def test_cipher_worker_dispatch_never_falls_back_to_zip_v1(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root = tmp_path / "runtime"
+    from src.core.runtime_root_protection import prepare_synthetic_test_root
+    prepare_synthetic_test_root(root.resolve())
     handoff_root = root / "restore-handoffs"
-    handoff_root.mkdir(parents=True)
+    handoff_root.mkdir(parents=True, mode=0o700)
     handoff = handoff_root / f"{uuid.uuid4()}.json"
     handoff.write_text("{}", encoding="utf-8")
+    handoff.chmod(0o600)
     calls: list[tuple[Path, str]] = []
 
     class CipherService:

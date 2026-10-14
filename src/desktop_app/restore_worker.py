@@ -25,6 +25,7 @@ from src.core.restore_runtime import (
     recover_interrupted_restore,
     restore_transaction_paths,
 )
+from src.security.upgrade_startup import UpgradeStartupBlocked
 
 
 LOGGER = logging.getLogger(__name__)
@@ -70,8 +71,7 @@ class RestoreWorkerLaunchPlan:
             *self.command_prefix,
             "--handoff",
             str(handoff),
-            "--nonce",
-            nonce,
+            f"--nonce={nonce}",
             "--lock-fd",
             str(lock_fd),
             "--ready-fd",
@@ -285,6 +285,17 @@ def _abort_unconfirmed_restore(
     restore_mode: str,
 ) -> None:
     if restore_mode == RESTORE_MODE_FINAL_V4_ENCRYPTED:
+        # A failed worker must not turn an upgrade/restore conflict into an
+        # automatic restore-journal transition in the parent process either.
+        from src.security.upgrade_startup import ProductStartupInventory
+        from src.core.installation_inventory import InstallationInventoryStatus
+
+        inventory = ProductStartupInventory().inspect(lock.runtime_root)
+        if inventory.upgrade_evidence or inventory.status in {
+            InstallationInventoryStatus.UNSAFE, InstallationInventoryStatus.CHANGED,
+            InstallationInventoryStatus.UNKNOWN,
+        }:
+            return
         if restore_id is None:
             return
         try:
@@ -392,10 +403,17 @@ def run(
         else None
     )
     try:
+        if args.restore_mode == RESTORE_MODE_FINAL_V4_ENCRYPTED:
+            from src.security.upgrade_startup import (
+                ProductStartupInventory, ProductUpgradeStartupGuard,
+            )
+            inventory_port = ProductStartupInventory()
+            before_inventory = inventory_port.before_lock(runtime_root)
         lock = RuntimeInstanceLock(runtime_root, inherited_fd=args.lock_fd)
         lock.acquire()
         try:
             if args.restore_mode == RESTORE_MODE_FINAL_V4_ENCRYPTED:
+                ProductUpgradeStartupGuard(lock, inventory=inventory_port).evaluate(before=before_inventory)
                 if encrypted_service_factory is None:
                     from src.desktop_app.final_v4_runtime_adapters import (
                         DesktopFinalV4RestartLauncher,
@@ -430,6 +448,8 @@ def run(
             lock.release()
             raise
         return EXIT_SUCCESS
+    except UpgradeStartupBlocked:
+        return EXIT_MANUAL_RECOVERY_REQUIRED
     except RestoreLockError:
         return EXIT_LOCKED
     except RestoreHandoffError:

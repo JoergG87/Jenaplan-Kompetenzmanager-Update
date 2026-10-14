@@ -1503,18 +1503,27 @@ def _bootstrap_restore_old_runtime(
 
 
 def run_confirm(argv: list[str] | None = None) -> int:
+    from src.security.upgrade_startup import (
+        ProductStartupInventory, ProductUpgradeStartupGuard, UpgradeStartupBlocked,
+    )
+
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--final-v4-restore-confirm", action="store_true")
     parser.add_argument("--runtime-root", type=Path, required=True)
     parser.add_argument("--restore-id", required=True)
     parser.add_argument("--restore-token", required=True)
     parser.add_argument("--restore-lock-fd", type=int, required=True)
+    lock = None
     try:
         args = parser.parse_args(argv)
+        inventory = ProductStartupInventory()
+        root = args.runtime_root.expanduser().absolute()
+        before = inventory.before_lock(root)
         lock = RuntimeInstanceLock(
-            args.runtime_root,
+            root,
             inherited_fd=args.restore_lock_fd,
         ).acquire()
+        ProductUpgradeStartupGuard(lock, inventory=inventory).evaluate(before=before)
         confirm_final_v4_restore_startup(
             runtime_root=args.runtime_root,
             restore_id=args.restore_id,
@@ -1522,7 +1531,9 @@ def run_confirm(argv: list[str] | None = None) -> int:
         )
         lock.transfer()
         return 0
-    except (SystemExit, RestoreRuntimeError, FinalV4EncryptedBackupError):
+    except (SystemExit, RestoreRuntimeError, FinalV4EncryptedBackupError, UpgradeStartupBlocked, OSError):
+        if lock is not None:
+            lock.release()
         return 1
 
 

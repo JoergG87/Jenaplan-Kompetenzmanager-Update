@@ -1,5 +1,10 @@
 # UI Data Mapping
 
+## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+A2 verwendet den bestehenden QMessageBox.critical-Port: „Sicherer Start angehalten“. Unklarer Upgrade-/Installationszustand bietet nur Schließen, keine Reparatur, Datenbankauswahl, First Run oder Erfolgsmeldung. Technische Fehlercodes bleiben fest definierte Diagnosen ohne Schlüsselmaterial.
+
+
 ## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 Keine neuen UI-Felder oder Aktionen. Guard-Status ist keine Runtime-, First-Run-, Restore- oder Aktivierungscapability.

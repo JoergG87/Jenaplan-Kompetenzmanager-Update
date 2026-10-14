@@ -1,29 +1,8 @@
 """Isolated pre-start classification port; not wired into product startup."""
-from dataclasses import dataclass
 from src.core.schema_registry import FINAL_V4_SCHEMA_REGISTRATION
-from src.core.schema_upgrade import (UpgradeArtifact, UpgradePhase, UpgradeRecoveryStatus, classify_upgrade)
-
-
-@dataclass(frozen=True)
-class UpgradeStartupDecision:
-    status: UpgradeRecoveryStatus
-    reason: str
-
-    @property
-    def continue_existing_startup(self):
-        return self.status is UpgradeRecoveryStatus.NO_OPERATION
-
-    @property
-    def normal_runtime_allowed(self):
-        return False
-
-    @property
-    def first_run_allowed(self):
-        return False
-
-    @property
-    def activation_allowed(self):
-        return False
+from src.core.schema_upgrade import (
+    UpgradeArtifact, UpgradePhase, UpgradeRecoveryStatus, UpgradeStartupDecision, classify_upgrade,
+)
 
 
 class UpgradeStartupGuard:

@@ -335,6 +335,28 @@ class UpgradeRecoveryStatus(str, Enum):
 
 
 @dataclass(frozen=True)
+class UpgradeStartupDecision:
+    status: UpgradeRecoveryStatus
+    reason: str
+
+    @property
+    def continue_existing_startup(self):
+        return self.status is UpgradeRecoveryStatus.NO_OPERATION
+
+    @property
+    def normal_runtime_allowed(self):
+        return False
+
+    @property
+    def first_run_allowed(self):
+        return False
+
+    @property
+    def activation_allowed(self):
+        return False
+
+
+@dataclass(frozen=True)
 class UpgradeRecoveryDecision:
     status: UpgradeRecoveryStatus
     reason: str

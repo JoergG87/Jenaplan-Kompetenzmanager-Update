@@ -1,5 +1,10 @@
 # View Data Ownership
 
+## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+Security besitzt die Qt-freie read-only A2-Produktprüfung; Desktop Composition Root hält den bestehenden Runtime-Lock und orchestriert die Prüfung vor jeder Restoremutation. Keine neue Ansicht; bestehender QMessageBox-Fehlerport zeigt ausschließlich sanitisierten Starthalt. Keine Schlüssel-/Pfaddetails oder Reparaturaktion.
+
+
 ## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
 
 Keine neue Ansicht. Core besitzt Inventar-DTO und Portvertrag; Security Infrastructure besitzt vollständige Dateisystembeobachtung; Security besitzt Existing-only-Komposition vorhandener Loader. Authentisierter Account kommt aus einer unabhängigen vertrauenswürdigen Aufrufergrenze, niemals aus Dateinamen/Journalmetadaten. Schema-/Restore-/Upgradeprüfer behalten alleinige Prüfverantwortung. Keine produktive Komposition oder Guardverdrahtung.

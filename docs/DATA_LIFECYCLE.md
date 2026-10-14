@@ -1,5 +1,10 @@
 # Data Lifecycle
 
+## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+Read-only Rootpreflight und Inventar → RuntimeInstanceLock → Inventarvergleich unter Lock (nur Lockwrite zulässig) und Rootneuklassifikation → Upgrade-/Restorekonfliktprüfung → bei Upgradeevidenz ausschließlich Existing-only-Keys und authentisierte Journal-/Anker-/Kontext-/Registryprüfung → sicherer Halt. Nur upgradefreie eindeutig bekannte Zustände erreichen bestehenden Restore-Recovery/Restart-Handshake → erneute Bestandsprüfung → kontrollierte First-Run-Kandidatur → bisherigen Security-/Cipherstartup. Leerer Root darf vor Rootmarkerpublikation ausschließlich Lock und gegebenenfalls synthetischen Rootmarker enthalten. Restorebestand darf vor Recovery partiell sein; seine bestehenden Prüfer behalten alleinige Recoveryautorität.
+
+
 ## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
 
 A1 hat keinen Schreibprozess. Inventar öffnet Verzeichnisse descriptorrelativ mit NOFOLLOW und prüft zwei vollständige Metadatascans; EMPTY verlangt tatsächlich null Einträge, auch Locks/Marker verhindern EMPTY. Fehlender Root ist UNSAFE, keine implizite First-Run-Autorität. Schlüsselport verlangt unabhängig authentisierten aktiven Account vom Aufrufer, prüft Inventar vor/nach dem Laden, verweigert Sidecars am Keyset und nutzt nur direkte DMK-Reads und authentisierte Envelope-Reads. Kein initialize, load-Pending-Recovery, create-or-open, fail/revoke, Rewrap oder Repair. Später unter bestehendem Runtime-Lock und bei Schlüssel-/Evidenzprüfung zusätzlich passenden Writergrenzen verwenden; A1 hält/erteilt selbst keinen Lease.

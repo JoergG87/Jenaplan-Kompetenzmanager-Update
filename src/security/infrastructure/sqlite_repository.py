@@ -1562,3 +1562,50 @@ def _fsync_directory(path: Path) -> None:
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
+
+
+class ExistingStartupAccountRepository(SQLiteSecurityRepository):
+    """Current-only immutable Security inspection, without migration or chmod.
+
+The active account and enrollment binding select the existing key namespace;
+they do not authenticate a human session. DMK fingerprint, envelope and journal
+authentication subsequently establish the cryptographic installation binding.
+"""
+    def initialize(self, **kwargs):
+        raise SecurityStoreError("startup_security_read_only")
+
+    def _connect_write(self):
+        raise SecurityStoreError("startup_security_read_only")
+
+    def _connect_read_only(self):
+        path = self.database_path
+        if path.is_symlink() or not path.is_file() or any(
+                Path(str(path) + suffix).exists() for suffix in ("-wal", "-shm", "-journal")):
+            raise SecurityStoreError("startup_security_snapshot_required")
+        connection = sqlite3.connect(path.as_uri() + "?mode=ro&immutable=1", uri=True)
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA query_only = ON")
+        return connection
+
+    @contextmanager
+    def _read_connection(self):
+        connection = self._connect_read_only()
+        try:
+            yield connection
+        finally:
+            connection.close()
+
+    def _ensure_current_schema(self):
+        with self._read_connection() as connection:
+            if (connection.execute("PRAGMA application_id").fetchone()[0] != _SQLITE_APPLICATION_ID
+                    or connection.execute("PRAGMA user_version").fetchone()[0] != SECURITY_SCHEMA_VERSION):
+                raise SecurityStoreError("startup_security_identity_invalid")
+
+    def load_bound_active_account(self):
+        from .system import EnrollmentMarkerFile
+
+        _, _, reference, account = self.inspect()
+        marker = EnrollmentMarkerFile(self.database_path.parent / "enrollment.marker", None)
+        if account.status is not AccountStatus.ACTIVE or marker.read_reference() != reference:
+            raise SecurityStoreError("startup_security_binding_invalid")
+        return account

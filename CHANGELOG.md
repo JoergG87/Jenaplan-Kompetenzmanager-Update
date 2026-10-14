@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+- Produktiver fail-closed Upgrade-Startup-Guard vor Restore-Recovery, Rootmarker-/First-Run-Anlage, Security-Keyanlage und normaler Cipheröffnung.
+- Vollständiges Root-/Artefaktpreflight vor und erneut unter dem bestehenden Prozesslock; sichere Trennung leerer, partieller, unbekannter und erhaltener Upgrade-/Restorezustände.
+- Begrenzter Produktadapter mit ausschließlich bestehendem DMK-/Envelope-Load und authentisierter Journal-/Anker-/Replay-/Installations-/Key-/Registryprüfung. Kein globaler Produktionsschalter und keine Lockerung synthetischer Upgrade-Leases.
+- Restore-Worker, Restart-Handoff und direkter Confirm-Einstieg behalten vorhandene Recoveryautorität und erhalten Konfliktveto; bei Upgradekonflikt kein automatischer Parent-Abbruch. Nonce-CLI-Übergabe gegen führendes Minus abgesichert.
+- Bestehender sanitisierter QMessageBox-Fehlerport, ohne Reparatur, First Run, Datenbankauswahl oder Journal-/Ankerbereinigung. Gemeinsamer unveränderter Startup-DTO nach Core verschoben; kein Security→Application/Desktop/Qt-Import.
+
+Final V4, Cipherprovider/-parameter, Schlüsselidentitäten, Produktdaten, Pflanzenbilder-ZIP, veröffentlichte Version und Build-404-Paket unverändert. Keine Migration, Aktivierung, neue produktive Upgradekante, Version, Build, Verteilung, Push oder Tag. Native A2-Paket-/Keychainabnahme bleibt offen; keine Downgradesicherheitsgarantie gegenüber Build 404.
+
+
+A2-Abnahmeverlauf: 63 neue synthetische Tests ohne Skip, plus reale Worker-Nonce-Regression. Der erste Gesamtlauf meldete 2894 bestandene Tests, zwei Fehler, 104 bestehende Skips und 120 bestandene Untertests und gilt nicht als Abnahme: Repositoryplatzierung des immutable Accountports verletzte das bestehende SQLite-Architekturgate; außerdem war vor dem dritten im selben Prozess simulierten Neustart noch SQLite-Garbage-Collection offen. Accountport in das bestehende SQLite-Repository verschoben, Test-Lifecycle abgeschlossen; keine Testregel, kein Trigger oder Sicherheitsgate gelockert. Abschließend zusätzliche exakte Bindung zwischen Preflightroot und Lockroot geprüft, auch bei zwei leeren Roots. Insgesamt 64 neue A2-Tests ohne Skip. Finaler gezielter Lauf: `rtk proxy python3 -m pytest tests/test_product_upgrade_startup.py tests/test_security_core.py -q` → 93 bestanden, 49,01 s. Finaler regulärer Lauf: `rtk proxy python3 -m pytest tests -q -rs` → 2897 bestanden, 104 unveränderte bestehende Skips, 120 bestandene Untertests, 364,52 s, Exit 0. Vorheriger erweiterter Lauf: 541 bestanden / 35 bestehende Skips; vorherige grüne Gesamtsuite: 2896 bestanden / 104 Skips / 120 Untertests vor der letzten Rootbindungspräzisierung. Keine neue Skipregel oder Testausnahme. Architektur-/Technical Review im A2-Umfang: P0 = 0, P1 = 0; dokumentierte P2-Grenzen bleiben. Native SQLCipher-4.17/CommonCrypto tatsächlich über das hashgeprüfte Build-404-Wheel ausgeführt, einschließlich echtem Produktstart und synthetischen Restoreprozessen. Native Bridge-Ladeprüfung: `macos_security_bridge_unavailable`; kein Keychainzugriff, keine native Paketabnahme. Kein Produktdaten-/Produktschlüsselzugriff. Pflanzen-ZIP: 439602 Bytes, fünf valide Einträge, SHA256 `ef06e04c4bbc4803fb036f8dfa61151f8556a2a3f647c89b5fbe9d7dec9a31d4`. Historische Build-404-DMG unverändert, SHA256 `d55c21c35509a034b3b249450478dc82514f7f296ab5e494799dae0fd93f311e`.
+
 ## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
 
 - Isoliertes read-only Installationsinventar mit vollständiger rekursiver Artefaktprüfung, explizitem UNKNOWN/UNSAFE/CHANGED und Upgrade-/Restorekoexistenz.

@@ -1,4 +1,4 @@
-"""Isolated existing-only key port; no product startup composition.
+"""Existing-only key port; product composition is confined to the A2 adapter.
 
 The caller supplies an independently authenticated active account. Neither the
 root marker nor keyset/peek_context metadata authenticates that account. A1
@@ -69,8 +69,11 @@ Immutable metadata reads require absent WAL/SHM/journal; no checkpoint/repair.
 No product main/companion DB is opened. Recheck under runtime lock in A2.
 """
 
-    def __init__(self, *, key_store=None):
+    def __init__(self, *, key_store=None, inventory=None):
+        # Default A1 policy stays private and unchanged. A2 supplies its explicit
+        # product inventory contract for normal non-secret ancillary permissions.
         self._key_store = key_store
+        self._inventory = inventory
 
     def load_existing(self, root: Path, *, authenticated_account) -> ExistingInstallationKeyResult:
         status = ExistingInstallationKeyStatus
@@ -80,7 +83,7 @@ No product main/companion DB is opened. Recheck under runtime lock in A2.
                 raise ValueError
         except (AttributeError, ValueError, SecurityStoreError):
             return ExistingInstallationKeyResult(status.INSTALLATION_UNKNOWN)
-        inventory_port = ReadOnlyInstallationInventory()
+        inventory_port = self._inventory or ReadOnlyInstallationInventory()
         before = inventory_port.inspect(root)
         if before.status in {InventoryStatus.EMPTY, InventoryStatus.UNSAFE,
                              InventoryStatus.CHANGED, InventoryStatus.UNKNOWN}:

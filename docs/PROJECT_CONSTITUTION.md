@@ -1,5 +1,10 @@
 # Project Constitution
 
+## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+PO-Auftrag A2: den fail-closed Upgrade-Startup-Guard produktiv vor Restoremutation, First Run, Schlüsselanlage und Runtimeöffnung einbinden. Keine Datenmodelländerung, Migration, Aktivierung, Writerfreigabe, neue Upgradekante oder Version. Bestehende Restoreautorität bleibt bestehen; Build 404 bleibt historische Referenz.
+
+
 ## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
 
 PO-Auftrag A1: ausschließlich isoliertes read-only Installationsinventar und Existing-only-Schlüsselport. Keine Datenmodelländerung, neue First-Run-Autorität, Runtime-Schemafreigabe, produktive Upgradekante, Migration oder Aktivierung. Produktstartup und isolierter Guard bleiben unverändert; A2 fehlt.

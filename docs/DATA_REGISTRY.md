@@ -1,5 +1,10 @@
 # Data Registry
 
+## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
+
+Keine neue Datenquelle. A2 liest den bestehenden Root, Security Store/Enrollmentmarker, A1-Inventar, bestehende DMK-/Envelopeidentität und Upgradejournal/Replayanker. Journal bleibt Operationswahrheit; Inventar und Rootmarker sind keine kryptografische Autorität. Ohne Upgradeevidenz kein Keyload und kein Journal-/Ankerwrite.
+
+
 ## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
 
 Keine neue Persistenz. Inventar liest vollständig rekursiv den vorhandenen Root: Rootmarker, Security Store, Keyset/Envelope, Final-V4-Main, Companion, Dokumentcontainer, Sidecars, Locks, Backup/Export/Logs/Preferences sowie sämtliche Upgrade-/Restoreverzeichnisse. Jeder Eintrag wird mit relativer Rolle, Typ, Device/Inode, Eigentümer, Rechten, Linkzahl, Größe und Änderungszeiten berichtet. Unbekannte Einträge bleiben explizit unbekannt; Recoverypayloads werden als ungeprüfte Evidenz berichtet. Schlüsselport liest nur vorhandene aktive Keyset-Metadaten ohne Sidecars mittels bestehender immutable-read Option, DMK mittels bestehendem Store.read und authentisierte Envelope-Registry mittels load_active. Kein Security-Store-/Accountloader, kein Keychainankerzugriff.

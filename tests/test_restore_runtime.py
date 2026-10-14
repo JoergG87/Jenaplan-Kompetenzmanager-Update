@@ -474,9 +474,16 @@ def test_productive_restore_blocks_before_activation_when_pending_recovery_is_in
     assert old_document.read_bytes() == old_document_before
 
 
+@pytest.mark.parametrize("leading_dash", (False, True))
 def test_real_source_worker_confirms_takeover_before_parent_exit_and_is_reaped(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    leading_dash: bool,
 ) -> None:
+    if leading_dash:
+        import src.core.restore_runtime as restore_runtime
+        original = restore_runtime.secrets.token_urlsafe
+        monkeypatch.setattr(restore_runtime.secrets, "token_urlsafe", lambda n: "-" + original(n)[1:])
     _source, live, _archive, handoff = _prepared(
         tmp_path,
         "RST-REAL-SOURCE-WORKER",

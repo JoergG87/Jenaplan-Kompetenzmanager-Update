@@ -244,6 +244,22 @@ def _require_existing_product_security(paths: RuntimePaths) -> None:
         raise RuntimeRootProtectionError("pilot_product_security_incomplete")
 
 
+def _show_upgrade_startup_blocked(arguments: list[str], *, packaged_smoke: bool) -> None:
+    """Existing UI error port, with no authentication, storage or repair action."""
+    message = (
+        "Der sichere Start wurde angehalten. Der lokale Installations- oder "
+        "Upgradezustand ist nicht eindeutig prüfbar. Die Anwendung hat keine "
+        "weitere Nutzung freigegeben. Bitte lassen Sie den vorhandenen "
+        "Zustand durch den Support prüfen."
+    )
+    print(message, file=sys.stderr)
+    if not packaged_smoke:
+        from PySide6.QtWidgets import QApplication, QMessageBox
+
+        app = QApplication.instance() or QApplication(arguments)
+        QMessageBox.critical(None, "Sicherer Start angehalten", message)
+
+
 def _build_cipher_product_student_adapter(product_runtime):
     """Inject the one keyed product runtime without constructing another DB."""
     from src.core.sqlite_store import SQLiteCompetencyRepository
@@ -413,27 +429,44 @@ def main() -> int:
         restore_runtime_root
         if restore_runtime_root is not None
         else (smoke_data_root or application_data_root())
-    ).expanduser().resolve(strict=False)
+    ).expanduser().absolute()
+    from src.security.upgrade_startup import (
+        ProductStartupInventory, ProductUpgradeStartupGuard, UpgradeStartupBlocked,
+    )
+
     try:
+        inventory_port = ProductStartupInventory()
+        before_inventory = inventory_port.before_lock(data_root)
         root_protection, fresh_unmarked_root = _preflight_desktop_runtime_root(
             data_root,
             packaged_smoke=packaged_smoke,
         )
-    except RuntimeRootProtectionError as error:
-        print(f"App-Start blockiert: {error.code}", file=sys.stderr)
+    except UpgradeStartupBlocked:
+        _show_upgrade_startup_blocked(arguments, packaged_smoke=packaged_smoke)
+        return 3
+    except (RuntimeRootProtectionError, OSError) as error:
+        print(f"App-Start blockiert: {getattr(error, 'code', 'runtime_root_unreadable')}", file=sys.stderr)
+        _show_upgrade_startup_blocked(arguments, packaged_smoke=packaged_smoke)
         return 3
     from src.core.restore_runtime import (
         RuntimeInstanceLock,
     )
 
-    lock = RuntimeInstanceLock(data_root, inherited_fd=inherited_lock_fd)
+    lock = None
     new_database_initialization_candidate = False
     try:
+        lock = RuntimeInstanceLock(data_root, inherited_fd=inherited_lock_fd)
         lock.acquire()
+        startup_guard = ProductUpgradeStartupGuard(lock, inventory=inventory_port)
+        startup_guard.evaluate(before=before_inventory)
         if fresh_unmarked_root:
             root_protection = publish_pilot_product_root(
                 data_root.resolve(strict=True),
                 allowed_existing=(lock.path,),
+            )
+        else:
+            root_protection, _ = _preflight_desktop_runtime_root(
+                data_root, packaged_smoke=packaged_smoke,
             )
         from src.security.final_v4_live_restore import (
             confirm_final_v4_restore_startup,
@@ -459,14 +492,23 @@ def main() -> int:
                     token=str(recovery.resume_token),
                     product_paths=runtime_paths(data_root),
                 )
+        # Recovery may legitimately replace components. Reinventory its result;
+        # never use the pre-recovery snapshot to authorize a fresh installation.
+        startup_guard.evaluate()
         new_database_initialization_candidate = (
             _new_database_initialization_candidate(
                 data_root,
                 runtime_lock_path=lock.path,
             )
         )
-    except RuntimeError as error:
-        lock.release()
+    except UpgradeStartupBlocked:
+        if lock is not None:
+            lock.release()
+        _show_upgrade_startup_blocked(arguments, packaged_smoke=packaged_smoke)
+        return 3
+    except (RuntimeError, OSError) as error:
+        if lock is not None:
+            lock.release()
         print(
             "App-Start wegen eines unsicheren Runtime-Zustands abgelehnt: "
             f"{error}",
