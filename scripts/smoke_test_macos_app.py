@@ -9,6 +9,7 @@ import plistlib
 import sqlite3
 import subprocess
 import tempfile
+from contextlib import nullcontext
 from pathlib import Path
 import sys
 
@@ -24,10 +25,36 @@ PACKAGED_SMOKE_MARKER_ENV = "JENAPLAN_PACKAGED_SMOKE_MARKER"
 PACKAGED_SMOKE_MARKER_VALUE = "isolated-v1"
 
 
-def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str, object]:
+def smoke_test(app_path: Path, *, expected_data_mode: str = "empty",
+               test_profile: Path | None = None, preflight_only: bool = False) -> dict[str, object]:
     """Launch two frozen processes against one isolated encrypted Final-V4 root."""
-    app_path = Path(app_path).resolve()
-    executable = app_path / "Contents" / "MacOS" / APP_NAME
+    profile = None
+    identity_snapshot = None
+    if test_profile is not None:
+        from scripts.macos_package_profile import load_profile
+        from src.core.macos_test_package_profile import (
+            test_build_path_identity, validate_internal_test_smoke_context,
+        )
+        if expected_data_mode != "empty":
+            raise ValueError("test_profile_invalid")
+        profile = load_profile(test_profile, before_build=False)
+        if os.environ.get("JENAPLAN_APP_DATA_DIR", profile.runtime_root) != profile.runtime_root:
+            raise ValueError("test_profile_invalid")
+        app_path = Path(app_path)
+        executable = app_path / "Contents/MacOS" / profile.app_name
+        identity_snapshot = test_build_path_identity(profile)
+        validate_internal_test_smoke_context(
+            profile, executable=executable, root=profile.runtime_root,
+            arguments=["--packaged-smoke-test", "initialize"],
+            expected_identity=identity_snapshot,
+        )
+        if preflight_only:
+            return {"profile": profile.as_dict(), "status": "preflight_ok", "app_started": False}
+    else:
+        if preflight_only:
+            raise ValueError("test_profile_invalid")
+        app_path = Path(app_path).resolve()
+        executable = app_path / "Contents" / "MacOS" / APP_NAME
     info_plist = app_path / "Contents" / "Info.plist"
     if not executable.is_file() or not info_plist.is_file():
         raise RuntimeError(f"Ungültiges App-Bundle: {app_path}")
@@ -39,15 +66,25 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
             "Laura-Pilot muss genau eine ausdrücklich fiktive Startdatenbank enthalten."
         )
 
-    with tempfile.TemporaryDirectory(prefix="jenaplan-packaged-smoke-") as temp:
-        data_root = Path(temp) / "Application Support" / APP_NAME
-        data_root.parent.mkdir(parents=True)
-        prepare_synthetic_test_root(data_root)
-        initialized = _run(executable, data_root, "initialize")
+    context = (nullcontext(None) if profile is not None else
+               tempfile.TemporaryDirectory(prefix="jenaplan-packaged-smoke-"))
+    with context as temp:
+        if profile is None:
+            data_root = Path(temp) / "Application Support" / APP_NAME
+            data_root.parent.mkdir(parents=True)
+            prepare_synthetic_test_root(data_root)
+        else:
+            data_root = Path(profile.runtime_root)
+        def run(mode):
+            if profile is None:
+                return _run(executable, data_root, mode)
+            return _run(executable, data_root, mode, profile=profile,
+                        expected_identity=identity_snapshot)
+        initialized = run("initialize")
         try:
-            restarted = _run(executable, data_root, "restart")
+            restarted = run("restart")
         finally:
-            cleanup = _run(executable, data_root, "cleanup")
+            cleanup = run("cleanup")
         if initialized["build_info"].get("data_mode") != expected_data_mode:
             raise RuntimeError(
                 "Pilotdaten-Variante stimmt nicht: "
@@ -98,7 +135,7 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
             raise RuntimeError("Der Final-V4-Pakettest räumte den DMK nicht auf.")
         with info_plist.open("rb") as plist_file:
             plist = plistlib.load(plist_file)
-        if plist.get("CFBundleIdentifier") != "de.jenaplan.kompetenzmanager":
+        if plist.get("CFBundleIdentifier") != (profile.bundle_id if profile is not None else "de.jenaplan.kompetenzmanager"):
             raise RuntimeError("Bundle-ID stimmt nicht.")
         restarted["plist"] = {
             "bundle_id": plist.get("CFBundleIdentifier"),
@@ -114,11 +151,21 @@ def smoke_test(app_path: Path, *, expected_data_mode: str = "empty") -> dict[str
         return restarted
 
 
-def _run(executable: Path, data_root: Path, mode: str) -> dict[str, object]:
+def _run(executable: Path, data_root: Path, mode: str, *, profile=None,
+         expected_identity=None) -> dict[str, object]:
     environment = os.environ.copy()
-    environment["JENAPLAN_APP_DATA_DIR"] = str(data_root)
-    environment[PACKAGED_SMOKE_MARKER_ENV] = PACKAGED_SMOKE_MARKER_VALUE
-    environment["QT_QPA_PLATFORM"] = "offscreen"
+    if profile is None:
+        environment["JENAPLAN_APP_DATA_DIR"] = str(data_root)
+        environment[PACKAGED_SMOKE_MARKER_ENV] = PACKAGED_SMOKE_MARKER_VALUE
+        environment["QT_QPA_PLATFORM"] = "offscreen"
+    else:
+        from src.core.macos_test_package_profile import validate_internal_test_smoke_context
+        validate_internal_test_smoke_context(
+            profile, executable=executable, root=str(data_root),
+            arguments=["--packaged-smoke-test", mode], expected_identity=expected_identity,
+        )
+        if environment.get("JENAPLAN_APP_DATA_DIR", profile.runtime_root) != profile.runtime_root:
+            raise ValueError("test_profile_invalid")
     result = subprocess.run(
         [str(executable), "--packaged-smoke-test", mode],
         check=False,
@@ -140,6 +187,8 @@ def _run(executable: Path, data_root: Path, mode: str) -> dict[str, object]:
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("app", type=Path)
+    parser.add_argument("--test-profile", type=Path)
+    parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument(
         "--expected-data-mode",
         choices=("empty", "laura", "release"),
@@ -152,7 +201,8 @@ def main() -> int:
     args = _parse_args()
     print(
         json.dumps(
-            smoke_test(args.app, expected_data_mode=args.expected_data_mode),
+            smoke_test(args.app, expected_data_mode=args.expected_data_mode,
+                       test_profile=args.test_profile, preflight_only=args.preflight_only),
             ensure_ascii=False,
             indent=2,
             sort_keys=True,

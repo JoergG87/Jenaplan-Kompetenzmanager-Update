@@ -3630,3 +3630,7 @@ Build-/Hookhilfen: load_profile, validate_build_selection, profile_digest, prepa
 ## Einheitliche interne macOS-Buildpfadidentität – unveröffentlicht nach Build 404
 
 `canonical_test_temp_root`, `test_build_path_identity`, `_directory_identity`: read-only kanonische Systemtemp- und descriptorrelative NOFOLLOW-Identitätsprüfung im bestehenden Profilmodul. `validate_test_build_paths`, --check-build-paths, --expected-path-identity, --expected-digest, --field path_identity: Builder-Vorprüfung mit flüchtigem Device/Inode-Snapshot und unverändertem Profildigest; keine neue persistente Quelle oder Profilformatänderung.
+
+## Versiegelter interner Smoke-Kontext – unveröffentlicht nach Build 404
+
+`verify_test_package`, `validate_internal_test_smoke_context`, `active_internal_test_smoke_root`, `_test_path_identity`: gemeinsamer read-only Profil-/Paket-/Root-/Argumentvertrag im bestehenden Testprofilmodul. Smoke benötigt vorhandene aktivierte Frozen-Identität und erneute Paketattestation; kein Environment aktiviert diese Identität. `smoke_test_macos_app --test-profile --preflight-only` prüft denselben Kontext ohne Appstart; historischer Modus bleibt getrennt. Keine neue persistente Quelle oder Profilformatänderung.

@@ -174,6 +174,7 @@ def validate_test_profile(payload, *, before_build=True):
 
 
 _test_identity: MacOSTestPackageProfile | None = None
+_test_path_identity = None
 
 
 def test_identity():
@@ -182,7 +183,7 @@ def test_identity():
 
 def activate_test_identity(payload, *, arguments, environment):
     """Hook boundary used anew by normal launch, worker and restart."""
-    global _test_identity
+    global _test_identity, _test_path_identity
     if _test_identity is not None:
         _reject()
     profile = validate_test_profile(payload, before_build=False)
@@ -201,6 +202,7 @@ def activate_test_identity(payload, *, arguments, environment):
     override = environment.get("JENAPLAN_APP_DATA_DIR")
     if override is not None and override != profile.runtime_root:
         _reject()
+    path_identity = test_build_path_identity(profile)
     # Keep OS session and bootloader values; discard app/dev loader overrides.
     for name in tuple(environment):
         if name.startswith(("JENAPLAN_", "JKM_", "DYLD_", "PYTHON", "QT_")):
@@ -208,6 +210,7 @@ def activate_test_identity(payload, *, arguments, environment):
     environment["JENAPLAN_APP_DATA_DIR"] = profile.runtime_root
     environment["JENAPLAN_PACKAGED_SMOKE_MARKER"] = "isolated-v1"
     _test_identity = profile
+    _test_path_identity = path_identity
     return profile
 
 
@@ -266,30 +269,78 @@ def keychain_account(installation_id, item_id):
     return f"{prefix}:{installation_id}:{item_id}".encode("ascii")
 
 
+def verify_test_package(profile, executable):
+    """Read-only attestation shared by hook, smoke and external preflight."""
+    import json
+    import plistlib
+    import hashlib
+    profile = validate_test_profile(profile.as_dict(), before_build=False)
+    executable = Path(executable)
+    app = Path(profile.dist_root) / f"{profile.app_name}.app"
+    if executable != app / "Contents" / "MacOS" / profile.app_name or executable.resolve(strict=True) != executable:
+        _reject()
+    info = plistlib.loads((app / "Contents" / "Info.plist").read_bytes())
+    digest = hashlib.sha256(json.dumps(profile.as_dict(), sort_keys=True).encode()).hexdigest()
+    if (info.get("CFBundleIdentifier") != profile.bundle_id
+            or info.get("CFBundleExecutable") != profile.app_name
+            or info.get("JKMInternalTestProfileSHA256") != digest
+            or any(k.startswith("SU") for k in info)):
+        _reject()
+    config = app / "Contents/Resources/internal_test_profile.json"
+    if config.is_symlink() or json.dumps(json.loads(config.read_text()), sort_keys=True) != json.dumps(profile.as_dict(), sort_keys=True):
+        _reject()
+
+
+def validate_internal_test_smoke_context(profile, *, executable, root, arguments,
+                                         expected_identity=None):
+    """Authorize only the sealed root, never a temporary-name prefix.
+
+    The external read-only runner can inspect this contract without activating
+    runtime identity; the app must already have entered through its frozen hook.
+    """
+    profile = validate_test_profile(profile.as_dict(), before_build=False)
+    if root != profile.runtime_root:
+        _reject()
+    _validate_arguments(profile, arguments)
+    snapshot = test_build_path_identity(profile)
+    if expected_identity is not None and snapshot != expected_identity:
+        _reject()
+    verify_test_package(profile, executable)
+    for directory, folders, files in os.walk(root, followlinks=False, onerror=lambda _: _reject()):
+        for name in (*folders, *files):
+            value = (Path(directory) / name).lstat()
+            if (not (stat.S_ISDIR(value.st_mode) or stat.S_ISREG(value.st_mode))
+                    or value.st_uid != os.getuid() or value.st_mode & 0o022
+                    or stat.S_ISREG(value.st_mode) and value.st_nlink != 1):
+                _reject()
+    if snapshot != test_build_path_identity(profile):
+        _reject()
+    return Path(root)
+
+
+def active_internal_test_smoke_root(environment, arguments):
+    """Frozen app entry; absence or contradiction never selects legacy mode."""
+    import sys
+    profile = test_identity()
+    if (profile is None or not getattr(sys, "frozen", False)
+            or _test_path_identity is None
+            or environment.get("JENAPLAN_PACKAGED_SMOKE_MARKER") != "isolated-v1"):
+        _reject()
+    return validate_internal_test_smoke_context(
+        profile, executable=sys.executable, root=environment.get("JENAPLAN_APP_DATA_DIR"),
+        arguments=arguments, expected_identity=_test_path_identity,
+    )
+
+
 def run_test_package_hook(payload):
     """Frozen-only bootstrap; missing/moved/contradictory context has no fallback."""
     import json
-    import plistlib
     import sys
     try:
         if not getattr(sys, "frozen", False):
             _reject()
         profile = validate_test_profile(payload, before_build=False)
-        executable = Path(sys.executable)
-        app = Path(profile.dist_root) / f"{profile.app_name}.app"
-        if executable != app / "Contents" / "MacOS" / profile.app_name or executable.resolve(strict=True) != executable:
-            _reject()
-        info = plistlib.loads((app / "Contents" / "Info.plist").read_bytes())
-        import hashlib
-        digest = hashlib.sha256(json.dumps(profile.as_dict(), sort_keys=True).encode()).hexdigest()
-        if (info.get("CFBundleIdentifier") != profile.bundle_id
-                or info.get("CFBundleExecutable") != profile.app_name
-                or info.get("JKMInternalTestProfileSHA256") != digest
-                or any(k.startswith("SU") for k in info)):
-            _reject()
-        config = app / "Contents/Resources/internal_test_profile.json"
-        if config.is_symlink() or json.dumps(json.loads(config.read_text()), sort_keys=True) != json.dumps(profile.as_dict(), sort_keys=True):
-            _reject()
+        verify_test_package(profile, sys.executable)
         arguments = sys.argv[1:]
         if arguments == ["--packaged-test-profile-audit"]:
             activate_test_identity(payload, arguments=[], environment=os.environ)

@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## Nativer Smoke-Root an internal-test gebunden – unveröffentlicht nach Build 404
+
+- Historischen Paket-/Smoke-NO-GO erhalten. Interner Smoke-Einstieg übernimmt ausschließlich den aktiven Frozen-Profilkontext und prüft Paket/Snapshot/Digest, exakten synthetischen Root, sichere Parent-/Dateistruktur und flüchtige Verzeichnisidentität erneut. Kein Rootpräfix als Freigabe.
+- Historischer Smoke-Modus unverändert getrennt; interner Runner nur mit explizitem --test-profile, keine neue Testwurzel oder freie Environmentüberschreibung. --preflight-only validiert ohne Appstart; bestehendes Bundle ergibt Exit 0 mit unverändertem Digest und Rootbestand.
+- Installations-/Keychain-/Worker-/Restartidentitäten, produktive Paketierung und Final-V4-/Ciphergates unverändert. Kein neuer Build/DMG, keine Migration/Aktivierung, kein Produktdaten-/Schlüsselzugriff. Alte Test-App enthält weiterhin alten Code; vollständige A2-Nativabnahme bleibt ausstehend.
+- Finaler enger Lauf: 124 bestanden, keine Skips. Unabhängiger Nachreview P0=0/P1=0; gefundener P2 im Fremdroot-Preflightcheck korrigiert und negativ geprüft. Finale erweiterte Regression 368 bestanden/ein bestehender Skip; Produktsuite 3009 bestanden/104 bestehende Skips/120 Unterprüfungen, 383.06 s, Exit 0. Read-only Smoke-Preflight bestanden; keine native A2-Freigabe.
+
+
+## Erneute A2-Nativabnahme – NO-GO im Smoke-Einstieg – 14.10.2026
+
+- Auf HEAD 8ad2684 interne Test-App im neuen versiegelten Profil 67680b19 paketiert; bestehende Pipeline und Bundleaudit Exit 0. Isolierte Bundle-/Appidentität, Ad-hoc-Signatur auch nach Start, kein Entitlementpayload, native SQLCipher-4.17/CommonCrypto-Runtime und Updatefreiheit bestätigt. Kein DMG/Release.
+- Werkzeuggestützte normale Öffnung zeigt First-Run-Dialog; kein Konto angelegt, wieder geschlossen. Native --packaged-smoke-test initialize scheitert Exit 2: vorhandene Smokeprüfung verlangt jenaplan-packaged-smoke-, versiegelter Testroot ist jkm-internal-test-.../data. Keine Umgehung oder Folgeimplementierung.
+- A2-Nativabnahme bleibt NO-GO: vollständiger First Run, 20-Fälle-Matrix, native Keychain-, Restore-/Worker-/Restart-/Crash- und manuelle Pflichtgates weiterhin offen. Keine neue Produktsuite nach Abbruch, kein Freigabecommit. Details und Evidenzpfade in RELEASE_AUTOMATION; Produktinstallation, Schlüssel, Build 404, Pilotfeed, Version und Pflanzen-ZIP unberührt.
+
+
 ## Interne macOS-Testpaketierung – P1-Pfadkorrektur – unveröffentlicht nach Build 404
 
 - Historischen A2-NO-GO erhalten. Profil- und Buildzielgate nutzen jetzt denselben kanonischen Verzeichnisidentitätsvertrag: geprüfte root-eigene macOS-Systemaliases, descriptorrelative NOFOLLOW-Prüfung, private bestehende Parent-/Rootidentität und unverändert neue Artefaktziele. Keine pauschale Symlinkfreigabe.

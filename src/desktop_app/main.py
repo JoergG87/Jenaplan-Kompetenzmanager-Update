@@ -74,6 +74,13 @@ def _validated_packaged_smoke_data_root(
         raise RuntimeStorageError(
             "Packaged-Smoke ohne gueltigen expliziten Smoke-Marker abgelehnt."
         )
+    from src.core import macos_test_package_profile as test_package
+    profile = test_package.test_identity()
+    if profile is not None:
+        try:
+            return test_package.active_internal_test_smoke_root(environment, sys.argv[1:])
+        except (OSError, ValueError, TypeError):
+            raise RuntimeStorageError("test_profile_invalid") from None
     raw_root = environment.get(APP_DATA_DIR_ENV, "")
     data_root = Path(raw_root).expanduser() if raw_root else Path()
     if not raw_root or not data_root.is_absolute():

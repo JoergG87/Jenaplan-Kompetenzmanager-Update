@@ -474,3 +474,153 @@ def test_real_builder_negative_preflight_never_reaches_buildwrite(tmp_path, prof
     assert not Path(profile["build_root"]).exists()
     assert not Path(profile["dist_root"]).exists()
     assert sorted(p.name for p in Path(profile["runtime_root"]).iterdir()) == [".jkm-runtime-root-v1"]
+
+
+@pytest.fixture
+def smoke_bundle(profile):
+    # Inert files only: no executable code, PyInstaller, signing or native App.
+    import plistlib
+    app = Path(profile["dist_root"]) / (profile["app_name"] + ".app")
+    exe = app / "Contents/MacOS" / profile["app_name"]
+    exe.parent.mkdir(parents=True, mode=0o700)
+    exe.write_text("inert")
+    resources = app / "Contents/Resources"
+    resources.mkdir(mode=0o700)
+    validated = identity.validate_test_profile(profile, before_build=False)
+    (resources / "internal_test_profile.json").write_text(json.dumps(profile))
+    (app / "Contents/Info.plist").write_bytes(plistlib.dumps(dict(
+        CFBundleIdentifier=profile["bundle_id"], CFBundleExecutable=profile["app_name"],
+        JKMInternalTestProfileSHA256=profile_digest(validated),
+    )))
+    return app, exe, validated
+
+
+def test_smoke_uses_activated_sealed_root_without_legacy_prefix(profile, smoke_bundle, monkeypatch):
+    from src.desktop_app import main as desktop
+    app, exe, validated = smoke_bundle
+    environment = {}
+    identity.activate_test_identity(profile, arguments=["--packaged-smoke-test", "initialize"], environment=environment)
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(exe))
+    monkeypatch.setattr(sys, "argv", [str(exe), "--packaged-smoke-test", "initialize"])
+    assert desktop._validated_packaged_smoke_data_root(environment) == Path(profile["runtime_root"])
+    assert identity.keychain_service(identity.PRODUCT_BUNDLE_ID + ".data-master-key").decode() == profile["keychain_services"][0]
+    assert profile["worker_bundle_id"] == profile["restart_bundle_id"] == profile["bundle_id"]
+
+
+@pytest.mark.parametrize("damage", ["missing", "tamper", "digest", "installation", "bundle", "service", "old_snapshot", "worker", "restart"])
+def test_smoke_preflight_snapshot_damage_stops_before_any_app_access(tmp_path, profile, smoke_bundle, monkeypatch, damage):
+    import plistlib
+    from scripts import smoke_test_macos_app as runner
+    app, exe, validated = smoke_bundle
+    path = config(tmp_path, profile)
+    config_path = app / "Contents/Resources/internal_test_profile.json"
+    if damage == "missing": config_path.unlink()
+    elif damage == "digest":
+        f = app / "Contents/Info.plist"
+        data = plistlib.loads(f.read_bytes()); data["JKMInternalTestProfileSHA256"] = "invalid"
+        f.write_bytes(plistlib.dumps(data))
+    else:
+        data = dict(profile)
+        field, value = {
+            "tamper": ("updates", True), "installation": ("installation_id", str(uuid.uuid4())),
+            "bundle": ("bundle_id", identity.PRODUCT_BUNDLE_ID),
+            "service": ("keychain_services", [identity.PRODUCT_BUNDLE_ID + ".data-master-key"]),
+            "old_snapshot": ("test_id", str(uuid.uuid4())),
+            "worker": ("worker_bundle_id", identity.PRODUCT_BUNDLE_ID),
+            "restart": ("restart_bundle_id", identity.PRODUCT_BUNDLE_ID),
+        }[damage]
+        data[field] = value; config_path.write_text(json.dumps(data))
+    monkeypatch.setattr(runner.subprocess, "run", lambda *a, **kw: pytest.fail("preflight must not launch any process"))
+    with pytest.raises((ValueError, OSError)):
+        runner.smoke_test(app, test_profile=path, preflight_only=True)
+    assert sorted(x.name for x in Path(profile["runtime_root"]).iterdir()) == [".jkm-runtime-root-v1"]
+
+
+@pytest.mark.parametrize("root", ["/Applications/Jenaplan-Kompetenzmanager.app", "/tmp/arbitrary", "relative", "/tmp/jenaplan-packaged-smoke-unbound", None])
+def test_active_smoke_never_falls_back_to_foreign_or_legacy_root(profile, smoke_bundle, monkeypatch, root):
+    from src.desktop_app import main as desktop
+    app, exe, validated = smoke_bundle
+    env = {}; identity.activate_test_identity(profile, arguments=[], environment=env)
+    env["JENAPLAN_APP_DATA_DIR"] = root
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(exe))
+    monkeypatch.setattr(sys, "argv", [str(exe), "--packaged-smoke-test", "initialize"])
+    with pytest.raises(desktop.RuntimeStorageError): desktop._validated_packaged_smoke_data_root(env)
+
+
+@pytest.mark.parametrize("arguments", [
+    ["--packaged-smoke-test"], ["--packaged-smoke-test", "unknown"],
+    ["--restore-worker", "--handoff", "/foreign/id.json", "--restore-mode", "final_v4_encrypted"],
+    ["--final-v4-restore-confirm", "--runtime-root", "/foreign"],
+])
+def test_smoke_preflight_rejects_ambiguous_worker_restart_arguments(profile, smoke_bundle, arguments):
+    app, exe, validated = smoke_bundle
+    with pytest.raises(ValueError):
+        identity.validate_internal_test_smoke_context(validated, executable=exe,
+            root=profile["runtime_root"], arguments=arguments)
+
+
+def test_read_only_preflight_rechecks_process_context_and_directory_identity(tmp_path, profile, smoke_bundle, monkeypatch):
+    from scripts import smoke_test_macos_app as runner
+    app, exe, validated = smoke_bundle
+    monkeypatch.setattr(runner.subprocess, "run", lambda *a, **kw: pytest.fail("unexpected process launch"))
+    report = runner.smoke_test(app, test_profile=config(tmp_path, profile), preflight_only=True)
+    assert report["status"] == "preflight_ok" and report["app_started"] is False
+    snapshot = identity.test_build_path_identity(validated)
+    root = Path(profile["runtime_root"]); old = root.with_name("data-retained")
+    root.rename(old)
+    from src.core.runtime_root_protection import prepare_synthetic_test_root
+    try:
+        prepare_synthetic_test_root(root)
+        with pytest.raises(ValueError):
+            identity.validate_internal_test_smoke_context(validated, executable=exe,
+                root=str(root), arguments=["--packaged-smoke-test", "restart"], expected_identity=snapshot)
+    finally:
+        import shutil
+        shutil.rmtree(root); old.rename(root)
+
+
+@pytest.mark.parametrize("damage", ["unfrozen", "moved_executable", "link", "unsafe_parent", "missing_marker"])
+def test_runtime_smoke_revalidates_frozen_package_and_root(profile, smoke_bundle, monkeypatch, damage):
+    from src.desktop_app import main as desktop
+    app, exe, validated = smoke_bundle
+    env = {}; identity.activate_test_identity(profile, arguments=[], environment=env)
+    monkeypatch.setattr(sys, "frozen", damage != "unfrozen", raising=False)
+    monkeypatch.setattr(sys, "executable", "/Applications/Jenaplan-Kompetenzmanager.app/Contents/MacOS/Jenaplan-Kompetenzmanager" if damage == "moved_executable" else str(exe))
+    monkeypatch.setattr(sys, "argv", [str(exe), "--packaged-smoke-test", "initialize"])
+    root = Path(profile["runtime_root"])
+    if damage == "link": (root / "link").symlink_to("/foreign")
+    elif damage == "unsafe_parent": root.parent.chmod(0o777)
+    elif damage == "missing_marker": (root / ".jkm-runtime-root-v1").unlink()
+    with pytest.raises(desktop.RuntimeStorageError): desktop._validated_packaged_smoke_data_root(env)
+
+
+def test_preflight_requires_explicit_profile_and_cannot_activate_from_environment(profile, smoke_bundle, monkeypatch):
+    from scripts import smoke_test_macos_app as runner
+    from src.desktop_app import main as desktop
+    app, exe, validated = smoke_bundle
+    monkeypatch.setenv("JENAPLAN_INTERNAL_TEST_PROFILE", "ignored")
+    with pytest.raises(ValueError): runner.smoke_test(app, preflight_only=True)
+    assert identity.test_identity() is None
+    with pytest.raises(desktop.RuntimeStorageError):
+        desktop._validated_packaged_smoke_data_root({"JENAPLAN_APP_DATA_DIR": profile["runtime_root"], "JENAPLAN_PACKAGED_SMOKE_MARKER": "isolated-v1"})
+
+
+
+def test_external_preflight_rejects_inherited_foreign_root_before_bundle_or_launch(tmp_path, profile, smoke_bundle, monkeypatch):
+    from scripts import smoke_test_macos_app as runner
+    app, exe, validated = smoke_bundle
+    monkeypatch.setenv("JENAPLAN_APP_DATA_DIR", "/foreign")
+    monkeypatch.setattr(runner.subprocess, "run", lambda *a, **kw: pytest.fail("unauthorized process"))
+    with pytest.raises(ValueError):
+        runner.smoke_test(app, test_profile=config(tmp_path, profile), preflight_only=True)
+
+
+def test_context_rejects_foreign_parameters_before_package_reads(profile, smoke_bundle, monkeypatch):
+    app, exe, validated = smoke_bundle
+    monkeypatch.setattr(identity, "verify_test_package", lambda *a: pytest.fail("foreign parameters must stop before package read"))
+    with pytest.raises(ValueError):
+        identity.validate_internal_test_smoke_context(validated, executable=exe, root="/foreign", arguments=[])
+    with pytest.raises(ValueError):
+        identity.validate_internal_test_smoke_context(validated, executable=exe, root=profile["runtime_root"], arguments=["--foreign"])
