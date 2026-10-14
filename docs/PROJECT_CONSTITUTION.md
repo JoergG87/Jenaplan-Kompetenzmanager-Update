@@ -1,5 +1,9 @@
 # Project Constitution
 
+## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
+
+PO-Auftrag A1: ausschließlich isoliertes read-only Installationsinventar und Existing-only-Schlüsselport. Keine Datenmodelländerung, neue First-Run-Autorität, Runtime-Schemafreigabe, produktive Upgradekante, Migration oder Aktivierung. Produktstartup und isolierter Guard bleiben unverändert; A2 fehlt.
+
 ## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
 
 A0 ist PO-freigegeben und implementiert als isolierter technischer Vertragsunterbau, unveröffentlicht nach Build 404. Keine Dateiaustausch-, Rollback-, Restart- oder Writerfreigabeausführung. Final V4 bleibt einzige produktive Schemaidentität; keine produktive Upgradekante und keine Startupintegration. Authentisierte dauerhafte Schreibfreigabe schließt automatischen Source-Rollback bereits vor dem ersten Write aus. Neue Zustände/Belege sind keine Produktcapabilities.

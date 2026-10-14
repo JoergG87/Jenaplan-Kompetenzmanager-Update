@@ -1,5 +1,9 @@
 # View Data Ownership
 
+## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
+
+Keine neue Ansicht. Core besitzt Inventar-DTO und Portvertrag; Security Infrastructure besitzt vollständige Dateisystembeobachtung; Security besitzt Existing-only-Komposition vorhandener Loader. Authentisierter Account kommt aus einer unabhängigen vertrauenswürdigen Aufrufergrenze, niemals aus Dateinamen/Journalmetadaten. Schema-/Restore-/Upgradeprüfer behalten alleinige Prüfverantwortung. Keine produktive Komposition oder Guardverdrahtung.
+
 ## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
 
 Core besitzt A0-Zustands-, Receipt- und Verbotregeln ohne I/O. Security Infrastructure codiert/authentisiert/persistiert über vorhandenes Journal und Replayanker; Application behält ausschließlich vorhandene STAGED-Koordination und isolierte Guardklassifikation. Runtime/UI erhalten keine Ausführung oder neue Ansicht. Typed Inspection ist ein Vertrag für spätere unabhängige Verifier, kein in A0 implementierter Produktverifier.

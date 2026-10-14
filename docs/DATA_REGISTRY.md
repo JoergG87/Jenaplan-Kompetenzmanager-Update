@@ -1,5 +1,9 @@
 # Data Registry
 
+## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
+
+Keine neue Persistenz. Inventar liest vollständig rekursiv den vorhandenen Root: Rootmarker, Security Store, Keyset/Envelope, Final-V4-Main, Companion, Dokumentcontainer, Sidecars, Locks, Backup/Export/Logs/Preferences sowie sämtliche Upgrade-/Restoreverzeichnisse. Jeder Eintrag wird mit relativer Rolle, Typ, Device/Inode, Eigentümer, Rechten, Linkzahl, Größe und Änderungszeiten berichtet. Unbekannte Einträge bleiben explizit unbekannt; Recoverypayloads werden als ungeprüfte Evidenz berichtet. Schlüsselport liest nur vorhandene aktive Keyset-Metadaten ohne Sidecars mittels bestehender immutable-read Option, DMK mittels bestehendem Store.read und authentisierte Envelope-Registry mittels load_active. Kein Security-Store-/Accountloader, kein Keychainankerzugriff.
+
 ## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
 
 Einzige Operationswahrheit bleibt `schema-upgrade-foundation/journal.json` im synthetisch autorisierten Root, neue Datensätze als `schema-upgrade-v2`. Der vorhandene Replayanker bleibt formatunverändert und bindet den Digest der vollständigen authentisierten Journalbytes. v1 bleibt bytekompatibel lesbar und bis STAGED fortschreibbar; keine automatische Hochstufung und keine neue Aktivierungs-/Schreibautorität aus Altbelegen. Rollbackbeleg bindet über Receipt/Context Operation, Installation, Database-/DMK-/Database-Key-Kontext, Quellschema, eigene UUID/Device/Inode/Größe und SHA-256 der verschlüsselten Quellenbytes. Intent/Result/Restart/Inspection enthalten ausschließlich technische IDs, genaue Schemas, Artefaktbelege und explizite Prüfergebnisse; keine Schlüsselbytes, Pfadfreitexte oder Fachdatensätze. Keine echte Rollbackdatei oder neue produktive Datenquelle.

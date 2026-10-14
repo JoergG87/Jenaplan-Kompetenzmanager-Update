@@ -1,5 +1,13 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
+
+A1 implementiert `ReadOnlyInstallationInventory.inspect` und `ExistingInstallationKeys.load_existing` ausschließlich isoliert. Vollständiger rekursiver Dateibestand ohne Anlage, Löschung oder Reparatur; EMPTY nur bei null Einträgen. Existing-only lädt unabhängig authentisierten aktiven Installationsaccount, vorhandenen DMK und authentisiertes aktives Database-Key-Envelope. Keine neue First-Run-Autorität, Runtime-Schemafreigabe, produktive Migration, Upgradekante oder Aktivierung. Final V4 bleibt einziges produktives Schema.
+
+Produktreihenfolge unverändert: Rootpreflight → RuntimeInstanceLock → Restore-Recovery/Bestätigung → First-Run-Kandidatur → Security-Startup/Anmeldung → Cipher-Keyruntime → keyed Final-V4-Prüfung → Dokumentruntime/Adapter. Guard bleibt isoliert; A2-Integration fehlt. Native/paketierte Existing-only-Keychain-, Startup-, Crash-/Recovery- und Lock-Koexistenzabnahme bleiben offen. macOS 0.4.4 / Build 404 unverändert.
+
+A1-Abschlussabnahme: `rtk python3 -m pytest tests -q`: 2832 bestanden, 104 bestehende Skips, 120 Untertests bestanden (317,85 s). Gezielter finaler Lauf: 354 bestanden, 30 bestehende Skips; umfasst `test_installation_startup_ports`, `test_schema_upgrade_activation_contracts`, `test_upgrade_replay_guard`, `test_schema_upgrade_foundation`, `test_encrypted_upgrade_source`, `test_schema_registry`, `test_runtime_root_protection`, `test_database_key_runtime`, `test_cipher_product_composition`, `test_final_v4_sqlcipher_runtime`. 57 A1-Tests ohne Skip. Keine native Keychain-Abnahme behauptet. Ein früherer Gesamtlauf wurde unterbrochen und zählt nicht als bestandener Nachweis. Keine Keychain-/Produktdatenmutation; Produktpfade, Schema/A0/Anker und Version unverändert. Pflanzenbilder-ZIP: 439602 Bytes, fünf valide Einträge, SHA256 `ef06e04c4bbc4803fb036f8dfa61151f8556a2a3f647c89b5fbe9d7dec9a31d4`.
+
 ## Upgrade-Replay und isolierter Startup-Guard – 14.10.2026
 
 Implementiert: HMAC-authentisierter kontextgebundener Upgrade-High-Water-Mark, Anker-vor-Journal-CAS und isolierter fail-closed Startup-Guard. Kein Produkt-Startup-Aufruf, keine Migration/Aktivierung, keine neue Runtime-/First-Run-/Restorefreigabe. Erhaltene Anker erkennen Journal-Replay; vollständiger lokaler Rollback bleibt unerkennbar. Crashmischstände sperren ohne Reparatur. Details und Integrationsport in DECISIONS.md. Abnahme: 254 gezielte Tests bestanden, 21 bestehende Skips; Produktsuite 2687 bestanden, 104 bestehende Skips und 120 bestandene Unterprüfungen. Eigener Architektur-/Technical Review: P0/P1 = 0. Bestehende Build-404-Starts und Final-V4-Zulassung unverändert. Native/paketierte Gates bleiben offen.

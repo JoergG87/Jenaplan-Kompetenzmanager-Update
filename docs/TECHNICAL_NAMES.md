@@ -1,5 +1,9 @@
 # Technical Naming Registry
 
+## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
+
+`InstallationInventoryPort`, `InstallationInventory`, `InstallationArtifact`, `InstallationInventoryStatus` (Core); `ReadOnlyInstallationInventory` (Security Infrastructure); `ExistingInstallationKeyPort`, `ExistingInstallationKeys`, `ExistingInstallationKeyResult`, `ExistingInstallationKeyStatus` (Security). `V4_ARTIFACTS_PRESENT` bedeutet nur vollständigen kanonischen Dateibestand, keine geprüfte Final-V4-Schemaidentität. Alle Ergebnisse sind flüchtig und gewähren keine Runtime-/First-Run-/Recoveryautorität.
+
 ## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
 
 Core: `UpgradeExchangeIntent`, `UpgradeExchangeResult`, `UpgradeRestartReceipt`, `UpgradeTargetInspection`, `source_rollback_forbidden`; Artefaktrollen `rollback` und `rollback_live`. `UpgradeState.contract_version` unterscheidet historischen Vertrag 1 und A0-Vertrag 2; Journalprotokoll `schema-upgrade-v2`. Neue Phasen: ACTIVATION_INTENT, TARGET_INSTALLED, RESTART_CONFIRMED, WRITES_ENABLED, ROLLBACK_INTENT, ROLLBACK_INSTALLED, ROLLED_BACK. ACTIVATING bleibt ausschließlich historische v1-Phase. `UpgradeRecoveryDecision.writer_admission_allowed` und `automatic_source_rollback_allowed` bleiben immer False. Recoveryklassifikationen INSTALLED, RESTART_VERIFIED, WRITES_ENABLED, ROLLED_BACK sind reine Beschreibungen. `UpgradeEvidence` trägt optional genau phasengebundene exchange_intent/exchange_result/restart/inspection-Belege. Keine neuen Runtimeports oder UI-Namen.

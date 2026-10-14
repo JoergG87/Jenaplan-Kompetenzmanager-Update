@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
+
+- Isoliertes read-only Installationsinventar mit vollständiger rekursiver Artefaktprüfung, explizitem UNKNOWN/UNSAFE/CHANGED und Upgrade-/Restorekoexistenz.
+- Existing-only-Schlüsselport mit direktem bestehenden DMK-Read und authentisiertem Envelope-Load; keine Schlüsselanlage, Rotation, Rewrap, Repair oder Lifecycle-Recovery.
+- Keine produktive Startup-/Guardintegration (A2 fehlt), First-Run-Autorität, Runtime-Schemafreigabe, Migration oder Aktivierung. Final V4 und macOS 0.4.4 / Build 404 unverändert.
+
+Validierung: 354 gezielte Tests; Produktsuite 2832 Tests und 120 Untertests bestanden, 104 bestehende umgebungsabhängige Skips. P0/P1 = 0 im isolierten Umfang; native Paket-/Keychain-Gates und A2 offen. Pflanzenbilder-ZIP unverändert.
+
 ## A0 – isolierte Aktivierungs-, Rollback- und Schreibfreigabeverträge – 14.10.2026
 
 Implementiert, unveröffentlicht nach macOS 0.4.4 / Build 404: reine typisierte

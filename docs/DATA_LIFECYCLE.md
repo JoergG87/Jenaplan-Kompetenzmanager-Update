@@ -1,5 +1,9 @@
 # Data Lifecycle
 
+## A1 – read-only Startupports – unveröffentlicht nach Build 404 – 14.10.2026
+
+A1 hat keinen Schreibprozess. Inventar öffnet Verzeichnisse descriptorrelativ mit NOFOLLOW und prüft zwei vollständige Metadatascans; EMPTY verlangt tatsächlich null Einträge, auch Locks/Marker verhindern EMPTY. Fehlender Root ist UNSAFE, keine implizite First-Run-Autorität. Schlüsselport verlangt unabhängig authentisierten aktiven Account vom Aufrufer, prüft Inventar vor/nach dem Laden, verweigert Sidecars am Keyset und nutzt nur direkte DMK-Reads und authentisierte Envelope-Reads. Kein initialize, load-Pending-Recovery, create-or-open, fail/revoke, Rewrap oder Repair. Später unter bestehendem Runtime-Lock und bei Schlüssel-/Evidenzprüfung zusätzlich passenden Writergrenzen verwenden; A1 hält/erteilt selbst keinen Lease.
+
 ## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
 
 A0 ergänzt ausschließlich reine Übergänge und synthetische authentisierte Persistenz. Vorbereitung bleibt PREFLIGHT → EXCLUSIVE → SOURCE_VERIFIED → BACKUP_VERIFIED → STAGED → MIGRATED → TARGET_VERIFIED. Danach ACTIVATION_PREPARED (Source/Backup/Candidate/Rollback vollständig gebunden) → ACTIVATION_INTENT (dauerhafte Absicht) → TARGET_INSTALLED (eigener exakter Austauschbeleg) → RESTART_CONFIRMED → RUNTIME_VERIFIED (Schema/Integrität/Keys/Fach-/Dokumentprüfung) → WRITES_ENABLED → COMPLETED. Erst die vorhandene Repository-Save/Load-Prüfung beweist Persistenz; ein In-Memory-Zustand ist keine Writerfreigabe. Jede Entscheidung bleibt ohne Produktrechte.
