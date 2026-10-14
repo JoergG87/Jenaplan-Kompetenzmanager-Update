@@ -53,7 +53,7 @@ def test_absence_requires_complete_consistent_inventory(case):
         path.rmdir()  # test fixture only; guard never cleans
 
 
-@pytest.mark.parametrize('index', range(11))
+@pytest.mark.parametrize('index', range(14))
 def test_current_generation_and_terminal_states_never_admit(case, index):
     ctx, root, lease, repo, key = case
     states, _ = full_states(ctx)
@@ -65,16 +65,16 @@ def test_current_generation_and_terminal_states_never_admit(case, index):
     repo.save(states[index], states[index], key)
     assert repo.path.read_bytes() == raw and repo.anchor.path.read_bytes() == anchor
     recorded = {a.role: a for e in states[index].evidence for a in e.artifacts}
-    schema_args = dict(live_schema=ctx.target) if index == 10 else {}
+    schema_args = dict(live_schema=ctx.target) if index == 13 else {}
     result = evaluate(repo, key, tuple(recorded.values()), **schema_args)
     assert not result.continue_existing_startup
-    if index == 10:
-        assert result.status is UpgradeRecoveryStatus.COMPLETED
+    if index == 13:
+        assert result.status is UpgradeRecoveryStatus.RECOVERY_REQUIRED  # fresh post-write inspection is not supplied
     for role in ('source', 'backup', 'candidate'):
         if role in recorded:
             missing = tuple(a for k, a in recorded.items() if k != role)
-            # Completed state requires live instead of candidate; source and backup always required.
-            if index != 10 or role != 'candidate':
+            # Pre-write evidence remains mandatory; post-write classification requires a separate fresh inspection.
+            if index < 12:
                 assert evaluate(repo, key, missing, **schema_args).status is UpgradeRecoveryStatus.RECOVERY_REQUIRED
 
 
@@ -221,5 +221,5 @@ def test_completed_requires_live_schema_matching_journal_and_artifacts(case):
     observed = tuple(recorded.values())
     assert evaluate(repo, key, observed).status is UpgradeRecoveryStatus.RECOVERY_REQUIRED
     result = evaluate(repo, key, observed, live_schema=ctx.target)
-    assert result.status is UpgradeRecoveryStatus.COMPLETED
-    assert not result.continue_existing_startup
+    assert result.status is UpgradeRecoveryStatus.RECOVERY_REQUIRED
+    assert not result.continue_existing_startup  # A0 does not integrate a mutable-target verifier

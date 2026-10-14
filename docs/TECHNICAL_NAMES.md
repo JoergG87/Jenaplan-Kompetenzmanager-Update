@@ -1,5 +1,9 @@
 # Technical Naming Registry
 
+## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
+
+Core: `UpgradeExchangeIntent`, `UpgradeExchangeResult`, `UpgradeRestartReceipt`, `UpgradeTargetInspection`, `source_rollback_forbidden`; Artefaktrollen `rollback` und `rollback_live`. `UpgradeState.contract_version` unterscheidet historischen Vertrag 1 und A0-Vertrag 2; Journalprotokoll `schema-upgrade-v2`. Neue Phasen: ACTIVATION_INTENT, TARGET_INSTALLED, RESTART_CONFIRMED, WRITES_ENABLED, ROLLBACK_INTENT, ROLLBACK_INSTALLED, ROLLED_BACK. ACTIVATING bleibt ausschließlich historische v1-Phase. `UpgradeRecoveryDecision.writer_admission_allowed` und `automatic_source_rollback_allowed` bleiben immer False. Recoveryklassifikationen INSTALLED, RESTART_VERIFIED, WRITES_ENABLED, ROLLED_BACK sind reine Beschreibungen. `UpgradeEvidence` trägt optional genau phasengebundene exchange_intent/exchange_result/restart/inspection-Belege. Keine neuen Runtimeports oder UI-Namen.
+
 ## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 `UpgradeReplayAnchor`, `UpgradeReplayAnchorRepository` (Security Infrastructure), Format `schema-upgrade-replay-v1`; `UpgradeStartupGuard`, `UpgradeStartupDecision` (Application). Anker bindet vollständigen Kontextdigest, Journalrevision und authentisierten Journaldigest; keine zweite Phasenwahrheit. `UpgradeStartupGuard.evaluate` verlangt unabhängige Inventar-/Artefakt- und Live-Schemabelege. `UpgradeStartupDecision.continue_existing_startup` bedeutet ausschließlich NO_OPERATION; `normal_runtime_allowed`, `first_run_allowed` und `activation_allowed` bleiben False. `AuthenticatedUpgradeJournalRepository.exists` behandelt auch leere Upgrade-/Anker-/Workspaceverzeichnisse als Evidenz; `load_with_digest` prüft Ankerfrische.

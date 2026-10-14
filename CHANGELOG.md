@@ -1,5 +1,51 @@
 # CHANGELOG
 
+## A0 – isolierte Aktivierungs-, Rollback- und Schreibfreigabeverträge – 14.10.2026
+
+Implementiert, unveröffentlicht nach macOS 0.4.4 / Build 404: reine typisierte
+Verträge für gebundene verschlüsselte Rollbackevidenz, vorbereitete Aktivierung,
+getrennte dauerhafte Austauschabsicht und festgestelltes Ergebnis, Restartbeleg,
+vollständige Zielprüfevidenz, WRITES_ENABLED und Abschluss. Aktiver Rollback
+besitzt eigene Intent-/Installed-/Rolled-back-Zustände; ABORTED bleibt voraktiv.
+Ab dauerhaft gespeicherter Schreibfreigabe ist automatischer Source-Rollback
+verboten, auch ohne nachgewiesenen ersten fachlichen Write. Frische Zielprüfung
+nach dieser Grenze darf legitime veränderte Zielbytes/Inodes belegen; historische
+Kandidatenbelege bleiben eingefroren. Alle Entscheidungs-/Admissionflags bleiben
+ohne produktive Aktivierungs-, Runtime-, Writer- oder Rollbackrechte.
+
+Journal v2 verwendet den bestehenden HMAC-/CAS-/fsync-/Replayvertrag. Historische
+v1-Journalbytes bleiben exakt authentisierbar und bis STAGED fortschreibbar;
+spätere v1-Aktivierungshistorien bleiben lesbar, ohne Hochstufung oder neue Rechte.
+Replayankerformat, Anker-vor-Journal-Publikation und blockierende Crashdiskrepanzen
+bleiben unverändert. Vollständiger konsistenter lokaler Artefaktrollback ist
+weiterhin nicht zuverlässig erkennbar.
+
+Keine Dateiaustausch-/Rollbackkopie-/Checkpoint-/Connection-Drain-Ausführung,
+kein Upgrade-Worker oder Restart-Handoff, keine produktive Writerfreigabe,
+Startupintegration, historische Restoreaktivierung oder Migration. Startup-Guard
+weiterhin isoliert; Final V4 einzige produktive Schemaidentität; keine
+registrierte produktive Upgradekante. SQLCipher, Keychain, Build 404 und
+Pflanzenbilder-ZIP unverändert; kein Build, Push, Tag oder Versionswechsel.
+
+Git-Gate: Ausgangs-HEAD c7e2be3226d892bcede14682dd885500725b6867;
+7794810aef1e8a71245f9a42081ca8ecbf22be79 ist dessen unmittelbarer Vorgänger.
+Beide geforderten Ancestor-Gates bestanden; sauberer Arbeitsbaum und leeres
+Staging vor Implementierung. Der Architekturbericht nennt den neueren Stand.
+
+Validierung: erster enger gezielter Lauf 223 bestanden. Erweiterter Lauf zunächst
+376 bestanden / 1 fehlerhafte neue Testannahme: ein in einen gültigen Quellenbeleg
+umgebauter Beleg wurde zu Unrecht als widersprüchlich erwartet. Test korrigiert,
+sodass tatsächlich unerlaubte Aktivierungsevidenz verbleibt. Abschließender
+gezielter Lauf: 377 bestanden, keine Skips, Exit 0; einschließlich realer
+verschlüsselter Quellen-/Backup-/STAGED-Regression und authentisierter
+Journal-/Ankerprüfung. Reguläre Produktsuite (`python3 -m pytest tests -q -rs`):
+2775 bestanden, 104 bestehende umgebungs-/Gate-Skips, 120 bestandene Unterprüfungen,
+Exit 0. Keine neuen Skipregeln oder Testausnahmen. Eigener Architektur-/Technical
+Review im isolierten A0-Umfang: P0 = 0, P1 = 0. P2 bleibt die dokumentierte
+Nichterkennung vollständigen lokalen Artefaktrollbacks; produktive Ausführung,
+Startup-/Workerintegration und native Paketqualifikation sind Folgepakete und
+keine Abnahme dieses Auftrags. Diffprüfung bestanden.
+
 ## Upgrade-Replay und isolierter Startup-Guard – 14.10.2026
 
 Unveröffentlicht nach macOS 0.4.4 / Build 404: Upgradejournal mit authentisiertem, vollständig kontextgebundenem lokalem Replayanker abgesichert. Monotone Anker-vor-Journal-Fortschreibung, gesperrte Crashmischstände, keine Rekonstruktion fehlender Anker. Isolierter Startup-Guard klassifiziert nur bei vollständiger Evidenz; keine Runtime-, First-Run-, Restore- oder Aktivierungsfreigabe und keine Produktintegration. Keine Garantie gegen vollständigen lokalen Rollback oder alten Build-404-Code. Reale synthetische Prozessabbrüche und qualifizierte SQLCipherprüfungen; native Paketgates weiter offen. Abnahme: 254 gezielte Tests bestanden; finale Produktsuite 2687 bestanden, 104 bestehende Skips und 120 bestandene Unterprüfungen. Keine Migration, Versionsänderung oder Veröffentlichung.

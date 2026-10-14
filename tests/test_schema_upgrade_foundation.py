@@ -19,7 +19,8 @@ from src.core.schema_registry import (DatabaseSchemaRegistry, FINAL_V4_SCHEMA_RE
     SCHEMA_FINGERPRINT_ALGORITHM, SchemaAdmission, SchemaRegistryError)
 from src.core.schema_upgrade import (UpgradeContext, UpgradePhase, UpgradeArtifact, UpgradeEvidence,
     UpgradeState, UpgradeError, UpgradeRecoveryStatus, new_upgrade_state, advance_upgrade,
-    classify_upgrade, validate_upgrade_state)
+    classify_upgrade, validate_upgrade_state, UpgradeExchangeIntent, UpgradeExchangeResult,
+    UpgradeRestartReceipt, UpgradeTargetInspection)
 from src.application.commands.schema_upgrade import UpgradeMaintenance
 from src.security.infrastructure.upgrade_process_lease import UpgradeProcessLease
 from src.security.infrastructure.upgrade_journal_repository import AuthenticatedUpgradeJournalRepository
@@ -52,16 +53,35 @@ def receipt(ctx, phase, artifacts=()):
 
 def full_states(ctx):
     states = [new_upgrade_state(ctx, registry())]
-    source, backup = artifact(ctx, "source"), artifact(ctx, "backup")
+    source = artifact(ctx, "source")
+    backup = replace(artifact(ctx, "backup"), file_id=5, sha256="b" * 64)
     candidate = artifact(ctx, "candidate", ctx.source)
-    migrated = replace(candidate, schema=ctx.target, sha256="c" * 64)
+    migrated = replace(candidate, schema=ctx.target, sha256="c" * 64, file_id=3)
+    # A migration keeps file identity; staging therefore starts with this inode.
+    candidate = replace(candidate, file_id=3)
     live = replace(migrated, role="live")
-    for phase in list(UpgradePhase)[1:11]:
-        value = {UpgradePhase.SOURCE_VERIFIED: source, UpgradePhase.BACKUP_VERIFIED: backup,
-            UpgradePhase.STAGED: candidate, UpgradePhase.RUNTIME_VERIFIED: live,
-            UpgradePhase.COMPLETED: live}.get(phase, migrated)
-        parts = () if phase is UpgradePhase.EXCLUSIVE else (value,)
-        states.append(advance_upgrade(states[-1], receipt(ctx, phase, parts), registry()))
+    rollback = replace(source, role="rollback", artifact_id=str(uuid4()), file_id=4)
+    intent = UpgradeExchangeIntent(ctx, str(uuid4()), "activate", source, migrated)
+    restart = UpgradeRestartReceipt(ctx, str(uuid4()), live)
+    inspection = UpgradeTargetInspection(ctx, str(uuid4()), restart.restart_id, live, True, True, True, True)
+    receipts = (
+        receipt(ctx, UpgradePhase.EXCLUSIVE),
+        receipt(ctx, UpgradePhase.SOURCE_VERIFIED, (source,)),
+        receipt(ctx, UpgradePhase.BACKUP_VERIFIED, (backup,)),
+        receipt(ctx, UpgradePhase.STAGED, (candidate,)),
+        receipt(ctx, UpgradePhase.MIGRATED, (migrated,)),
+        receipt(ctx, UpgradePhase.TARGET_VERIFIED, (migrated,)),
+        receipt(ctx, UpgradePhase.ACTIVATION_PREPARED, (source, backup, migrated, rollback)),
+        UpgradeEvidence(ctx, UpgradePhase.ACTIVATION_INTENT, exchange_intent=intent),
+        UpgradeEvidence(ctx, UpgradePhase.TARGET_INSTALLED, (live,),
+                        exchange_result=UpgradeExchangeResult(ctx, intent.intent_id, live)),
+        UpgradeEvidence(ctx, UpgradePhase.RESTART_CONFIRMED, restart=restart),
+        UpgradeEvidence(ctx, UpgradePhase.RUNTIME_VERIFIED, (live,), inspection=inspection),
+        UpgradeEvidence(ctx, UpgradePhase.WRITES_ENABLED, inspection=inspection),
+        UpgradeEvidence(ctx, UpgradePhase.COMPLETED, inspection=inspection),
+    )
+    for evidence in receipts:
+        states.append(advance_upgrade(states[-1], evidence, registry()))
     return states, (source, backup, migrated, live)
 
 
@@ -93,7 +113,7 @@ def test_missing_source_target_and_unregistered_schemas():
     states, _ = full_states(ctx)
     for index in (1, 5):
         with pytest.raises(UpgradeError, match="artifact_missing"):
-            advance_upgrade(states[index], receipt(ctx, list(UpgradePhase)[index+1]), registry())
+            advance_upgrade(states[index], receipt(ctx, states[index+1].phase), registry())
     with pytest.raises(SchemaRegistryError):
         new_upgrade_state(ctx, PRODUCT_SCHEMA_REGISTRY)
     with pytest.raises(SchemaRegistryError):
@@ -122,6 +142,8 @@ def test_activation_cannot_be_called_aborted_and_missing_observations_block():
 def classify(state, ctx, observed, **changes):
     args = dict(expected_context=ctx, observed=observed, registry=registry(),
                 inventory_complete=True, journal_authenticated=True)
+    if state is not None and isinstance(state, UpgradeState) and state.phase in {UpgradePhase.COMPLETED, UpgradePhase.WRITES_ENABLED}:
+        args["target_inspection"] = state.evidence[-1].inspection
     args.update(changes)
     return classify_upgrade(state, **args)
 
@@ -154,7 +176,8 @@ def test_inconsistent_artifact_rejected():
     ctx = context(); states, artifacts = full_states(ctx)
     with pytest.raises(UpgradeError, match="artifact_changed"):
         advance_upgrade(states[6], receipt(ctx, UpgradePhase.ACTIVATION_PREPARED,
-            (replace(artifacts[2], sha256="d" * 64),)), registry())
+            tuple(replace(a, sha256="d" * 64) if a.role == "candidate" else a
+                  for a in states[7].evidence[-1].artifacts)), registry())
 
 
 def setup_runtime(tmp_path, ctx):
@@ -362,9 +385,10 @@ def test_no_product_root_authority_and_no_journal_access_without_lease(tmp_path)
 
 def test_live_reopen_evidence_must_match_prepared_candidate():
     ctx=context(); states,parts=full_states(ctx)
-    with pytest.raises(UpgradeError,match="live_candidate_mismatch"):
-        advance_upgrade(states[8], receipt(ctx,UpgradePhase.RUNTIME_VERIFIED,
-            (replace(parts[-1],artifact_id=str(uuid4())),)), registry())
+    with pytest.raises(UpgradeError,match="runtime_target_mismatch"):
+        advance_upgrade(states[10], UpgradeEvidence(ctx,UpgradePhase.RUNTIME_VERIFIED,
+            (replace(parts[-1],artifact_id=str(uuid4())),),
+            inspection=states[11].evidence[-1].inspection), registry())
 
 
 def test_extra_unrecorded_or_contradictory_observations_require_recovery():

@@ -1,5 +1,9 @@
 # Project Constitution
 
+## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
+
+A0 ist PO-freigegeben und implementiert als isolierter technischer Vertragsunterbau, unveröffentlicht nach Build 404. Keine Dateiaustausch-, Rollback-, Restart- oder Writerfreigabeausführung. Final V4 bleibt einzige produktive Schemaidentität; keine produktive Upgradekante und keine Startupintegration. Authentisierte dauerhafte Schreibfreigabe schließt automatischen Source-Rollback bereits vor dem ersten Write aus. Neue Zustände/Belege sind keine Produktcapabilities.
+
 ## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 Freigegeben: isolierter synthetischer Replayanker und Startup-Guard; keine Änderung des fachlichen Datenmodells. Alle Ergebnisse sind Klassifikation ohne Runtime-, First-Run-, Restore- oder Aktivierungsfreigabe. Keine produktive Upgradekante.

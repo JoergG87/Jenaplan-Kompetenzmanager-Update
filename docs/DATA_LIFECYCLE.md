@@ -1,5 +1,15 @@
 # Data Lifecycle
 
+## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
+
+A0 ergänzt ausschließlich reine Übergänge und synthetische authentisierte Persistenz. Vorbereitung bleibt PREFLIGHT → EXCLUSIVE → SOURCE_VERIFIED → BACKUP_VERIFIED → STAGED → MIGRATED → TARGET_VERIFIED. Danach ACTIVATION_PREPARED (Source/Backup/Candidate/Rollback vollständig gebunden) → ACTIVATION_INTENT (dauerhafte Absicht) → TARGET_INSTALLED (eigener exakter Austauschbeleg) → RESTART_CONFIRMED → RUNTIME_VERIFIED (Schema/Integrität/Keys/Fach-/Dokumentprüfung) → WRITES_ENABLED → COMPLETED. Erst die vorhandene Repository-Save/Load-Prüfung beweist Persistenz; ein In-Memory-Zustand ist keine Writerfreigabe. Jede Entscheidung bleibt ohne Produktrechte.
+
+ABORTED ist nur vor der Austauschabsicht zulässig. Ab ACTIVATION_INTENT und vor WRITES_ENABLED existiert getrennt ROLLBACK_INTENT → ROLLBACK_INSTALLED → ROLLED_BACK; niemals ABORTED als aktiver Rollback. Intent ist kein Austauschnachweis, Prozessstart kein Runtimeprüfnachweis. RECOVERY_REQUIRED bleibt terminal und erhält die gesamte Historie einschließlich Schreibgrenze. `source_rollback_forbidden` ist ein konservatives Verbot, keine Rollbackcapability; unbekannte/alte/ungültige Verträge sperren.
+
+Vor Schreibfreigabe muss Live exakt dem unveränderten geprüften Kandidaten entsprechen. Danach darf frische `UpgradeTargetInspection` veränderte Zielbytes/Dateiidentität belegen; maßgeblich sind Kontext, logische Artefaktidentität, exaktes Zielschema und vollständige Prüfung zusammen mit authentisierter Historie. Historische Kandidaten-/Rollbackbelege bleiben unverändert. Alle Klassifikationen und Guardflags erlauben weiterhin keine Runtime oder Aktivierung.
+
+Codec/CAS behalten eine Wahrheit: v1 wird identisch re-encodiert, v2 hat strikte versionierte Felder; kein Versionswechsel innerhalb einer Operation. Exakter Retry bleibt ohne neue Revision/Write. Anker-vor-Journal, blockierende Crashdiskrepanz und Retention unverändert; vollständiger konsistenter lokaler Artefaktrollback weiterhin nicht zuverlässig erkennbar. Kein Austausch, Checkpoint, produktiver Connection-Drain, Worker, Restart-Handoff, Startupintegration, historische Restoreaktivierung oder Migration in A0.
+
 ## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 Unter vorhandenem Runtime-/Writer-Lease: initial nur bei vollständig abwesenden Upgradeverzeichnissen; Anker atomar und dauerhaft vor Journal publizieren. Fortschreibung nur nach authentisiertem Gleichstand und exaktem Zustandsübergang. Jede Diskrepanz, fehlender Anker, Temp-Rest oder verwaistes Verzeichnis sperrt; keine Rekonstruktion, Bereinigung oder Reparatur. Dateirechte 0600, Verzeichnisse 0700, fsync Datei und Verzeichnis einschließlich Root nach Erstverzeichnisanlage. Identischer Aufruf prüft Gleichstand ohne Write.

@@ -1,5 +1,9 @@
 # Data Registry
 
+## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
+
+Einzige Operationswahrheit bleibt `schema-upgrade-foundation/journal.json` im synthetisch autorisierten Root, neue Datensätze als `schema-upgrade-v2`. Der vorhandene Replayanker bleibt formatunverändert und bindet den Digest der vollständigen authentisierten Journalbytes. v1 bleibt bytekompatibel lesbar und bis STAGED fortschreibbar; keine automatische Hochstufung und keine neue Aktivierungs-/Schreibautorität aus Altbelegen. Rollbackbeleg bindet über Receipt/Context Operation, Installation, Database-/DMK-/Database-Key-Kontext, Quellschema, eigene UUID/Device/Inode/Größe und SHA-256 der verschlüsselten Quellenbytes. Intent/Result/Restart/Inspection enthalten ausschließlich technische IDs, genaue Schemas, Artefaktbelege und explizite Prüfergebnisse; keine Schlüsselbytes, Pfadfreitexte oder Fachdatensätze. Keine echte Rollbackdatei oder neue produktive Datenquelle.
+
 ## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 `schema-upgrade-replay/anchor.json`: HMAC-authentisierter technischer High-Water-Mark im synthetischen Runtime-Root. Enthält nur Kontext-SHA256, Revision, Journal-SHA256. Keine Schlüsselbytes oder fachlichen Daten. Vorhandener Keychain-Security-Anker bleibt unverändert und ist nicht der Upgradeanker.

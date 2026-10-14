@@ -1,5 +1,9 @@
 # View Data Ownership
 
+## A0 – isolierte Aktivierungs- und Rollbackverträge – 14.10.2026
+
+Core besitzt A0-Zustands-, Receipt- und Verbotregeln ohne I/O. Security Infrastructure codiert/authentisiert/persistiert über vorhandenes Journal und Replayanker; Application behält ausschließlich vorhandene STAGED-Koordination und isolierte Guardklassifikation. Runtime/UI erhalten keine Ausführung oder neue Ansicht. Typed Inspection ist ein Vertrag für spätere unabhängige Verifier, kein in A0 implementierter Produktverifier.
+
 ## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 Keine neue Ansicht. UpgradeStartupGuard liefert isolierte Klassifikation an einen künftigen Startup-Integrationsport; keine Kandidatenauswahl oder UI-basierte Freigabe.
