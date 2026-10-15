@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## B1 – dauerhafte verschlüsselte Rollbackquelle – unveröffentlicht nach Build 404
+
+- Eigene private verschlüsselte Quellkopie mit eigenem Inode und Artefaktbeleg, unabhängig gebundenem Backup, tatsächlichem SQLCipher-Reopen und vollständigem typisiertem Inhaltsvergleich.
+- Exklusive atomare Publikation mit Datei-/Verzeichnis-fsync; unbekannte Teilkopien oder Rollbackreste bleiben erhalten und sperren. Keine Schlüsselrotation oder automatische Bereinigung.
+
 ## B1 – vollständiger Connection-Drain – unveröffentlicht nach Build 404
 
 - Gemeinsame Providerregistrierung für Reader, Writer, offene Transaktionen und Öffnungsreservierungen; Pfad-/Inodefreeze bleibt über die Aktivierungsentscheidung bestehen. Kontrollierter SQLCipher-Checkpoint und Sidecarprüfung ohne Bereinigung.
