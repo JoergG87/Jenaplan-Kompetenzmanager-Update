@@ -1,5 +1,13 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## B1/B2 – unveröffentlicht nach Build 404 – 15.10.2026
+
+Implementiert ist ein expliziter synthetischer Pfad bis TARGET_INSTALLED: gemeinsame physische Connectionregistrierung vor Provideröffnung, vollständiger Freeze mit kontrolliertem SQLCipher-Checkpoint, dauerhaft verschlüsselte Rollbackquelle und eine einzelne descriptorrelative atomare Main-Ersetzung. A0-Journal und Replayanker bleiben die einzige Zustandswahrheit. Keine C-Phase, produktive Upgradekante, Zielruntime, Writerfreigabe oder neue Schemaidentität. Final V4 und macOS 0.4.4 / Build 404 unverändert.
+
+Aktivierung verlangt eine bereits getrennt belegte TARGET_VERIFIED-Phase; die synthetische Zielprüfung erlaubt nur unveränderte vollständige Tabelleninhalte. Sie implementiert keine Transformation. Connection- und Inodesperren bleiben nach Kontextende erhalten; jeder Aktivierungsabschluss verlangt Recovery/C, auch bei Lockverlust. Vor Aktivierung unbekannte Reste werden weder übernommen noch bereinigt.
+
+Abnahme: 312 gezielte Tests ohne Skip bestanden (145,04 s), einschließlich fünf echten SIGKILL-Persistenzgrenzen und Fehlern an jedem privaten Verzeichnisvorfahren. Unabhängiges Abschlussreview nach Korrektur der vollständigen Fsynckette: P0 = 0, P1 = 0; dokumentierte P2-Nachweisgrenzen in DATA_LIFECYCLE und DECISIONS. Finale reguläre Produktsuite: `rtk proxy python3 -m pytest tests -q -rs` → 3170 bestanden, 104 unveränderte bestehende Skips, 120 bestandene Untertests, 487,52 s, Exit 0. Keine neue Skipregel oder Sicherheitsausnahme. Native Paket-/Lifecycle-/Recoveryfreigabe und C bleiben offen. Historische A2-Abnahme wird nicht wiederholt.
+
 A2-Nativabnahme, PO-Folgeauftrag 14.10.2026: verbleibende Testeinstiege werden profilgebunden korrigiert und anschließend mit frischer internal-test-App geprüft. A2 FINAL: NATIV ABGENOMMEN, UNVERÖFFENTLICHT (15.10.2026), Codecommit b6e3a0e81c8b8dbe5785ffe3146ea32c91aa8e24. Kein Produkt-/Pilotrelease oder Migrationsauftrag. Nachweise in docs/RELEASE_AUTOMATION.md.
 
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026

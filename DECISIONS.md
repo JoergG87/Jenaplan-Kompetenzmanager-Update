@@ -1,5 +1,17 @@
 # Architekturentscheidungen
 
+## B1/B2 – Connection-, Rollback- und Austauschgrenze – 15.10.2026
+
+Der PO-Auftrag wird als isolierter synthetischer Adapter umgesetzt. Bestehende RuntimeInstanceLock-, ObservationWriterLock-, Maintenance-, Journal-/Anker-, SQLCipher-, Backup- und Vollinhaltsprüfungen werden wiederverwendet. Kein neuer Lockdateipfad und keine produktive Schema-/Upgraderegistrierung.
+
+ConnectionDrain friert Provideröffnungen für Main, Companion, Kandidat und Rollback gemeinsam ein. Alle Providerinstanzen teilen registrierte Öffnungsreservierungen und tatsächlich geschlossene physische Handles; Inodealiase und nachträglich publizierte Rollbackinodes sind eingeschlossen. Writer-Maintenance allein ist kein Aktivierungsbeleg. Prüföffnungen bleiben registriert und standardmäßig query_only; ausschließlich der eng begrenzte Checkpointport öffnet unter Maintenance mit Schreibautorität. Privilegierte Adapter sind vertrauenswürdiger In-Process-Code, keine Sandbox gegen beliebigen Pythoncode.
+
+DurableUpgradeRollbackSource kopiert ausschließlich verschlüsselte V4-Quellbytes, prüft unabhängig das gebundene vollständige Backup, eigene UID/0600/nlink/Dateiidentität und tatsächliches keyed Reopen mit vollständigem typisiertem Tabellenvergleich. Eine native exklusive atomare Renamepublikation verhindert Überschreiben unbekannter Rollbackreste. Datei- und Eltern-fsyncs sind obligatorisch. Keine Hardlinks, Schlüsselrotation oder Bereinigung. Journalbindung erfolgt erst nach erfolgreicher dauerhafter Publikation über ACTIVATION_PREPARED.
+
+SyntheticUpgradeActivation persistiert ACTIVATION_PREPARED und ACTIVATION_INTENT über das bestehende HMAC-/CAS-/Replayankerpaar. Danach genau ein os.replace mit gebundenen Eltern-FDs; kein Quelle-weg-Rename, keine Copy/Delete-Alternative bei EXDEV. Identischer Kandidateninode am Mainpfad, erneute Bytebindung und fsync beider Eltern sind vor TARGET_INSTALLED erforderlich. Jede Unklarheit erhält Belege und Connectionfreeze; lokales RECOVERY_REQUIRED wird auch bei verlorener externer Lockautorität gesetzt, ohne dadurch Dateischreibautorität zu erlangen.
+
+Grenzen: POSIX advisory locks koordinieren autorisierte Appakteure; ein unsanktionierter gleichberechtigter Akteur kann zwischen letzter Identitätsprüfung und os.replace eingreifen. os.replace bietet keine kernelgestützte Inode-CAS-Garantie. Freigabe-/Wiedererwerbsgenerationen und aktuelle flock-Zeugen erkennen regulären Autoritätsverlust; absichtliches direktes Unlock/Relock zwischen Prüfungen bleibt historisch nicht beweisbar. fsync plus SIGKILL ist kein Nachweis vollständiger Stromausfallsicherheit. Vollständig konsistenter lokaler Rollback aller authentisierten Artefakte bleibt außerhalb des Replaymodells. C muss Recovery, Restart, Runtimeprüfung und Writerfreigabe gesondert implementieren und abnehmen. Keine Produkt-/Releasefreigabe.
+
 Interne A2-Nativabnahme (PO-Folgeauftrag 14.10.2026): ein profilgebundener Final-V4-Testeinstieg in der bestehenden Pipeline; keine Reaktivierung des ausgeschlossenen historischen Migrationssmokes. Der Hook erlaubt ausschließlich geschlossene native Testmodi, prüft Identität weiterhin vor jedem Prozess. Externe Runner erhalten explizite Profiloptionen und nutzen dieselbe Rootautorität; keine Bundlekopie oder Umbenennung zur Identitätsumgehung.
 
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026

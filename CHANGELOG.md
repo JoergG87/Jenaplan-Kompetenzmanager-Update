@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## B2 – isolierter synthetischer Main-Austausch – unveröffentlicht nach Build 404
+
+- Authentisierte A0-Phasen ACTIVATION_PREPARED → ACTIVATION_INTENT → TARGET_INSTALLED; exakt eine descriptorrelative atomare Main-Ersetzung mit erneuter Identitätsprüfung und Datei-/Eltern-fsyncs.
+- Fehler erhalten Belege, Connectionfreeze und Recoveryhalt. Keine C-Phase, Zielruntime, Writerfreigabe, produktive Upgradekante, Versionsänderung oder Veröffentlichung. Grenzen und finale Testnachweise in PROJECT, DECISIONS und DATA_LIFECYCLE.
+
 ## B1 – dauerhafte verschlüsselte Rollbackquelle – unveröffentlicht nach Build 404
 
 - Eigene private verschlüsselte Quellkopie mit eigenem Inode und Artefaktbeleg, unabhängig gebundenem Backup, tatsächlichem SQLCipher-Reopen und vollständigem typisiertem Inhaltsvergleich.
