@@ -126,11 +126,13 @@ def test_product_restore_creates_and_reverifies_restore_ready_before_handoff(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     service = _EncryptedService(tmp_path)
+    boundaries = []
     application = FinalV4EncryptedRestoreApplicationService(
         service,
         lock=object(),
         worker_launcher=object(),
         restore_id_provider=lambda: "restore-1",
+        before_handoff=lambda: boundaries.append("flushed"),
     )
     source = tmp_path / "pilot.jkmebackup"
     result = application.verify(VerifyRestoreBackupQuery(source))
@@ -154,6 +156,8 @@ def test_product_restore_creates_and_reverifies_restore_ready_before_handoff(
     launched: list[object] = []
 
     def prepare(**kwargs):
+        assert boundaries == ["flushed"]
+        boundaries.append("evidence_bound")
         prepared.append(kwargs)
         return preparation
 
@@ -175,8 +179,11 @@ def test_product_restore_creates_and_reverifies_restore_ready_before_handoff(
         )
     )
     assert observed is handoff
+    assert not application.handoff_transferred
     assert prepared[0]["staging_root"] == result.staging_root
     assert application.launch_prepared_restore(handoff) == "worker"
+    assert application.handoff_transferred
+    assert boundaries == ["flushed", "evidence_bound"]
     assert launched[0]["preparation"] is preparation
     assert launched[0]["launcher"] is application.worker_launcher
 

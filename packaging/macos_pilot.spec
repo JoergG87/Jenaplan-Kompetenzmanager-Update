@@ -174,7 +174,7 @@ a = Analysis(
         "nacl.bindings",
         "sqlcipher3",
         "sqlcipher3._sqlite3",
-    ],
+    ] + (["scripts.macos_native_acceptance"] if TEST_PROFILE is not None else []),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=([str(Path(TEST_PROFILE.build_root) / "internal_test_hook.py")]
@@ -188,7 +188,7 @@ a = Analysis(
         "src.security.integration_gate",
         "src.security.integration_orchestrator",
         "src.security.packaged_integration_smoke",
-    ],
+    ] + (["scripts.macos_native_acceptance"] if TEST_PROFILE is None else []),
     noarchive=False,
     optimize=1,
 )

@@ -15,6 +15,13 @@ from src.core.runtime_root_protection import inspect_runtime_root, RuntimeRootKi
 PRODUCT_BUNDLE_ID = "de.jenaplan.kompetenzmanager"
 PRODUCT_APP_NAME = "Jenaplan-Kompetenzmanager"
 SERVICES = ("data-master-key", "device-credential", "monotonic-security-anchor")
+NATIVE_TEST_MODES = frozenset({
+    "initialize", "restart", "restart-denied", "cleanup", "existing-keys", "matrix", "hold-lock", "acl-preflight",
+    "restore-worker", "restore-ready", "restore-parent-exit",
+    "restore-crash-before_swap", "restore-crash-between_main_and_companion",
+    "restore-crash-after_databases_before_documents", "restore-crash-during_documents",
+    "restore-crash-after_swap_before_reopen", "restore-crash-after_reopen",
+})
 
 
 def _reject():
@@ -216,10 +223,14 @@ def activate_test_identity(payload, *, arguments, environment):
 
 def _validate_arguments(profile, arguments):
     import argparse
+    if (len(arguments) == 2 and arguments[0] == "--internal-native-test"
+            and arguments[1] in NATIVE_TEST_MODES):
+        return
     if not arguments or arguments == ["--packaged-runtime-audit"]:
         return
     if (len(arguments) == 2 and arguments[0] == "--packaged-smoke-test"
-            and arguments[1] in {"initialize", "restart", "cleanup", "restore-worker"}):
+            and arguments[1] in {"initialize", "restart", "cleanup", "restore-worker",
+                                 "restore-ready", "restore-parent-exit"}):
         return
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
     parser.add_argument("--restore-worker", action="store_true")

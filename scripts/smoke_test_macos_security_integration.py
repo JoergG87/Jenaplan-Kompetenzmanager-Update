@@ -10,6 +10,11 @@ from pathlib import Path
 import subprocess
 import tempfile
 import uuid
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 APP_NAME = "Jenaplan-Kompetenzmanager"
@@ -21,7 +26,15 @@ CRASH_POINTS = (
 )
 
 
-def smoke_test(app_path: Path) -> dict[str, object]:
+def smoke_test(app_path: Path, *, test_profile: Path | None = None) -> dict[str, object]:
+    if test_profile is not None:
+        from scripts.macos_native_acceptance import run_profile
+        # Explicit Final-V4 suite. Historical migration and 4.12 expectations
+        # below remain confined to their original, excluded legacy test path.
+        result = run_profile(app_path, test_profile, "matrix", timeout=1200)
+        if result["returncode"] != 0:
+            raise RuntimeError("Native Final-V4-Abnahme nicht vollständig: " + json.dumps(result))
+        return result
     app_path = Path(app_path).resolve()
     executable = app_path / "Contents" / "MacOS" / APP_NAME
     if not executable.is_file():
@@ -166,10 +179,11 @@ def _snapshot(root: Path) -> dict[str, str]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("app", type=Path)
+    parser.add_argument("--test-profile", type=Path)
     args = parser.parse_args()
     print(
         json.dumps(
-            smoke_test(args.app),
+            smoke_test(args.app, test_profile=args.test_profile),
             ensure_ascii=False,
             indent=2,
             sort_keys=True,

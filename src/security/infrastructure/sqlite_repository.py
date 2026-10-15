@@ -258,11 +258,11 @@ class SQLiteSecurityRepository:
         if self._database_path.is_symlink() or not self._database_path.is_file():
             raise SecurityStoreError("security_store_missing")
         try:
-            with sqlite3.connect(
+            with closing(sqlite3.connect(
                 f"file:{self._database_path.resolve()}?mode=ro",
                 uri=True,
                 isolation_level=None,
-            ) as connection:
+            )) as connection:
                 connection.execute("PRAGMA query_only = ON")
                 application_id = int(
                     connection.execute("PRAGMA application_id").fetchone()[0]
@@ -276,6 +276,14 @@ class SQLiteSecurityRepository:
             raise SecurityStoreError("security_store_identity_invalid")
         if user_version != SECURITY_SCHEMA_VERSION:
             raise SecurityStoreError("security_store_version_invalid")
+
+    def checkpoint_truncate(self) -> None:
+        """Finish a successful writer lifecycle; never used by startup readers."""
+        self.require_current_read_only()
+        with closing(self._connect_write()) as connection:
+            result = connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+            if result is None or int(result[0]) != 0:
+                raise SecurityStoreError("security_store_checkpoint_busy")
 
     def inspect(self) -> tuple[int, int, str, AccountRecord]:
         if self._database_path.is_symlink():

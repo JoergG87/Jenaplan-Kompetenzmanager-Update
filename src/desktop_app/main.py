@@ -264,7 +264,13 @@ def _show_upgrade_startup_blocked(arguments: list[str], *, packaged_smoke: bool)
         from PySide6.QtWidgets import QApplication, QMessageBox
 
         app = QApplication.instance() or QApplication(arguments)
-        QMessageBox.critical(None, "Sicherer Start angehalten", message)
+        dialog = QMessageBox()
+        dialog.setOption(QMessageBox.Option.DontUseNativeDialog, True)
+        dialog.setIcon(QMessageBox.Icon.Critical)
+        dialog.setWindowTitle("Sicherer Start angehalten")
+        dialog.setText(message)
+        dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
+        dialog.exec()
 
 
 def _build_cipher_product_student_adapter(product_runtime):
@@ -315,6 +321,14 @@ def _require_authenticated_cipher_context(
 def main() -> int:
     """Start the desktop app."""
     arguments = list(sys.argv)
+    if "--internal-native-test" in arguments:
+        from src.core.macos_test_package_profile import test_identity
+        if test_identity() is None or not getattr(sys, "frozen", False):
+            print("Isolierter Teststart gesperrt.", file=sys.stderr)
+            return 2
+        # Dynamic import keeps this test-only module out of product bundles.
+        native = __import__("scripts.macos_native_acceptance", fromlist=["run_frozen"])
+        return native.run_frozen(arguments[2] if len(arguments) == 3 else "")
     if PACKAGED_RUNTIME_AUDIT_ARGUMENT in arguments:
         arguments.remove(PACKAGED_RUNTIME_AUDIT_ARGUMENT)
         return _run_packaged_runtime_audit()
@@ -653,6 +667,11 @@ def main() -> int:
         logging.getLogger("jenaplan.security").error(
             "fatal_security_error error_class=%s", type(error).__name__
         )
+        if packaged_smoke:
+            print("Security-Pakettest blockiert.", file=sys.stderr)
+            discard_pre_auth_security_logging(security_event_buffer)
+            lock.release()
+            return 1
         security_decision = SecurityStartupDecision(
             SecurityStartState.FATAL_SECURITY_ERROR,
             "SEC-FATAL_SECURITY_ERROR",
@@ -741,10 +760,12 @@ def main() -> int:
         encrypted_backup_application = FinalV4EncryptedBackupApplicationService(
             encrypted_backup_service
         )
+        from src.security.startup import finalize_security_runtime
         encrypted_restore_application = FinalV4EncryptedRestoreApplicationService(
             encrypted_backup_service,
             lock=lock,
             worker_launcher=DesktopFinalV4RestoreWorkerLauncher(),
+            before_handoff=lambda: finalize_security_runtime(security_runtime, paths, lock),
         )
         build_info = load_build_info()
         backup_restore_adapter = BackupRestoreDesktopAdapter(
@@ -796,6 +817,10 @@ def main() -> int:
             packaged_smoke=packaged_smoke,
         )
     except RuntimeStorageError as error:
+        if packaged_smoke:
+            print("Runtime-Pakettest blockiert.", file=sys.stderr)
+            lock.release()
+            return 1
         QMessageBox.critical(
             None,
             "App-Daten nicht zugänglich",
@@ -809,6 +834,10 @@ def main() -> int:
             error.code,
             error.operation.value,
         )
+        if packaged_smoke:
+            print(f"Cipher-Pakettest blockiert: {error.code}", file=sys.stderr)
+            lock.release()
+            return 4
         QMessageBox.critical(
             None,
             "Verschlüsselter Datenbestand nicht verfügbar",
@@ -819,6 +848,10 @@ def main() -> int:
         return 4
     except Exception as error:  # pragma: no cover - startup/platform feedback
         logging.exception("Die App konnte nicht initialisiert werden.")
+        if packaged_smoke:
+            print("Pakettest-Initialisierung blockiert.", file=sys.stderr)
+            lock.release()
+            return 1
         QMessageBox.critical(
             None,
             "App konnte nicht gestartet werden",
@@ -829,23 +862,32 @@ def main() -> int:
         return 1
 
     window.setWindowIcon(_app_icon())
+    from src.security.startup import finalize_security_runtime
     if packaged_smoke:
-        result = _run_packaged_smoke(
-            app,
-            window,
-            paths,
-            mode=str(packaged_smoke_mode),
-            product_runtime=product_runtime,
-            security_runtime=security_runtime,
-            backup_application=encrypted_backup_application,
-            restore_application=encrypted_restore_application,
-            login_authenticated=session is not None,
-        )
-        lock.release()
-        return result
+        try:
+            result = _run_packaged_smoke(
+                app,
+                window,
+                paths,
+                mode=str(packaged_smoke_mode),
+                product_runtime=product_runtime,
+                security_runtime=security_runtime,
+                backup_application=encrypted_backup_application,
+                restore_application=encrypted_restore_application,
+                login_authenticated=session is not None,
+            )
+            if (not encrypted_restore_application.handoff_transferred
+                    and packaged_smoke_mode != "restore-ready"):
+                finalize_security_runtime(security_runtime, paths, lock)
+            return result
+        finally:
+            lock.release()
     window.showMaximized()
     try:
-        return app.exec()
+        result = app.exec()
+        if not encrypted_restore_application.handoff_transferred:
+            finalize_security_runtime(security_runtime, paths, lock)
+        return result
     finally:
         lock.release()
 
@@ -954,7 +996,7 @@ def _run_packaged_smoke(
         "student_count": student_count,
         "window_title": window.windowTitle(),
     }
-    if mode == "restore-worker":
+    if mode in {"restore-worker", "restore-ready", "restore-parent-exit"}:
         backup_result = backup_application.create(
             CreateBackupCommand(
                 database_path=paths.final_v4_database,
@@ -982,8 +1024,24 @@ def _run_packaged_smoke(
                 str(build_info.get("source_tree_state", "dirty")),
             )
         )
+        if mode == "restore-ready":
+            restore_application._preparations[restore.restore_id].safety_backup.transfer_to_worker()
+            payload["restore"] = {"ready_state": "RESTORE_READY", "restore_id": restore.restore_id}
+            window.close()
+            app.processEvents()
+            print(json.dumps(payload, sort_keys=True), flush=True)
+            return 0
         plan = resolve_restore_worker_launch(paths.root)
         started = restore_application.launch_prepared_restore(handoff)
+        if mode == "restore-parent-exit":
+            from src.core.restore_runtime import _process_start_identity
+            payload["restore"] = {"worker_pid": started.process.pid, "restore_id": restore.restore_id,
+                                  "worker_start_identity": _process_start_identity(started.process.pid),
+                                  "parent_pid": os.getpid(),
+                                  "ready_state": "RESTORE_READY", "command_prefix": list(plan.command_prefix)}
+            print(json.dumps(payload, sort_keys=True), flush=True)
+            # Real parent death releases the lifetime pipe. Worker owns the handoff.
+            os._exit(0)
         try:
             state = RestoreJournal(
                 restore_transaction_paths(paths.root, restore.restore_id)

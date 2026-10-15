@@ -344,6 +344,7 @@ def product_main_ports(root, monkeypatch, store):
     application_factory.instance.return_value = app
     monkeypatch.setattr(widgets, "QApplication", application_factory)
     monkeypatch.setattr(widgets.QMessageBox, "critical", lambda *a: None)
+    monkeypatch.setattr(desktop_main, "_show_upgrade_startup_blocked", lambda *a, **k: None)
     monkeypatch.setattr(desktop_main.sys, "argv", ["app"])
     monkeypatch.setattr(desktop_main, "application_data_root", lambda: root)
     monkeypatch.setattr(desktop_main, "_app_icon", lambda: None)
@@ -585,15 +586,24 @@ def test_error_port_is_sanitized_and_offers_no_repair(monkeypatch):
     import PySide6.QtWidgets as widgets
     app = MagicMock()
     factory = MagicMock(); factory.instance.return_value = app
-    error_port = MagicMock()
+    message_box = widgets.QMessageBox
+    dialog = MagicMock()
+    error_port = MagicMock(return_value=dialog)
+    error_port.Option = message_box.Option
+    error_port.Icon = message_box.Icon
+    error_port.StandardButton = message_box.StandardButton
     monkeypatch.setattr(widgets, "QApplication", factory)
-    monkeypatch.setattr(widgets.QMessageBox, "critical", error_port)
+    monkeypatch.setattr(widgets, "QMessageBox", error_port)
     desktop_main._show_upgrade_startup_blocked(["app"], packaged_smoke=False)
     factory.assert_not_called()
-    error_port.assert_called_once()
-    assert error_port.call_args.args[1] == "Sicherer Start angehalten"
-    assert "Support" in error_port.call_args.args[2]
-    assert "Reparieren" not in error_port.call_args.args[2]
+    error_port.assert_called_once_with()
+    dialog.setOption.assert_called_once_with(message_box.Option.DontUseNativeDialog, True)
+    dialog.setIcon.assert_called_once_with(message_box.Icon.Critical)
+    dialog.setStandardButtons.assert_called_once_with(message_box.StandardButton.Ok)
+    dialog.setWindowTitle.assert_called_once_with("Sicherer Start angehalten")
+    assert "Support" in dialog.setText.call_args.args[0]
+    assert "Reparieren" not in dialog.setText.call_args.args[0]
+    dialog.exec.assert_called_once_with()
 
 
 def test_direct_confirm_entry_cannot_bypass_upgrade_guard(installation, monkeypatch):

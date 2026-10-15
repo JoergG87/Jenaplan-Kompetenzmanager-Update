@@ -143,3 +143,22 @@ def build_security_runtime(paths: SecurityRuntimePaths) -> SecurityRuntime:
 def legacy_installation_present(paths: SecurityRuntimePaths) -> bool:
     """Recognize an existing product runtime without opening its database."""
     return paths.database.is_file() or paths.documents.is_dir()
+
+
+def finalize_security_runtime(runtime: SecurityRuntime, paths, lock) -> None:
+    """Flush existing metadata only after successful runtime use, under its lock.
+
+    This is not a startup, recovery or repair port. Immutable readers keep
+    rejecting sidecars. No key is loaded, generated, rotated or rewrapped.
+    """
+    from src.security.upgrade_startup import ProductUpgradeStartupGuard
+    from src.security.database_key_runtime import DatabaseKeyRuntimePaths
+    from src.security.infrastructure.data_keyset_repository import SQLiteDataKeysetRepository
+
+    ProductUpgradeStartupGuard(lock)._require_lock()
+    expected = DatabaseKeyRuntimePaths.for_root(lock.runtime_root).keyset_metadata
+    if (runtime.repository.database_path != lock.runtime_root / "security/security.sqlite"
+            or Path(paths.keyset_metadata) != expected):
+        raise SecurityStoreError("security_runtime_finalize_context_invalid")
+    runtime.repository.checkpoint_truncate()
+    SQLiteDataKeysetRepository(expected, PlatformFilePermissionManager()).checkpoint_truncate()

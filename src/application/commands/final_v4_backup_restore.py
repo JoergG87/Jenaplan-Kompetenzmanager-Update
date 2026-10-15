@@ -117,11 +117,14 @@ class FinalV4EncryptedRestoreApplicationService:
         lock: RuntimeInstanceLock,
         worker_launcher: FinalV4RestoreWorkerLauncher,
         restore_id_provider: Callable[[], str] | None = None,
+        before_handoff: Callable[[], None] | None = None,
     ) -> None:
         self.service = service
         self.lock = lock
         self.worker_launcher = worker_launcher
         self._restore_id = restore_id_provider or (lambda: str(uuid.uuid4()))
+        self._before_handoff = before_handoff
+        self.handoff_transferred = False
         self._sessions: dict[str, FinalV4RestoreApplicationResult] = {}
         self._preparations: dict[str, FinalV4LiveRestorePreparation] = {}
 
@@ -224,6 +227,8 @@ class FinalV4EncryptedRestoreApplicationService:
             raise RuntimeError("cipher_restore_session_missing") from None
         session = self._reverify(session)
         try:
+            if self._before_handoff is not None:
+                self._before_handoff()
             preparation = prepare_final_v4_live_restore(
                 backup_service=self.service,
                 lock=self.lock,
@@ -257,11 +262,13 @@ class FinalV4EncryptedRestoreApplicationService:
         except KeyError:
             raise RuntimeError("cipher_restore_preparation_missing") from None
         try:
-            return launch_prepared_final_v4_restore(
+            started = launch_prepared_final_v4_restore(
                 preparation=preparation,
                 lock=self.lock,
                 launcher=self.worker_launcher,
             )
+            self.handoff_transferred = True
+            return started
         except Exception:
             raise FinalV4BackupRestoreApplicationError(
                 "worker_takeover_failed"

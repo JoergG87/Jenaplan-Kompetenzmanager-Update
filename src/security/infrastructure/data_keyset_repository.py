@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 import os
 from pathlib import Path
 import sqlite3
@@ -104,7 +104,7 @@ class SQLiteDataKeysetRepository:
         temporary = Path(name)
         self._permissions.secure_file(temporary)
         try:
-            with sqlite3.connect(temporary, isolation_level=None) as connection:
+            with closing(sqlite3.connect(temporary, isolation_level=None)) as connection:
                 connection.execute("PRAGMA journal_mode = DELETE")
                 connection.execute("PRAGMA synchronous = FULL")
                 connection.execute("BEGIN IMMEDIATE")
@@ -150,11 +150,11 @@ class SQLiteDataKeysetRepository:
             identity = (status.st_dev, status.st_ino)
             os.close(descriptor)
             descriptor = None
-            with sqlite3.connect(
+            with closing(sqlite3.connect(
                 f"file:{self._database_path.resolve()}?mode=ro", uri=True
-            ) as source:
+            )) as source:
                 source.execute("PRAGMA query_only = ON")
-                with sqlite3.connect(target, isolation_level=None) as snapshot:
+                with closing(sqlite3.connect(target, isolation_level=None)) as snapshot:
                     snapshot.execute("PRAGMA journal_mode = DELETE")
                     snapshot.execute("PRAGMA synchronous = FULL")
                     source.backup(snapshot)
@@ -179,7 +179,7 @@ class SQLiteDataKeysetRepository:
 
         self._validate_store()
         try:
-            with sqlite3.connect(self._database_path, timeout=5.0) as connection:
+            with closing(sqlite3.connect(self._database_path, timeout=5.0)) as connection:
                 result = connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
                 if result is not None and int(result[0]) != 0:
                     raise SecurityStoreError("data_keyset_checkpoint_busy")
@@ -352,9 +352,9 @@ class SQLiteDataKeysetRepository:
         if self._database_path.is_symlink() or not self._database_path.is_file():
             raise SecurityStoreError("data_keyset_store_missing")
         try:
-            with sqlite3.connect(
+            with closing(sqlite3.connect(
                 self._read_only_uri(), uri=True
-            ) as connection:
+            )) as connection:
                 connection.row_factory = sqlite3.Row
                 if int(connection.execute("PRAGMA application_id").fetchone()[0]) != _SQLITE_APPLICATION_ID:
                     raise SecurityStoreError("data_keyset_store_identity_invalid")

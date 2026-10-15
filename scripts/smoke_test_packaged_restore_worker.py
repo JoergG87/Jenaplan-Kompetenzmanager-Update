@@ -20,7 +20,17 @@ from src.core.runtime_root_protection import prepare_synthetic_test_root
 APP_NAME = "Jenaplan-Kompetenzmanager"
 
 
-def smoke_test(app_path: Path) -> dict[str, object]:
+def smoke_test(app_path: Path, *, test_profile: Path | None = None) -> dict[str, object]:
+    if test_profile is not None:
+        from scripts.macos_native_acceptance import run_profile
+        results = {}
+        for mode in ("existing-keys", "restore-worker", "restart"):
+            result = run_profile(app_path, test_profile, mode)
+            if result["returncode"] != 0:
+                raise RuntimeError("Profilgebundener Restore-Smoke blockiert: " + json.dumps(result))
+            results[mode] = result
+        # The shared native matrix owns final cleanup, never this existing-only runner.
+        return {"status": "ok", "profile_bound": True, "results": results}
     app = Path(app_path).expanduser().resolve(strict=True)
     executable = app / "Contents" / "MacOS" / APP_NAME
     if not executable.is_file() or not os.access(executable, os.X_OK):
@@ -75,8 +85,9 @@ def main() -> int:
         description="Smoke-Test für den gebündelten Final-V4-Restore-Worker"
     )
     parser.add_argument("app", type=Path)
+    parser.add_argument("--test-profile", type=Path)
     args = parser.parse_args()
-    print(json.dumps(smoke_test(args.app), indent=2, sort_keys=True))
+    print(json.dumps(smoke_test(args.app, test_profile=args.test_profile), indent=2, sort_keys=True))
     return 0
 
 
