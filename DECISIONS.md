@@ -1,5 +1,26 @@
 # Architekturentscheidungen
 
+## Entscheidung: Einzeldatei-SQLCipher-Transaktion statt Upgrade-Dateiaustausch – 15.10.2026
+
+Der PO eröffnet ausdrücklich einen neuen angemessenen Bedrohungsrahmen. Weg B wird gewählt. A benötigt externe Journal-/Ankerzustände, Kandidaten-/Rollbackdateien, Austauschintention und mehrere Neustart-/Writerfreigaben; die bestätigte Lease-Kontinuitätslücke plus Journalmutation nach Lockverlust bleiben P1. Ein eigener NOTE_FUNLOCK-Monitor würde weiter neue Lifecycle- und Mutationsgrenzen erzeugen. B übernimmt Atomizität für DDL, Daten und user_version direkt von SQLite; vollständiges bestehendes .jkmebackup sichert die Installation vorher unabhängig. Die bestehende Datenbank wird nie ersetzt; Schlüssel, Companion und Managed Documents bleiben identisch. Weniger eigener Recoverycode und kein verteilter Commit. Aufwand und Wartbarkeit sprechen für B, sofern echte Cipher-/Crashnachweise erfolgreich sind.
+
+| Aspekt | A: Dateiaustausch | B: gewählte Transaktion |
+|---|---|---|
+| Datensicherheit/Crash | externe Zustandskoordination; zwei bestätigte P1 | SQLite-Journal: vollständige Quelle oder vollständiges Ziel, zusätzlicher Vollbackupvergleich |
+| Grenzen | mehrere Dateien und Phasen | ausschließlich Main, feste DDL/DML, keine Companion-/Keymutation |
+| WAL/Busy | Checkpoint-/Austauschdrain nötig | erster Schritt verlangt sidecarfreies DELETE; SQLite EXCLUSIVE verweigert Konkurrenz |
+| Komplexität | eigene Aktivierungs-/Recoveryautorität | bestehende Wartung + Backup + eine Transaktion + Vollprüfung nach Restart |
+| Backup/Restore | Ziel trotzdem neu zu qualifizieren | V4-Quellbackup unverändert wiederverwendet; Zielbackup/-restore weiterhin Produktgate |
+| Alte App | unbekanntes Schema abweisen | bestehende exakte V4-Policy weist V5 ab, ohne First Run |
+| Stundenplan | Migrationstechnik unabhängig vom Modell | additive Zeitvorlagen zuerst; kind/Mehrfachfach-Linkmodell gesondert, A/B später |
+
+SQLite-Garantien: https://sqlite.org/lang_transaction.html, https://sqlite.org/atomiccommit.html, https://sqlite.org/pragma.html#pragma_synchronous, https://sqlite.org/wal.html; SQLCipher-Seiten und Journale: https://www.zetetic.net/sqlcipher/design/. BEGIN EXCLUSIVE sperrt im DELETE-Modus Leser/Writer; im WAL-Modus wäre es nur IMMEDIATE, deshalb kein WAL-Migrationsbetrieb. DDL und user_version werden explizit transaktional ausgeführt; kein Python executescript. Fehler können nur die letzte Anweisung zurückrollen, deshalb expliziter vollständiger ROLLBACK im Fehlerpfad. Commitfehler bleiben unklar bis keyed Neustartprüfung. FULL/EXTRA/fullfsync beruhen auf funktionierender OS-/Speicherhardware; SIGKILL ist kein echter Stromausfalltest.
+
+Die ursprünglichen P1-Nachweise und nachstehenden historischen Vertragsstände bleiben erhalten. Öffentliche alte APIs werden dauerhaft ablehnend; ihre ausführbaren historischen Implementierungen existieren nur im Testarchiv. Kein produktiver Import des Archivs und keine Aktivierungsautorität aus alten Codecs oder Phasen. A0-Klassifikation, A2-Startupveto, Registry, Backupverifikation, keyed reopen, typisierter Datenvergleich und vorhandener ConnectionDrain bleiben nützlich. C1–C3 entfallen für diesen Weg und werden nicht implementiert.
+
+Reviewabschluss: Die neue feste synthetische Maintransaktion hat keinen konkreten offenen P0/P1/P2 im unabhängig geprüften Umfang. Der anfänglich fehlende fsync der Backupvorfahren wurde vor Testabschluss korrigiert. Das ist keine produktive Schemaaktivierungsfreigabe. Historische P1 bestehen im Testarchiv als Gegenbelege weiter; src enthält dafür ausschließlich terminal ablehnende Ausführungseinstiege und reine in-memory Lesecodecs. Produktbackup/Restore bleiben V4-only; die Vollsicherung des Quellbestands ist auch nach synthetischem Zielcommit als RESTORE_READY geprüft, aber ein Live-Restore über eine bereits produktiv genutzte Zielversion ist damit ausdrücklich nicht freigegeben.
+
+
 ## B1/B2 – Connection-, Rollback- und Austauschgrenze – 15.10.2026
 
 Der PO-Auftrag wird als isolierter synthetischer Adapter umgesetzt. Bestehende RuntimeInstanceLock-, ObservationWriterLock-, Maintenance-, Journal-/Anker-, SQLCipher-, Backup- und Vollinhaltsprüfungen werden wiederverwendet. Kein neuer Lockdateipfad und keine produktive Schema-/Upgraderegistrierung.

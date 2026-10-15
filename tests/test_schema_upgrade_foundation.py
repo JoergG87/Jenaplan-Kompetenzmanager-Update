@@ -21,9 +21,9 @@ from src.core.schema_upgrade import (UpgradeContext, UpgradePhase, UpgradeArtifa
     UpgradeState, UpgradeError, UpgradeRecoveryStatus, new_upgrade_state, advance_upgrade,
     classify_upgrade, validate_upgrade_state, UpgradeExchangeIntent, UpgradeExchangeResult,
     UpgradeRestartReceipt, UpgradeTargetInspection)
-from src.application.commands.schema_upgrade import UpgradeMaintenance
-from src.security.infrastructure.upgrade_process_lease import UpgradeProcessLease
-from src.security.infrastructure.upgrade_journal_repository import AuthenticatedUpgradeJournalRepository
+from tests.historical_upgrade.schema_upgrade import UpgradeMaintenance
+from tests.historical_upgrade.upgrade_process_lease import UpgradeProcessLease
+from tests.historical_upgrade.upgrade_journal_repository import AuthenticatedUpgradeJournalRepository
 from src.security.infrastructure.migration_journal_repository import MigrationJournalError
 from src.security.infrastructure.system import PlatformFilePermissionManager
 from src.security.database_keys import derive_migration_journal_auth_key

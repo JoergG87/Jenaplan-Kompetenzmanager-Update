@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Transaktionale Migration / Unterrichtszeitvorlagen – unveröffentlicht nach Build 404
+
+- Entscheidung für eine einzelne SQLCipher-Transaktion mit vollständigem vorherigem verschlüsseltem V4-Backup; synthetisches additives Ziel und isolierte Zeitvorlagen-Fachfunktion, ohne Produktmigration oder Versionserhöhung.
+- Alte Dateiaustausch-/Lease-/Journal-Schreib-APIs dauerhaft stillgelegt; historische Implementierungen und P1-Nachweise im Testarchiv erhalten. A2 und produktiver V4-Backup-/Restorepfad bleiben erhalten.
+- Echter SQLCipher-/SIGKILL-Nachweis: 66 gezielte Prüfungen ohne Skip; reguläre Produktsuite 3236 bestanden, 104 bestehende Skips und 120 bestandene Untertests. Zusätzlicher Lauf bestehender Backup-/Live-Restore-/Runtime-/Supportresettests mit echtem qualifiziertem 4.17-Wheel: 88 bestanden, sechs bestehende explizite Keychain-Gates. Unabhängiger Review ohne offene konkrete P0/P1/P2 im isolierten Implementierungsumfang; produktive Migration bleibt gesperrt.
+
 ## B2 – isolierter synthetischer Main-Austausch – unveröffentlicht nach Build 404
 
 - Authentisierte A0-Phasen ACTIVATION_PREPARED → ACTIVATION_INTENT → TARGET_INSTALLED; exakt eine descriptorrelative atomare Main-Ersetzung mit erneuter Identitätsprüfung und Datei-/Eltern-fsyncs.

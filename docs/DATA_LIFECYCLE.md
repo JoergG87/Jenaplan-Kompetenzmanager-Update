@@ -1,5 +1,25 @@
 # Data Lifecycle
 
+## Gewählter Transaktionspfad – 15.10.2026
+
+Synthetic-only precondition before any I/O mutation: canonical marked system-temporary synthetic installation, existing keyed V4 service and exact qualified 4.17 provider. Acquire existing RuntimeInstanceLock (no inheritance/handoff), activate the existing maintenance gate and ObservationWriterLock. Reject all initial main/Companion WAL/SHM/journal sidecars without checkpoint or cleanup. Verify exact V4 read-only, complete typed table evidence, domain references, companion/document inventory and crossbindings; publish full .jkmebackup and independently extract/open/check it. Sync the full new backup directory chain through the runtime root and request macOS F_FULLFSYNC on the published backup before BEGIN. Freeze/close all own physical main/Companion connections with existing ConnectionDrain. Open existing keyed main create=False; verify DELETE, synchronous=EXTRA, fullfsync=ON on Darwin, FK=ON, memory temp store and cipher provider. BEGIN EXCLUSIVE; recheck exact source and full content against verified backup; execute fixed additive DDL; compare all historical rows, check target and FK integrity; set user_version in the same transaction; COMMIT. No executescript, VACUUM, rekey, ATTACH, implicit commit or file exchange. Roll back explicitly on any exception; retain evidence and maintenance freeze on every terminal outcome, require process restart.
+
+Restart inspection is a separate synthetic-only existing-file keyed open. SQLite performs its own hot-journal recovery; then classify only exact registered source OR exact registered target, with full integrity and complete source-row comparison against independently reverified backup. An unsynced non-hot rollback journal can remain after a pre-commit SIGKILL; preserve it, report only schema/content classification, never runtime admission. A hot journal is recovered exclusively by SQLite. No reexecution, downgrade, First Run, cleanup or product admission. Initial WAL is deliberately refused: the current application uses DELETE; busy readers/writers fail without retrying migration. Separate real tests exercise WAL checkpoint busy/success and hot rollback recovery. SIGKILL tests establish process-crash behavior; physical power loss is not experimentally proved. Durability depends on SQLite VFS/OS/storage honoring flush and journal semantics, with EXTRA directory sync and macOS fullfsync requested and checked.
+
+The old two P1 are treated by permanent retirement of public mutation authority, retaining original implementations and original counterexamples as historical test evidence. Nine active negative regressions retain real direct/fork/foreign-holder/anchor-boundary scenarios and now require the retired public API to reject all mutation/admission. A2 continues to classify and veto historical evidence read-only. Product restore remains unchanged and V4-only. No automatic source restore after target use.
+
+Crashmatrix des nativen Nachweises:
+
+| SIGKILL-Grenze | Keyed Neustartbefund |
+|---|---|
+| nach BEGIN EXCLUSIVE | exakt V4, vollständige historische Inhalte |
+| nach DDL / Zielprüfung / unmittelbar vor COMMIT | exakt V4; SQLite kann ein nicht heißes Journal mit Nullheader erhalten, keine eigene Bereinigung |
+| nativer VFS vor tatsächlichem Journal-Delete, Main bereits verändert | heißes Cipherjournal; SQLite stellt vollständiges V4 wieder her |
+| nativer VFS nach echtem Journal-Delete, nach COMMIT, nach Close | exakt synthetisches V5, vollständige V4-Inhalte plus leere Vorlagentabelle |
+
+Alle Fälle halten Main-Inode, Schlüsselmaterial/-generationen, Envelope-/Keysetdateien, Companion und Dokumentcontainer stabil. Der Test-VFS beobachtet nur den unveränderten realen xDelete und pausiert den Testprozess; keine Ersatz-I/O, simulierten Erfolgscodes oder Kryptografiemocks. Kein Stromausfallgerätetest. Initiale WAL-/SHM-/Journalreste werden nicht automatisch checkpointed/entfernt; ein getrenntes echtes WAL-Experiment belegt SQLITE_BUSY bei festgehaltenem Reader und erfolgreichen TRUNCATE nach dessen Ende. Busy EXCLUSIVE führt nicht zum Wiederholen einzelner DDL. Unbekannte oder fehlende Quellen, bestehende Restoreevidenz und erneute Aufträge werden ohne Initialisierung abgewiesen.
+
+
 ## B1/B2 – tatsächliche Persistenz- und Recoverygrenze – 15.10.2026
 
 ConnectionDrain muss unter aktiver Upgrade-Maintenance und bestehender Runtime-/Writerlease betreten werden. Neue Provideröffnungen sind danach für Main, Companion, Kandidat und Rollback blockiert, auch über andere Factoryinstanzen oder Inodealiase. Laufende Reader/Writer/Transaktionen müssen sich geordnet schließen; Timeout blockiert ohne Zwangscommit. Checkpoint verlangt eine registrierte Verbindung exakt zur verlangten Runtime-Datei, fehlerfreie TRUNCATE-Rückmeldung und anschließend nachweisbares Close. WAL/SHM/Journalreste bleiben erhalten und sperren; unerwartete Pfadfehler werden nicht als Abwesenheit behandelt. Kontextende gibt die Sperre nicht frei. Expliziter sicherer Abbruch benötigt weiterhin gültige Autorität; B2 selbst bietet keine Freigabe.

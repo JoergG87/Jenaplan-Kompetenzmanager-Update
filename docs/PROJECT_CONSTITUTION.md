@@ -1,5 +1,11 @@
 # Project Constitution
 
+## Transaktionale Schemaumstellung – PO-Auftrag 15.10.2026
+
+Dieser spätere PO-Auftrag ersetzt den blockierten Versuch einer ununterbrochenen, nicht übertragbaren Upgrade-Lockautorität. Gewählt ist eine kleine SQLCipher-Einzeldateitransaktion mit vorherigem vollständig verschlüsseltem und unabhängig geprüftem V4-Vollbackup. Der Bedrohungsrahmen umfasst normale konkurrierende Appinstanzen, Crash, SQL-Fehler, beschädigte Daten, falsche Schlüssel und Benutzerfehler. Kompromittierte gleichberechtigte Prozesse, absichtliche Kernel-Lockmanipulation und vollständiger lokaler Dateisystemrollback werden nicht als beherrschbar behauptet. Die bestätigten beiden P1 bleiben historische Befunde; ihre Dateiaustausch-/Journal-Schreib-APIs werden aus dem Produktcode entfernt und durch dauerhaft ablehnende Einstiege ersetzt. Historische Implementierungen sind ausschließlich unter tests/historical_upgrade zulässig und dürfen aus src oder Produktpaketen nicht importiert werden.
+
+Freigegeben sind synthetische verschlüsselte Migration und als erster abgeschlossener Fachschritt globale Unterrichtszeitvorlagen. Produktregistry, Produktstartup, Final V4, Version und Build 404 bleiben unverändert. Ein bewusst exakt registriertes synthetisches V5 ergänzt ausschließlich lesson_time_templates. Keine produktive Upgradekante, Zielruntime oder Migration vor vollständigem Zielbackup-/Restorevertrag. Stammgruppenstunden und Mehrfachfächer bleiben nächste fachliche Modellschritte; A/B-Wochen fachlich offen.
+
 ## B1/B2 – PO-Auftrag 15.10.2026
 
 Freigegeben sind vollständiger Connection-Drain, dauerhafte verschlüsselte Rollbackquelle und isolierter atomarer Main-Austausch ausschließlich in autorisierten synthetischen Installationen. Grenze TARGET_INSTALLED; keine C-Phase, produktive Upgradekante, neue Schemaidentität, Schlüsselrotation oder Releasefreigabe. Final V4 und Build 404 bleiben unverändert.

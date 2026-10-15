@@ -10,8 +10,8 @@ import multiprocessing
 from uuid import uuid4
 import pytest
 
-from src.application.commands.schema_upgrade import UpgradeMaintenance
-from src.application.commands.prepare_upgrade_source import PrepareEncryptedUpgradeSource
+from tests.historical_upgrade.schema_upgrade import UpgradeMaintenance
+from tests.historical_upgrade.prepare_upgrade_source import PrepareEncryptedUpgradeSource
 from src.core.database_compatibility import DatabaseCompatibilityInspector
 from src.core.maintenance_gate import ConnectionDrain, MaintenanceState, MaintenanceGateError
 from src.core.restore_runtime import RuntimeInstanceLock
@@ -20,11 +20,11 @@ from src.core.schema_registry import (DatabaseSchemaRegistry, SchemaRegistration
 from src.core.schema_upgrade import UpgradeContext, UpgradeEvidence, UpgradePhase, UpgradeError, advance_upgrade
 from src.security.database_keys import derive_migration_journal_auth_key
 from src.security.infrastructure.system import PlatformFilePermissionManager
-from src.security.infrastructure.upgrade_process_lease import UpgradeProcessLease
-from src.security.infrastructure.upgrade_journal_repository import AuthenticatedUpgradeJournalRepository
-from src.security.infrastructure.encrypted_upgrade_source import EncryptedUpgradeSourceAdapter
-from src.security.infrastructure.upgrade_rollback_source import DurableUpgradeRollbackSource
-from src.security.infrastructure.upgrade_atomic_activation import SyntheticUpgradeActivation, PinnedUpgradeFiles
+from tests.historical_upgrade.upgrade_process_lease import UpgradeProcessLease
+from tests.historical_upgrade.upgrade_journal_repository import AuthenticatedUpgradeJournalRepository
+from tests.historical_upgrade.encrypted_upgrade_source import EncryptedUpgradeSourceAdapter
+from tests.historical_upgrade.upgrade_rollback_source import DurableUpgradeRollbackSource
+from tests.historical_upgrade.upgrade_atomic_activation import SyntheticUpgradeActivation, PinnedUpgradeFiles
 from tests.test_encrypted_upgrade_source import _open_case, _hash
 
 

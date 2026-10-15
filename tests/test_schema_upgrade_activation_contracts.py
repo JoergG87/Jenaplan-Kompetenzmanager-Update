@@ -15,10 +15,10 @@ from src.core.schema_upgrade import (
     new_upgrade_state, source_rollback_forbidden, validate_upgrade_state,
 )
 from src.core.schema_registry import PRODUCT_SCHEMA_REGISTRY, FINAL_V4_SCHEMA_REGISTRATION
-from src.application.commands.schema_upgrade import UpgradeMaintenance
+from tests.historical_upgrade.schema_upgrade import UpgradeMaintenance
 from src.application.commands.upgrade_startup_guard import UpgradeStartupGuard
 from src.core.maintenance_gate import MaintenanceGate
-from src.security.infrastructure.upgrade_journal_repository import AuthenticatedUpgradeJournalRepository
+from tests.historical_upgrade.upgrade_journal_repository import AuthenticatedUpgradeJournalRepository
 from src.security.infrastructure.migration_journal_repository import MigrationJournalError
 from tests.test_schema_upgrade_foundation import (
     context, registry, full_states, receipt, artifact, setup_runtime, repository, auth_key,

@@ -1,5 +1,14 @@
 # Data Registry
 
+## Synthetisches Ziel für Unterrichtszeitvorlagen – 15.10.2026
+
+lesson_time_templates: lesson_number INTEGER primary key (>0), start_time TEXT and end_time TEXT (canonical HH:MM, start < end). Source of truth is the encrypted main database, never AppPreferences or plaintext settings. Only isolated synthetic V5 registers this additive schema; all V4 tables/columns/rows remain identical. Existing timetable_entries stores actual copied times independently, with its real single subject_id unchanged. No invented subject or duplicated observation. Future organizational lessons require explicit kind and zero actual subjects; combined lessons require a link table to actual subjects and one observation subject. These are pending model work, not implemented schema.
+
+source.jkmebackup is retained under schema-upgrade-source/transaction-v1; existing A2 inventory blocks all such evidence. No new upgrade journal, replay anchor, key, Companion or document container is created by the migration. SQLite's encrypted rollback journal is the transaction authority. Historic A0/B1/B2 implementations move to tests/historical_upgrade; only authenticated read codecs stay in src.
+
+Exakte synthetische Zielidentität: user_version=5, Fingerprint 21f9af621c54a31e476161a6ee8c916bfd248acbd8d443bed979d27d67f9d1af, sqlite-schema-canonical-json-sha256-v1. SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION besitzt keine Runtime-/historische Produktzulassung; ausschließlich SYNTHETIC_LESSON_TIMES_REGISTRY kennt die V4→synthetic-V5-Testkante. PRODUCT_SCHEMA_REGISTRY unverändert.
+
+
 ## B1/B2 – Datenverträge 15.10.2026
 
 Keine fachliche Datenquelle oder Schemaänderung. Flüchtige Connection-Registrierung dient ausschließlich Öffnungssperre und belegtem Close. Die Rollbackdatei ist eine getrennte private verschlüsselte Kopie der unabhängig geprüften V4-Quelle mit eigener Datei- und Artefaktidentität. Quelle, geprüftes Quellenbackup, Kandidat und Rollback werden an den vollständigen UpgradeContext und das authentisierte Journal-/Ankerpaar gebunden. Unbekannte Reste bleiben sperrende Evidenz.

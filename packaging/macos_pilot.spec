@@ -180,6 +180,8 @@ a = Analysis(
     runtime_hooks=([str(Path(TEST_PROFILE.build_root) / "internal_test_hook.py")]
                    if TEST_PROFILE is not None else []),
     excludes=[
+        "tests.historical_upgrade",  # Retired unsafe execution must never ship.
+        "tests.helpers.sqlcipher_commit_probe",
         "numpy",
         "pandas",
         "PySide6.QtMultimedia",

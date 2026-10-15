@@ -6,7 +6,7 @@ from src.core.restore_runtime import RuntimeInstanceLock
 from src.core.runtime_root_protection import prepare_synthetic_test_root
 from src.core.schema_registry import FINAL_V4_SCHEMA_REGISTRATION
 from src.core.schema_upgrade import UpgradeContext, UpgradeError
-from src.security.infrastructure.upgrade_process_lease import UpgradeProcessLease
+from tests.historical_upgrade.upgrade_process_lease import UpgradeProcessLease
 
 
 def context():

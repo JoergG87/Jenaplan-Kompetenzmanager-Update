@@ -1,5 +1,12 @@
 # Technical Naming Registry
 
+## Transaktionale Migration und Unterrichtszeitvorlagen – 15.10.2026
+
+Core: LessonTimeTemplate, LessonTimeTemplateRepository, LessonTimeTemplateService, LessonTimeTemplateError; encrypted SQLite adapter SQLiteLessonTimeTemplateRepository; schema source LESSON_TIME_TEMPLATE_STATEMENT and SYNTHETIC_LESSON_TIMES_REGISTRY (test-only admission, no product edge). Security: SyntheticTransactionalMigration with execute and inspect_restart; verify_timetable_source_references; UpgradeJournalCodec and UpgradeReplayCodec (historical read-only authenticated codecs). RetiredUpgradeAPI rejects every former exchange/lease/journal write entry with upgrade_file_exchange_retired. No production lock-continuity authority remains. No new UI names. ConnectionDrain.synthetic_transaction_connection is an explicit single writable synthetic main connection; all ordinary maintenance opens remain query-only. SQLCipherCommitProbe is a test-only native VFS observer, never product code.
+
+SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION bindet das exakte user_version-/Fingerprinttripel des additiven Testschemas. _sync_backup_chain ist die private vollständige Backupverzeichnis-Synchronisierung vor der Maintransaktion. SQLCipherCommitProbe gehört ausschließlich zum Testhelper; Packaging-excludes tests.historical_upgrade und tests.helpers.sqlcipher_commit_probe verhindern Auslieferung historischer Mutation beziehungsweise nativer Testbeobachter.
+
+
 ## B1/B2 – implementierte technische Namen – 15.10.2026
 
 - `ConnectionDrain`: expliziter physischer Connectionfreeze mit exakter Maintenance-/Owner-/Pfadbindung, Runtimecheckpointpflicht und dauerhafter Öffnungssperre.

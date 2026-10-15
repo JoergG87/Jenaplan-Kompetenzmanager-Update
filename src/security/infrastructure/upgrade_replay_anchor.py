@@ -14,40 +14,13 @@ class UpgradeReplayAnchor:
     journal_sha256: str
 
 
-class UpgradeReplayAnchorRepository(AuthenticatedMigrationJournalRepository):
-    def __init__(self, permissions, lease, context):
-        super().__init__(lease.lock.runtime_root / "schema-upgrade-replay" / "anchor.json", permissions)
-        self.lease, self.context = lease, context
+from src.core.retired_upgrade import RetiredUpgradeAPI
 
-    def _require(self):
-        self.lease.require_owner(self.context)
-        if self.path != self.lease.lock.runtime_root / "schema-upgrade-replay" / "anchor.json":
-            raise UpgradeError("upgrade_anchor_path_invalid")
 
-    def create(self, state, auth_key):
-        self._require()
-        return super().create(state, auth_key)
-
-    def load(self, auth_key):
-        self._require()
-        return super().load(auth_key)
-
-    def load_with_digest(self, auth_key):
-        self._require()
-        return super().load_with_digest(auth_key)
-
-    def save(self, expected, replacement, auth_key):
-        self._require()
-        if (expected.context_sha256 != replacement.context_sha256
-                or expected.journal_sha256 == replacement.journal_sha256):
-            raise UpgradeError("upgrade_anchor_transition_invalid")
-        return super().save(expected, replacement, auth_key)
-
-    def delete_completed(self, *args, **kwargs):
-        raise UpgradeError("upgrade_anchor_retention_required")
-
-    def peek_context(self):
-        raise UpgradeError("upgrade_anchor_authentication_required")
+class UpgradeReplayCodec:
+    _encode = classmethod(AuthenticatedMigrationJournalRepository._encode.__func__)
+    _decode = classmethod(AuthenticatedMigrationJournalRepository._decode.__func__)
+    _validate_auth_key = staticmethod(AuthenticatedMigrationJournalRepository._validate_auth_key)
 
     @staticmethod
     def _validate_state(state):
@@ -76,3 +49,7 @@ class UpgradeReplayAnchorRepository(AuthenticatedMigrationJournalRepository):
     def for_journal(state, digest):
         context = json.dumps(asdict(state.context), sort_keys=True, separators=(",", ":")).encode("ascii")
         return UpgradeReplayAnchor(hashlib.sha256(context).hexdigest(), state.revision, digest)
+
+
+class UpgradeReplayAnchorRepository(RetiredUpgradeAPI, UpgradeReplayCodec):
+    """Compatibility name: no filesystem authority."""

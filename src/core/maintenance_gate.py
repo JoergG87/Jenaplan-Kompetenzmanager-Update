@@ -842,6 +842,33 @@ class ConnectionDrain:
         self._checkpointed.add(key)
         self._require_no_sidecars()
 
+    @contextmanager
+    def synthetic_transaction_connection(self, path, opener):
+        """One explicitly writable main connection for the synthetic SQL spike.
+
+        Ordinary maintenance opens remain query-only. Never grants a product
+        root, companion, inherited lease or file-exchange write capability.
+        """
+        from contextlib import closing
+        from pathlib import Path
+        from .runtime_root_protection import require_mutable_test_root, RuntimeRootKind
+        path = Path(path)
+        expected = path.parent.parent / "final-v4-sqlcipher-runtime-v1" / "final-v4.sqlcipher"
+        protection = require_mutable_test_root(path.parent.parent)
+        if (path != expected or _connection_path(path) not in self._runtime_keys
+                or protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST):
+            raise MaintenanceGateError("transaction_synthetic_main_required")
+        with self.maintenance_connections():
+            with closing(opener()) as connection:
+                if (not isinstance(connection, RegisteredConnection)
+                        or connection._registered_path != _connection_path(path)
+                        or connection.in_transaction):
+                    raise MaintenanceGateError("transaction_connection_mismatch")
+                connection.execute("PRAGMA query_only=OFF")
+                if connection.execute("PRAGMA query_only").fetchone()[0] != 0:
+                    raise MaintenanceGateError("transaction_connection_read_only")
+                yield connection
+
     def _require_no_sidecars(self):
         from pathlib import Path
         for path in self.paths:

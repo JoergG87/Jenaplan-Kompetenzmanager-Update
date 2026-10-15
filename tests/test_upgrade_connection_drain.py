@@ -320,8 +320,8 @@ def test_competing_maintenance_operation_blocks_upgrade(setup, purpose):
 
 def test_actual_parallel_encrypted_backup_blocks_upgrade(tmp_path):
     from tests.test_encrypted_upgrade_source import _open_case, _context
-    from src.application.commands.schema_upgrade import UpgradeMaintenance
-    from src.security.infrastructure.upgrade_process_lease import UpgradeProcessLease
+    from tests.historical_upgrade.schema_upgrade import UpgradeMaintenance
+    from tests.historical_upgrade.upgrade_process_lease import UpgradeProcessLease
     from src.core.restore_runtime import RuntimeInstanceLock
     runtime, service, *_ = _open_case(tmp_path)
     entered, proceed = threading.Event(), threading.Event()

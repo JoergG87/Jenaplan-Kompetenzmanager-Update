@@ -25,8 +25,8 @@ from src.security.existing_installation_keys import (
 from src.security.infrastructure.installation_inventory import ReadOnlyInstallationInventory
 from src.security.infrastructure.migration_journal_repository import AuthenticatedMigrationJournalRepository
 from src.security.infrastructure.sqlite_repository import ExistingStartupAccountRepository
-from src.security.infrastructure.upgrade_journal_repository import AuthenticatedUpgradeJournalRepository
-from src.security.infrastructure.upgrade_replay_anchor import UpgradeReplayAnchorRepository
+from src.security.infrastructure.upgrade_journal_repository import UpgradeJournalCodec
+from src.security.infrastructure.upgrade_replay_anchor import UpgradeReplayCodec
 
 
 class UpgradeStartupBlocked(RuntimeError):
@@ -104,10 +104,10 @@ class ReadOnlyUpgradeEvidence:
         raw = AuthenticatedMigrationJournalRepository(journal_path, None)._read_regular_bytes()
         operation_id = json.loads(raw.decode("ascii"))["state"]["context"]["operation_id"]
         key = derive_migration_journal_auth_key(loaded.dmk, migration_id=operation_id)
-        state = AuthenticatedUpgradeJournalRepository._decode(raw, key)
+        state = UpgradeJournalCodec._decode(raw, key)
         anchor_raw = AuthenticatedMigrationJournalRepository(anchor_path, None)._read_regular_bytes()
-        anchor = UpgradeReplayAnchorRepository._decode(anchor_raw, key)
-        if anchor != UpgradeReplayAnchorRepository.for_journal(state, hashlib.sha256(raw).hexdigest()):
+        anchor = UpgradeReplayCodec._decode(anchor_raw, key)
+        if anchor != UpgradeReplayCodec.for_journal(state, hashlib.sha256(raw).hexdigest()):
             raise UpgradeStartupBlocked("upgrade_replay_or_generation_conflict")
         context = state.context
         if (context.installation_id, context.database_context_id, context.database_key_id,

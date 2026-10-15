@@ -1,5 +1,9 @@
 # UI Data Mapping
 
+## Unterrichtszeitvorlagen – 15.10.2026
+
+No UI fields or product action added. Isolated domain API stores lesson_number/start_time/end_time and returns immutable suggested times; explicit individual times override both defaults. Existing timetable entry times remain independent copies. Editor and settings integration follows only after target runtime/backup/restore qualification. No unencrypted preference field.
+
 ## B1/B2 – 15.10.2026
 
 Keine neuen UI-Felder oder UI-Datenquellen. Isolierte synthetische Infrastruktur ohne produktiven Bedienpfad.

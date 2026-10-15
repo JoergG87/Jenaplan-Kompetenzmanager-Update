@@ -4,9 +4,9 @@ import os
 from pathlib import Path
 import pytest
 from tests.test_encrypted_upgrade_source import case, _runner, _hash
-from src.application.commands.schema_upgrade import UpgradeMaintenance
+from tests.historical_upgrade.schema_upgrade import UpgradeMaintenance
 from src.core.schema_upgrade import UpgradeError
-from src.security.infrastructure.upgrade_rollback_source import DurableUpgradeRollbackSource
+from tests.historical_upgrade.upgrade_rollback_source import DurableUpgradeRollbackSource
 
 
 def _prepared(case):
@@ -137,7 +137,7 @@ def test_real_sigkill_rollback_persistence_boundary(tmp_path, boundary):
 
 @pytest.mark.parametrize("error", [28, 5, 13])
 def test_publication_io_errors_preserve_source(case, monkeypatch, error):
-    import src.security.infrastructure.upgrade_rollback_source as module
+    import tests.historical_upgrade.upgrade_rollback_source as module
     runner, adapter, rollback = _prepared(case)
     with UpgradeMaintenance(adapter.service._gate, runner.lease, adapter.context):
         source = adapter.verify_source(); backup = adapter.verify_backup(source)
