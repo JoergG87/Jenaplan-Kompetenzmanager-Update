@@ -100,6 +100,12 @@ class ObservationWriterLock:
         self._process_lock: threading.RLock | None = None
         self._lock_key = str(self.lock_path.absolute())
         self._nested = False
+        self._authority_generation = 0
+
+    @property
+    def authority_generation(self) -> int:
+        """Changes when this object acquires or releases physical lock authority."""
+        return self._authority_generation
 
     def __enter__(self) -> "ObservationWriterLock":
         with self._registry_guard:
@@ -130,6 +136,7 @@ class ObservationWriterLock:
                 os.close(fd)
                 raise
             self._fd = fd
+            self._authority_generation += 1
         except Exception:
             depths.pop(self._lock_key, None)
             process_lock.release()
@@ -140,6 +147,7 @@ class ObservationWriterLock:
     def __exit__(self, exc_type, exc, traceback) -> None:
         try:
             if not self._nested and self._fd is not None:
+                self._authority_generation += 1
                 try:
                     fcntl.flock(self._fd, fcntl.LOCK_UN)
                 finally:

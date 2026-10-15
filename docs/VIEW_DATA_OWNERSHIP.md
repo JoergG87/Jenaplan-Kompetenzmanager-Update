@@ -1,5 +1,9 @@
 # View Data Ownership
 
+## B1/B2 – 15.10.2026
+
+Keine neue Ansicht. Connection-, Rollback- und Austauschautorität gehören ausschließlich in Core/Application/Security-Infrastruktur; Widgets erhalten weder SQLite- noch Aktivierungslogik.
+
 Früher A2-Starthalt bleibt im Desktop-QMessageBox-Port; expliziter Qt-Renderer betrifft nur Darstellung. Securityveto und Qt-freie Prüfautorität bleiben unverändert.
 
 Interne A2-Nativabnahme besitzt keine neue Produktansicht. Bestehende Desktop-/Security-/Restoreports behalten Ownership. Prüfberichte sind Testnachweise; automatisierte Fensterprüfung und menschliche UI-Abnahme bleiben getrennt.

@@ -198,6 +198,12 @@ class RuntimeInstanceLock:
         self.path = self.runtime_root / RESTORE_LOCK_FILENAME
         self._file = None
         self._inherited_fd = inherited_fd
+        self._authority_generation = 0
+
+    @property
+    def authority_generation(self) -> int:
+        """Changes whenever this object acquires or relinquishes lock authority."""
+        return self._authority_generation
 
     @property
     def fileno(self) -> int:
@@ -214,6 +220,7 @@ class RuntimeInstanceLock:
                 self._file.seek(0)
                 self._validate_locked_payload(self._file.read(), allow_live_owner=True)
                 self._write_current_owner()
+                self._authority_generation += 1
                 return self
             except Exception as error:
                 if self._file is not None:
@@ -230,6 +237,7 @@ class RuntimeInstanceLock:
                 self._validate_locked_payload(existing, allow_live_owner=False)
             self._file = lock_file
             self._write_current_owner()
+            self._authority_generation += 1
             return self
         except Exception:
             try:
@@ -296,12 +304,14 @@ class RuntimeInstanceLock:
         """Close this process descriptor without explicitly unlocking it."""
         if self._file is None:
             raise RestoreLockError("Der Runtime-Lock kann nicht uebergeben werden.")
+        self._authority_generation += 1
         self._file.close()
         self._file = None
 
     def release(self) -> None:
         if self._file is None:
             return
+        self._authority_generation += 1
         try:
             _unlock_file(self._file)
         finally:

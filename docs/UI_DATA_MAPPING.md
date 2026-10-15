@@ -1,5 +1,9 @@
 # UI Data Mapping
 
+## B1/B2 – 15.10.2026
+
+Keine neuen UI-Felder oder UI-Datenquellen. Isolierte synthetische Infrastruktur ohne produktiven Bedienpfad.
+
 Regulärer Metadatenabschluss ergänzt keine UI-Felder oder Reparaturaktion. Fehler bleiben technische Abschlussfehler, keine neue Startupfreigabe.
 
 Interne A2-Nativabnahme ergänzt keine Produktfelder. Der bestehende explizite Paket-Smoke kann Fehler sanitisiert auf stderr ausgeben und mit Fehlercode enden, um unbeaufsichtigte Fehlertests ohne modalen Dialog abzuschließen. Die fachliche Fehlersemantik bleibt unverändert; der frühe Sicherheitsstarthalt verwendet explizite Qt-Darstellung.

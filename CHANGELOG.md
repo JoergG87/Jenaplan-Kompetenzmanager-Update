@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## B1 – vollständiger Connection-Drain – unveröffentlicht nach Build 404
+
+- Gemeinsame Providerregistrierung für Reader, Writer, offene Transaktionen und Öffnungsreservierungen; Pfad-/Inodefreeze bleibt über die Aktivierungsentscheidung bestehen. Kontrollierter SQLCipher-Checkpoint und Sidecarprüfung ohne Bereinigung.
+- Runtime- und Writerlease binden Erwerbsgeneration, Descriptor und Inode; verlorene Autorität hält das lokale Writergate dauerhaft in RECOVERY_REQUIRED. Keine produktive Migration oder neue Schemaidentität.
+
 ## Profilgebundene A2-Nativabnahme – unveröffentlicht nach Build 404
 
 - A2 intern: erfolgreicher Security-Metadatenabschluss unter gehaltenem Lock; Restoreabschluss vor Evidenzbindung, kein Parentflush nach bestätigtem Workertransfer.

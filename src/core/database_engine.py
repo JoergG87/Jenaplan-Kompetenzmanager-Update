@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import sqlite3
 from typing import Any, Protocol
+from .maintenance_gate import registered_connection_open, checkpoint_connection_active
 
 
 _SQLITE_HEADER = b"SQLite format 3\x00"
@@ -97,6 +98,7 @@ class SQLiteConnectionProvider:
 
     engine = DatabaseEngine.SQLITE
 
+    @registered_connection_open
     def connect(
         self,
         path: Path,
@@ -125,6 +127,7 @@ class SQLiteReadOnlyConnectionProvider:
 
     engine = DatabaseEngine.SQLITE
 
+    @registered_connection_open
     def connect(
         self,
         path: Path,
@@ -181,6 +184,7 @@ class SQLCipherConnectionProvider:
     def expected_engine_version(self) -> str:
         return self._expected_engine_version
 
+    @registered_connection_open
     def connect(
         self,
         path: Path,
@@ -251,6 +255,7 @@ class SQLCipherConnectionProvider:
         if cipher_rows or not integrity_ok or foreign_key_rows:
             raise DatabaseCorruptError("sqlcipher_database_corrupt")
 
+    @registered_connection_open
     def connect_read_only(
         self,
         path: Path,
@@ -352,6 +357,8 @@ class SQLCipherConnectionProvider:
         _require_existing_regular_file(path)
         try:
             status = path.stat()
+            if status.st_nlink != 1:
+                raise DatabaseEngineConfigurationError("sqlcipher_hardlink_forbidden")
             size = status.st_size
             with path.open("rb") as database_file:
                 header = database_file.read(len(_SQLITE_HEADER))
@@ -441,16 +448,18 @@ class SQLCipherConnectionProvider:
     def _configure_database_after_authentication(connection: Any, driver: Any) -> None:
         try:
             connection.row_factory = driver.Row
-            connection.execute("PRAGMA journal_mode = DELETE")
+            if not checkpoint_connection_active():
+                connection.execute("PRAGMA journal_mode = DELETE")
             connection.execute("PRAGMA synchronous = FULL")
             connection.execute("PRAGMA secure_delete = ON")
             connection.execute("PRAGMA foreign_keys = ON")
             expected = {
-                "journal_mode": "delete",
                 "synchronous": "2",
                 "secure_delete": "1",
                 "foreign_keys": "1",
             }
+            if not checkpoint_connection_active():
+                expected["journal_mode"] = "delete"
             for pragma, value in expected.items():
                 row = connection.execute(f"PRAGMA {pragma}").fetchone()
                 if row is None or str(row[0]).lower() != value:

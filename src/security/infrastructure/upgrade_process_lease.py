@@ -18,6 +18,37 @@ class UpgradeProcessLease:
         self.writer = ObservationWriterLock(writer_root)
         self.pid = os.getpid()
         self.active = False
+        self._lock_generation = runtime_lock.authority_generation
+        self._lock_fd = runtime_lock.fileno
+        lock_stat = os.fstat(self._lock_fd)
+        self._lock_identity = (lock_stat.st_dev, lock_stat.st_ino)
+        root_stat = runtime_lock.runtime_root.lstat()
+        self._root_identity = (root_stat.st_dev, root_stat.st_ino)
+
+    @staticmethod
+    def _require_kernel_lock(path, identity):
+        """Independent open-description witness for a currently held flock.
+
+        This does not prove historical continuity against direct unlock/relock.
+        """
+        descriptor = None
+        try:
+            import fcntl
+            descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+            details = os.fstat(descriptor)
+            if (details.st_dev, details.st_ino) != identity:
+                raise ValueError
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+            raise ValueError
+        except (OSError, ValueError, ImportError):
+            raise UpgradeError("upgrade_kernel_lock_required") from None
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
 
     def _require_process(self) -> None:
         expected_root = self.lock.runtime_root / "final-v4-sqlcipher-runtime-v1" / ".observation-staging"
@@ -29,7 +60,15 @@ class UpgradeProcessLease:
         if self.pid != os.getpid():
             raise UpgradeError("upgrade_process_changed")
         try:
+            root = self.lock.runtime_root.lstat()
+            if (self.lock.authority_generation != self._lock_generation
+                    or self.lock.fileno != self._lock_fd
+                    or (root.st_dev, root.st_ino) != self._root_identity
+                    or self.lock.runtime_root.is_symlink()):
+                raise ValueError
             fd = os.fstat(self.lock.fileno)
+            if (fd.st_dev, fd.st_ino) != self._lock_identity:
+                raise ValueError
             path = self.lock.path.lstat()
             payload = json.loads(self.lock.path.read_text())
             if (fd.st_dev, fd.st_ino) != (path.st_dev, path.st_ino) or self.lock.path.is_symlink():
@@ -38,6 +77,7 @@ class UpgradeProcessLease:
                 raise ValueError
         except Exception:
             raise UpgradeError("upgrade_runtime_lock_required") from None
+        self._require_kernel_lock(self.lock.path, self._lock_identity)
 
     def __enter__(self):
         self._require_process()
@@ -47,15 +87,26 @@ class UpgradeProcessLease:
         if self.writer._fd is None:
             self.writer.__exit__(None, None, None)
             raise UpgradeError("upgrade_nested_writer_lock_denied")
+        self._writer_generation = self.writer.authority_generation
+        self._writer_fd = self.writer._fd
+        details = os.fstat(self._writer_fd)
+        self._writer_identity = (details.st_dev, details.st_ino)
         self.active = True
         return self
 
     def require_owner(self, context: UpgradeContext) -> None:
         self._require_process()
-        if self.active and self.writer._fd is not None:
+        if (not self.active or context != self.context or self.writer._fd is None
+                or self.writer.authority_generation != self._writer_generation
+                or self.writer._fd != self._writer_fd):
+            raise UpgradeError("upgrade_process_context_mismatch")
+        if self.active:
             fd, path = os.fstat(self.writer._fd), self.writer.lock_path.lstat()
-            if (fd.st_dev, fd.st_ino) != (path.st_dev, path.st_ino) or self.writer.lock_path.is_symlink():
+            if ((fd.st_dev, fd.st_ino) != self._writer_identity
+                    or (fd.st_dev, fd.st_ino) != (path.st_dev, path.st_ino)
+                    or self.writer.lock_path.is_symlink()):
                 raise UpgradeError("upgrade_writer_lock_changed")
+            self._require_kernel_lock(self.writer.lock_path, (fd.st_dev, fd.st_ino))
         if not self.active or context != self.context:
             raise UpgradeError("upgrade_process_context_mismatch")
 

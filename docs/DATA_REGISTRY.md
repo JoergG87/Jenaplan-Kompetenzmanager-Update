@@ -1,5 +1,9 @@
 # Data Registry
 
+## B1/B2 – Datenverträge 15.10.2026
+
+Keine fachliche Datenquelle oder Schemaänderung. Flüchtige Connection-Registrierung dient ausschließlich Öffnungssperre und belegtem Close. Die Rollbackdatei ist eine getrennte private verschlüsselte Kopie der unabhängig geprüften V4-Quelle mit eigener Datei- und Artefaktidentität. Quelle, geprüftes Quellenbackup, Kandidat und Rollback werden an den vollständigen UpgradeContext und das authentisierte Journal-/Ankerpaar gebunden. Unbekannte Reste bleiben sperrende Evidenz.
+
 Security-/Keyset-Metadatenabschluss verwendet nur vorhandene RuntimePaths.security_database und keyset_metadata nach erfolgreichem Cipherstart. Keine neue Quelle oder Persistenz.
 
 Interne A2-Nativabnahme verwendet ausschließlich profile.runtime_root und vorhandene synthetische Final-V4-/Security-/Keyset-/Envelope-/Upgrade-/Restoreartefakte. Keine zweite Runtimewurzel. Flüchtige verschlüsselte Bestandkopien und JSON-Nachweise im privaten Profilcontainer; Schlüsselmaterial verbleibt ausschließlich im Prozessspeicher und den eigenen Test-Keychainaccounts.

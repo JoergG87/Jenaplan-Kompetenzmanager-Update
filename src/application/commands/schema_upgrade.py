@@ -40,9 +40,11 @@ class UpgradeMaintenance:
     def require_recovery(self) -> None:
         if not self._entered:
             raise UpgradeError("upgrade_maintenance_not_active")
-        self.lease.require_owner(self.context)
+        # Local admission must fail closed even when external lock authority was lost.
+        # Latching recovery grants no journal or filesystem mutation authority.
         self._recovery = True
         self.gate.mark_recovery_required()
+        self.lease.require_owner(self.context)
 
     def __exit__(self, exc_type, exc, traceback):
         try:

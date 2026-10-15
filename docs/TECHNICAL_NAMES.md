@@ -1,5 +1,16 @@
 # Technical Naming Registry
 
+## B1/B2 – implementierte technische Namen – 15.10.2026
+
+- `ConnectionDrain`: expliziter physischer Connectionfreeze mit exakter Maintenance-/Owner-/Pfadbindung, Runtimecheckpointpflicht und dauerhafter Öffnungssperre.
+- `RegisteredConnection` / `RegisteredCursor` / `registered_connection_open`: gemeinsame Providerregistrierung einschließlich Öffnungsreservierung, Cursor-Connectionbindung und tatsächlichem Close.
+- `checkpoint_connection_active`: eng begrenzter Threadzustand, der vor kontrolliertem Checkpoint die implizite Journalmodusänderung des SQLCipher-Providers verhindert.
+- `DurableUpgradeRollbackSource`: eigene verschlüsselte dauerhafte Rollbackquelle aus geprüftem V4-Bestand mit eigener stabiler Artefaktidentität.
+- `PinnedUpgradeFiles`: private Root-/Parent-FDs und erneut gebundene Dateievidenz für den synthetischen Austausch.
+- `SyntheticUpgradeActivation`: isolierter A0-Adapter TARGET_VERIFIED → ACTIVATION_PREPARED → ACTIVATION_INTENT → TARGET_INSTALLED.
+- `ObservationWriterLock.authority_generation`: physische Erwerbs-/Freigabegeneration der vorhandenen Writerlease; keine zusätzliche Lockdatei.
+- `RuntimeInstanceLock.authority_generation`: Erwerbs-/Freigabe-/Transfergeneration zur Bindung vorhandener Upgradeautorität; keine neue Lockdatei.
+
 Regulärer Security-Metadatenabschluss: SQLiteSecurityRepository.checkpoint_truncate und finalize_security_runtime (Security Startup). Nur nach erfolgreich geöffnetem Cipher-Produktlauf, unter weiter gehaltenem RuntimeInstanceLock; kein Existing-only-/Guard-/Repairport.
 
 Interne A2-Nativabnahme: scripts.macos_native_acceptance; run_profile/run_frozen und NATIVE_TEST_MODES; --internal-native-test mit geschlossener Modusliste. Nur versiegelter aktiver MacOSTestPackageProfile-Kontext aktiviert den Einstieg. Startup-Probe beobachtet echte Python-Aufrufe ohne Portersetzung; keine Kryptografiemocks. Produktpaket enthält dieses Modul nicht.

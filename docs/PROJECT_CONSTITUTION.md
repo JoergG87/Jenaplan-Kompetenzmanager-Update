@@ -1,5 +1,9 @@
 # Project Constitution
 
+## B1/B2 – PO-Auftrag 15.10.2026
+
+Freigegeben sind vollständiger Connection-Drain, dauerhafte verschlüsselte Rollbackquelle und isolierter atomarer Main-Austausch ausschließlich in autorisierten synthetischen Installationen. Grenze TARGET_INSTALLED; keine C-Phase, produktive Upgradekante, neue Schemaidentität, Schlüsselrotation oder Releasefreigabe. Final V4 und Build 404 bleiben unverändert.
+
 PO-autorisierte native A2-Fehlerbehebung umfasst den regulären Metadatenabschluss erfolgreicher Sitzungen; die Existing-only-Anfangsprüfung bleibt unverändert strikt, ohne Checkpoint/Repair.
 
 PO-Folgeauftrag 14.10.2026: festgestellte Testeinstiegskonflikte beheben und frisches internal-test-Paket bis zur nativen A2-Prüfung führen. Ausschließlich synthetische Identität, bestehende Buildpipeline, kein Produktbuild/Release, keine Migration/Aktivierung. Historischer 4.12-Migrationssmoke bleibt ausgeschlossen; interne native Final-V4-Abnahme ist ein eigener expliziter Testzweck.
