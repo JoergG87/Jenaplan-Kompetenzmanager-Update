@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Profilgebundene A2-Nativabnahme – unveröffentlicht nach Build 404
+
+- A2 intern: erfolgreicher Security-Metadatenabschluss unter gehaltenem Lock; Restoreabschluss vor Evidenzbindung, kein Parentflush nach bestätigtem Workertransfer.
+- A2-Testinfrastruktur: itemlokalen ACL-Cleanup und nativen Denial-/Delete-Vorabtest ergänzt; RESTORE_READY ohne nachträglichen Metadatenflush.
+- A2-Fixturecleanup auf exakte native Itemreferenz umgestellt; keine zusätzlichen ACL-Rechte, Produkt-Keychainport unverändert.
+
+- PO-Folgeauftrag: inkompatible Testeinstiege beheben. Keychain-, Restore-/Worker- und Securityrunner erhalten eine ausdrückliche Profilwahl und verwenden die versiegelte Root-/Paketidentität. Historischer 4.12-Migrationspfad bleibt ausgeschlossen.
+- Ausschließlich interne Pakete enthalten den geschlossenen nativen A2-Testeinstieg: echte Frozen-Startprozesse, beobachtete und geprüfte Startupreihenfolge, native Existing-only-Keys, exakte SQLCipher-/CommonCrypto-/Integritätsprüfungen und reale Restore-/Kill-/Handoffprüfungen. Native ACL-Verweigerungsfixture betrifft nur den eigenen synthetischen DMK-Account.
+- Native kontrollierte First-Run-Abnahme bestanden; danach reale Metadaten-WAL-Reste durch ungeschlossene Prüfverbindungen gefunden. Sechs SQLite-Verbindungslebenszyklen deterministisch geschlossen, ohne Existing-only-Checkpoint/Reparatur oder Datenmodellwechsel; GC-unabhängige Regression ergänzt.
+- A2 FINAL 15.10.2026: NATIV ABGENOMMEN, UNVERÖFFENTLICHT. Getesteten Code unverändert in b6e3a0e81c8b8dbe5785ffe3146ea32c91aa8e24 gesichert; unabhängiger Paket-/Quellvergleich und Review P0=0/P1=0. 20 native Startupfälle, Keychain, Worker/Restart, sechs SIGKILL-Fälle, UI-Sichtgates und 3071 Produkttests demselben Paket zugeordnet. Keine Produktsuite wiederholt, keine Produkt-/Releasefreigabe; vollständige Hashbindung in docs/RELEASE_AUTOMATION.md.
+
 ## Nativer Smoke-Root an internal-test gebunden – unveröffentlicht nach Build 404
 
 - Historischen Paket-/Smoke-NO-GO erhalten. Interner Smoke-Einstieg übernimmt ausschließlich den aktiven Frozen-Profilkontext und prüft Paket/Snapshot/Digest, exakten synthetischen Root, sichere Parent-/Dateistruktur und flüchtige Verzeichnisidentität erneut. Kein Rootpräfix als Freigabe.
@@ -5467,3 +5478,5 @@ Kein Produktdaten-/Produktschlüsselzugriff, kein App-/DMG-Bau, kein Push/Tag/Re
 Abschlussprüfung dieses Vorbereitungsauftrags: 65 neue gezielte Tests ohne Skip bestanden (rtk proxy python3 -m pytest tests/test_macos_test_package_profile.py -q, 3.82 s, Exit 0). Erweiterter gezielter Zwischenstand: 201 bestanden / ein bestehender qualifizierter Runtime-Skip (25.88 s). Erster vollständiger Lauf: 2954 bestanden / ein Appinfo-Quellregressionstest fehlgeschlagen / 104 bestehende Skips / 120 bestandene Unterprüfungen (354.50 s, Exit 1); kein Abnahmenachweis. Explizite produktive Appinfo-Namenskonstante erhalten und nur im gebundenen Testprofil überlagert, bestehender Einzeltest grün. Ein folgender Zwischenlauf wurde vor Abnahme für die letzte Pfadhärtung beendet (Exit 130). Finaler regulärer Lauf am endgültigen Code: rtk proxy python3 -m pytest tests -q -rs → 2962 bestanden, 104 unveränderte bestehende Skips, 120 bestandene Unterprüfungen, 354.19 s, Exit 0. Keine neue Skipregel, Sicherheitsausnahme oder Lockerung bestehender Tests.
 
 Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse ausschließlich mit Vorabprüfung oder ungültigem Profil vor Build sowie Spec-/Hookprüfungen mit inerten Konstruktoren/Bundle-Reads. Kein nativer eingefrorener App-/SQLCipher-/Keychain-/Signingnachweis aus diesem Auftrag. Unabhängiger Architektur-/Diff-/Technical-Review einschließlich letzter Pfadhärtung: P0 = 0, P1 = 0, keine neue offene P2-Implementierungslücke; dokumentierte Sicherheitsgrenzen bleiben. Historischer NO-GO in allen vier bisherigen Dokumenten identisch und unverändert erhalten. Shellsyntax- und Diffprüfung erfolgreich. Damit Commit-Gate für die vorbereitete Testpipeline erfüllt; native A2-Paketabnahme weiterhin offen. Kein Testpaket gebaut und keine Veröffentlichung erfolgt.
+
+- Frühe A2-Sicherheitsfehlermeldung als expliziter Qt-Dialog (Critical, unveränderter Text, nur OK); Renderer-Kompatibilitätskandidat vor erneutem nativen Nachweis, keine behauptete Deadlockkorrektur.

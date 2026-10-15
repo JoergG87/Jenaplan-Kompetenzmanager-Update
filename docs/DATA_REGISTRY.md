@@ -1,5 +1,9 @@
 # Data Registry
 
+Security-/Keyset-Metadatenabschluss verwendet nur vorhandene RuntimePaths.security_database und keyset_metadata nach erfolgreichem Cipherstart. Keine neue Quelle oder Persistenz.
+
+Interne A2-Nativabnahme verwendet ausschließlich profile.runtime_root und vorhandene synthetische Final-V4-/Security-/Keyset-/Envelope-/Upgrade-/Restoreartefakte. Keine zweite Runtimewurzel. Flüchtige verschlüsselte Bestandkopien und JSON-Nachweise im privaten Profilcontainer; Schlüsselmaterial verbleibt ausschließlich im Prozessspeicher und den eigenen Test-Keychainaccounts.
+
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 Keine neue Datenquelle. A2 liest den bestehenden Root, Security Store/Enrollmentmarker, A1-Inventar, bestehende DMK-/Envelopeidentität und Upgradejournal/Replayanker. Journal bleibt Operationswahrheit; Inventar und Rootmarker sind keine kryptografische Autorität. Ohne Upgradeevidenz kein Keyload und kein Journal-/Ankerwrite.

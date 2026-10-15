@@ -1,8 +1,12 @@
 # UI Data Mapping
 
+Regulärer Metadatenabschluss ergänzt keine UI-Felder oder Reparaturaktion. Fehler bleiben technische Abschlussfehler, keine neue Startupfreigabe.
+
+Interne A2-Nativabnahme ergänzt keine Produktfelder. Der bestehende explizite Paket-Smoke kann Fehler sanitisiert auf stderr ausgeben und mit Fehlercode enden, um unbeaufsichtigte Fehlertests ohne modalen Dialog abzuschließen. Die fachliche Fehlersemantik bleibt unverändert; der frühe Sicherheitsstarthalt verwendet explizite Qt-Darstellung.
+
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
-A2 verwendet den bestehenden QMessageBox.critical-Port: „Sicherer Start angehalten“. Unklarer Upgrade-/Installationszustand bietet nur Schließen, keine Reparatur, Datenbankauswahl, First Run oder Erfolgsmeldung. Technische Fehlercodes bleiben fest definierte Diagnosen ohne Schlüsselmaterial.
+A2 verwendet den bestehenden kritischen QMessageBox-Port mit expliziter Qt-Darstellung (DontUseNativeDialog), Critical-Icon und ausschließlich OK: „Sicherer Start angehalten“. Unklarer Upgrade-/Installationszustand bietet nur Schließen, keine Reparatur, Datenbankauswahl, First Run oder Erfolgsmeldung. Technische Fehlercodes bleiben fest definierte Diagnosen ohne Schlüsselmaterial.
 
 
 ## Upgrade-Replay und isolierter Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026

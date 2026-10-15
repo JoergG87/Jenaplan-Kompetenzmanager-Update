@@ -1,5 +1,7 @@
 # Design-System
 
+Früher A2-Sicherheitsstarthalt: bestehender kritischer QMessageBox-Fehlerport verwendet explizite Qt-Darstellung, unveränderten sanitisierten Text und ausschließlich OK. Mit frischem internem Paket 5d58c6e0 am 15.10.2026 nativ sichtbar abgenommen; keine Reparatur-/First-Run-Aktion und keine zusätzliche Ereignispumpe. Kein Sicherheitsdialog des Betriebssystems wird verändert.
+
 Native Tablet-Meldungen behalten ihre Qt-Gridstruktur und Standardantworten. Bestehende Zurück-Aktion bleibt auch nach einem Qt-Layoutwechsel sichtbar in einer separaten Gridzeile; keine Überlagerung von Meldung oder Antwortbuttons.
 
 SDK-27-Neuqualifizierung betrifft keine Designwerte. Paketprüfung umfasst weiterhin vorhandene Desktopdarstellung, keine neue Ansicht.

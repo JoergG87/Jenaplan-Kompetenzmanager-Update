@@ -1,5 +1,11 @@
 # Data Lifecycle
 
+Native A2-Folgeprüfung: die paketierte SQLite-Laufzeit hinterlässt trotz deterministisch geschlossener Reader leere Metadaten-WAL/SHM. Erfolgreich geöffnete normale Sitzungen flushen deshalb vor Freigabe des RuntimeInstanceLock bestehende Security-/Keyset-Metadaten und schließen die RW-Verbindungen. Fehlende/gesperrte/unklare Starts erreichen diesen Abschluss nie. Keine Sidecarlöschung, Schemaänderung, neue DB oder Schlüsselprovisionierung; nur bestehendes WAL-Checkpointverfahren.
+
+Native A2-Prüfung fand deterministisch ungeschlossene Metadaten-SQLite-Verbindungen. Bestehende Security-Read-only- und Keyset-Validierungs-/Snapshot-/Checkpoint-/Initialisierungsverbindungen werden nun explizit mit closing geschlossen; explizite Commit-/Rollbackverträge unverändert. Keine zusätzliche Startup-/Existing-only-Mutation, kein neuer Checkpoint oder Repairport. GC-unabhängige Abnahme prüft sidecarfreien Bestand und bestehenden Account ohne Bereinigung im Reader.
+
+Interne A2-Nativabnahme: Profil/Paket/Digest/Root prüfen → native Initialisierung über echten main-Smoke → bestehende Keys laden → Fallfixture unter derselben Testrootautorität → neuer echter Frozen-Prozess → Ergebnis/Dateibestand vergleichen → ausschließlich synthetischen Fallbestand wiederherstellen. Fehler-/Killtests sind keine Stromausfallgarantie. Cleanup erst nach allen darauf angewiesenen Prüfungen. Native ACL-Verweigerung benötigt echten OS-Nachweis; nie als bestanden simulieren.
+
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 Read-only Rootpreflight und Inventar → RuntimeInstanceLock → Inventarvergleich unter Lock (nur Lockwrite zulässig) und Rootneuklassifikation → Upgrade-/Restorekonfliktprüfung → bei Upgradeevidenz ausschließlich Existing-only-Keys und authentisierte Journal-/Anker-/Kontext-/Registryprüfung → sicherer Halt. Nur upgradefreie eindeutig bekannte Zustände erreichen bestehenden Restore-Recovery/Restart-Handshake → erneute Bestandsprüfung → kontrollierte First-Run-Kandidatur → bisherigen Security-/Cipherstartup. Leerer Root darf vor Rootmarkerpublikation ausschließlich Lock und gegebenenfalls synthetischen Rootmarker enthalten. Restorebestand darf vor Recovery partiell sein; seine bestehenden Prüfer behalten alleinige Recoveryautorität.
@@ -3888,3 +3894,7 @@ Ablauf: bewusster Klick `Kompetenzen als PDF exportieren` -> Adapter liest frisc
 ## Isoliertes internes macOS-Testpaketprofil – 14.10.2026
 
 Reine Profilprüfung ohne Writes vor Build: exakte Felder, Identitäten, private synthetische Rootautorität, neue getrennte Build-/Distziele, keine Signing-/Feedoverrides. Erst expliziter späterer Build darf Hook und Payload erzeugen; Testprofil endet nach App/Audit ohne DMG/Release. Runtimehook prüft vor main/Worker/Restart den gleichen synthetischen Root und CLI-Kontext, bindet unveränderliche Testidentität und entfernt fremde Overrides. Enrollment nutzt ausschließlich gebundene Installations-ID; Keychainadapter verweigern fremde Installation vor Zugriff. Keine neue Runtime-/Writerfreigabe; A2 und Final V4 bleiben maßgeblich.
+
+A2-Abschlusskorrektur: Die Desktopkomposition übergibt before_handoff an den bestehenden Restore-Application-Service. Der Metadatenflush erfolgt vor der Handoff-Evidenzbindung. Erst bestätigter Workerlaunch setzt handoff_transferred; danach unterbleibt der Parentflush. Unerwarteter Lockverlust bleibt ein Fehler.
+
+A2-ACL-Fixture: Vor der Matrix wird an einer eigenen zufälligen Testitem-ID native Leseverweigerung, Delete und identische Materialwiederherstellung geprüft. Die Fixturebereinigung findet exakt Service/Account ohne Secretbytes per SecKeychainFindGenericPassword und löscht genau diese Referenz per SecKeychainItemDelete. Keine zusätzliche ACL-Berechtigung, Owneränderung oder globale Keychainänderung; Produkt-Keychainport unverändert. RESTORE_READY-Smokemodus beendet ohne erneuten Flush nach versiegelter Evidenz.

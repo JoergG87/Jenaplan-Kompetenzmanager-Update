@@ -1,5 +1,7 @@
 # Architekturentscheidungen
 
+Interne A2-Nativabnahme (PO-Folgeauftrag 14.10.2026): ein profilgebundener Final-V4-Testeinstieg in der bestehenden Pipeline; keine Reaktivierung des ausgeschlossenen historischen Migrationssmokes. Der Hook erlaubt ausschließlich geschlossene native Testmodi, prüft Identität weiterhin vor jedem Prozess. Externe Runner erhalten explizite Profiloptionen und nutzen dieselbe Rootautorität; keine Bundlekopie oder Umbenennung zur Identitätsumgehung.
+
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 PO-Auftrag A2 gibt ausschließlich Produkt-Startupintegration als Startveto frei. Vision/Discovery: Upgradeevidenz darf weder Restoremutation noch Erstinitialisierung auslösen. Produktentscheidung: jeder vorhandene Upgradezustand hält an, einschließlich STAGED, COMPLETED und ABORTED. Datenmodellreview: Final V4 und produktive Upgradekantenmenge unverändert. Architekturreview: expliziter Produktadapter unter vorhandener Runtime-Lockautorität statt globalem Produktionsschalter. UX-/Promptreview: vorhandener Fehlerport mit reinem Schließen, keine Reparatur oder Erfolgsbehauptung. Implementierung und Technical Review beziehen sich ausschließlich auf diesen Umfang.
@@ -4662,3 +4664,7 @@ Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse 
 ## Interner Smoke-Kontext – unveröffentlicht nach Build 404
 
 Der aktive Frozen-internal-test-Profilkontext ist alleinige Identitätsautorität des internen Smoke-Einstiegs. Gemeinsame Paketattestation prüft Snapshot/Digest und Prozess-/Rootbindung erneut. Historische Smokepräfixe bleiben ausschließlich im separat ausgewählten bisherigen Modus; keine automatische Modusmigration oder Environmentaktivierung. Runner-Vorprüfung ist lesend, kein native-A2-Freigabenachweis. Produkt-Worker/Restart, Final V4 und Keychainverträge unverändert; Einzelheiten in RELEASE_AUTOMATION.
+
+A2-UI-Interop 15.10.2026: Früher bestehender Sicherheitsfehlerport nutzt explizite Qt-QMessageBox-Darstellung mit Critical/OK. Wiederholte CUA-Timeouts am frühen nativen NSAlert bei regulärem Modalstack begründen Kompatibilitätsversuch, keinen nachgewiesenen Produktdeadlock. Veto/Text/Reihenfolge/Schreibgrenzen bleiben identisch; keine Ereignispumpe, kein Betriebssystem-Sicherheitsdialog betroffen. Kandidat erst nach frischer nativer Sichtprüfung akzeptieren, andernfalls zurücknehmen.
+
+A2 FINAL 15.10.2026: Qt-Fehlerport mit frischem Paket 5d58c6e0 nativ sichtbar abgenommen. Codecommit b6e3a0e81c8b8dbe5785ffe3146ea32c91aa8e24 enthält exakt den getesteten Inhalt; separate Quell-SHA256-, Frozen-Code-, Profil-, Bundle- und Testprovenienzprüfung bestanden. P0=0/P1=0, keine neue P2-Lücke im Korrekturumfang. A2 NATIV ABGENOMMEN, UNVERÖFFENTLICHT; historische NO-GOs bleiben erhalten. Keine Produktfreigabe. Vollständiger Nachweis in docs/RELEASE_AUTOMATION.md.

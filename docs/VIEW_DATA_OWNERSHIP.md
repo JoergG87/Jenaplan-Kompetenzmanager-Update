@@ -1,5 +1,9 @@
 # View Data Ownership
 
+Früher A2-Starthalt bleibt im Desktop-QMessageBox-Port; expliziter Qt-Renderer betrifft nur Darstellung. Securityveto und Qt-freie Prüfautorität bleiben unverändert.
+
+Interne A2-Nativabnahme besitzt keine neue Produktansicht. Bestehende Desktop-/Security-/Restoreports behalten Ownership. Prüfberichte sind Testnachweise; automatisierte Fensterprüfung und menschliche UI-Abnahme bleiben getrennt.
+
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 Security besitzt die Qt-freie read-only A2-Produktprüfung; Desktop Composition Root hält den bestehenden Runtime-Lock und orchestriert die Prüfung vor jeder Restoremutation. Keine neue Ansicht; bestehender QMessageBox-Fehlerport zeigt ausschließlich sanitisierten Starthalt. Keine Schlüssel-/Pfaddetails oder Reparaturaktion.

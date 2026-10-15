@@ -1,5 +1,9 @@
 # Technical Naming Registry
 
+Regulärer Security-Metadatenabschluss: SQLiteSecurityRepository.checkpoint_truncate und finalize_security_runtime (Security Startup). Nur nach erfolgreich geöffnetem Cipher-Produktlauf, unter weiter gehaltenem RuntimeInstanceLock; kein Existing-only-/Guard-/Repairport.
+
+Interne A2-Nativabnahme: scripts.macos_native_acceptance; run_profile/run_frozen und NATIVE_TEST_MODES; --internal-native-test mit geschlossener Modusliste. Nur versiegelter aktiver MacOSTestPackageProfile-Kontext aktiviert den Einstieg. Startup-Probe beobachtet echte Python-Aufrufe ohne Portersetzung; keine Kryptografiemocks. Produktpaket enthält dieses Modul nicht.
+
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 `ProductUpgradeStartupGuard`, `ProductStartupInventory`, `ReadOnlyUpgradeEvidence`, `ExistingStartupAccountRepository`, `UpgradeStartupBlocked` bezeichnen den begrenzten read-only Produktadapter, Inventar, authentisierten Evidenzleser, immutable Accountleser im bestehenden Security-SQLite-Repository und sanitisierten Starthalt. Bestehender RuntimeInstanceLock ist alleinige Prozessautorität. Der synthetische UpgradeProcessLease bleibt unverändert. Der gemeinsame unveränderte `UpgradeStartupDecision`-DTO liegt ab A2 in Core/schema_upgrade; Application reexportiert ihn für den isolierten Guard. Security importiert weder Application noch Desktop/Qt.
@@ -3634,3 +3638,11 @@ Build-/Hookhilfen: load_profile, validate_build_selection, profile_digest, prepa
 ## Versiegelter interner Smoke-Kontext – unveröffentlicht nach Build 404
 
 `verify_test_package`, `validate_internal_test_smoke_context`, `active_internal_test_smoke_root`, `_test_path_identity`: gemeinsamer read-only Profil-/Paket-/Root-/Argumentvertrag im bestehenden Testprofilmodul. Smoke benötigt vorhandene aktivierte Frozen-Identität und erneute Paketattestation; kein Environment aktiviert diese Identität. `smoke_test_macos_app --test-profile --preflight-only` prüft denselben Kontext ohne Appstart; historischer Modus bleibt getrennt. Keine neue persistente Quelle oder Profilformatänderung.
+
+FinalV4EncryptedRestoreApplicationService.before_handoff: optionaler Composition-Callback vor Bindung der Restoreevidenz. handoff_transferred: erst nach bestätigtem Workerlaunch wahr; danach kein Parent-Metadatenabschluss.
+
+Interner Nativeinstieg acl-preflight / _acl_preflight: itemlokaler echter Denial-/Delete-/Same-Material-Vorabnachweis vor der Matrix; native-acl-fixture.json enthält ausschließlich Testservice, Key-ID und Cleanupstatus, kein Schlüsselmaterial.
+
+_delete_restricted_key: ausschließlich versiegelter Test-Fixture-Cleanupport; exakte Testservice-/Accountbindung, native Referenzsuche ohne Passwortdaten und itembezogene Löschung. Kein Produktport.
+
+Native Matrix meldet ui_visibility_checks als separat nachzuweisendes Pflichtgate und manual_ui_performed=false. Eine nicht vom PO verlangte menschliche Freigabe wird nicht als zwingendes Gate erfunden; tatsächlich menschliche und werkzeuggestützte Sichtprüfungen bleiben ausdrücklich getrennt.

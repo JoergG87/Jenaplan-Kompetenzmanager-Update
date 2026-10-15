@@ -1,5 +1,9 @@
 # Project Constitution
 
+PO-autorisierte native A2-Fehlerbehebung umfasst den regulären Metadatenabschluss erfolgreicher Sitzungen; die Existing-only-Anfangsprüfung bleibt unverändert strikt, ohne Checkpoint/Repair.
+
+PO-Folgeauftrag 14.10.2026: festgestellte Testeinstiegskonflikte beheben und frisches internal-test-Paket bis zur nativen A2-Prüfung führen. Ausschließlich synthetische Identität, bestehende Buildpipeline, kein Produktbuild/Release, keine Migration/Aktivierung. Historischer 4.12-Migrationssmoke bleibt ausgeschlossen; interne native Final-V4-Abnahme ist ein eigener expliziter Testzweck.
+
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 PO-Auftrag A2: den fail-closed Upgrade-Startup-Guard produktiv vor Restoremutation, First Run, Schlüsselanlage und Runtimeöffnung einbinden. Keine Datenmodelländerung, Migration, Aktivierung, Writerfreigabe, neue Upgradekante oder Version. Bestehende Restoreautorität bleibt bestehen; Build 404 bleibt historische Referenz.

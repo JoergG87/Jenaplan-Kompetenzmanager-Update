@@ -1,5 +1,7 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+A2-Nativabnahme, PO-Folgeauftrag 14.10.2026: verbleibende Testeinstiege werden profilgebunden korrigiert und anschließend mit frischer internal-test-App geprüft. A2 FINAL: NATIV ABGENOMMEN, UNVERÖFFENTLICHT (15.10.2026), Codecommit b6e3a0e81c8b8dbe5785ffe3146ea32c91aa8e24. Kein Produkt-/Pilotrelease oder Migrationsauftrag. Nachweise in docs/RELEASE_AUTOMATION.md.
+
 ## A2 – produktiver Upgrade-Startup-Guard – unveröffentlicht nach Build 404 – 14.10.2026
 
 A2 ist technisch in den echten Desktopstart, den verschlüsselten Restore-Worker und den direkten Confirm-Einstieg integriert. Der Guard ist eine read-only Startveto-Grenze ohne Migration, Aktivierung, Writerfreigabe oder Reparatur. Bestehende Final-V4-Starts ohne Upgradeevidenz benötigen weiterhin weder Upgradejournal noch Replayanker; das unveränderte keyed Runtimegate bleibt alleinige Schemafreigabe.
