@@ -5562,3 +5562,8 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 - Autorisierte interne V6-Runtime in den tatsächlichen Desktopstart integriert; vorhandener Prozesslock, Existing-only-Schlüssel und exakte keyed Schemaauswahl. Unterrichtszeitenadapter an Einstellungen/Editor durchgereicht. Produkt-Final-V4 bleibt unverändert.
 - Bestehenden Restore-Worker/Restart um den profilgebundenen V6-Vertrag ergänzt; vorhandener authentisierter Recovery-Bootstrap bei fehlender Live-Keymetadatenposition, keine Schlüsselanlage oder V4-Umdeutung.
 - Historische Backupprüfung hält Installationsinventar unverändert; verschlüsselte Prüfkopie ausschließlich im privaten Tempbereich. Quellenintegration, reale Lock-/SIGKILL-Prüfungen und interne native V6-Prüfmodi ergänzt. Native Qualifikation und offene Grenzen in docs/RELEASE_AUTOMATION.md.
+
+
+## Native V6-Harnesskorrektur – 16.10.2026
+
+- Bestehenden V4-Backup-Builder mit seinem erforderlichen Environmentkontext aufrufen. Erster frischer Paketlauf hat den fehlenden Harnessparameter nach erfolgreichem First Run aufgedeckt; kein neuer Produktstart-, Schema- oder Cipherpfad.

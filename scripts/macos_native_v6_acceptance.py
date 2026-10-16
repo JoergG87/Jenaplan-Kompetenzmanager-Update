@@ -7,6 +7,7 @@ from contextlib import closing
 from dataclasses import asdict
 import json
 import os
+import os
 from pathlib import Path
 import shutil
 import signal
@@ -46,7 +47,7 @@ def _v4_service(profile, *, seed=False):
         from scripts.seed_test_data import seed_cipher_pilot_test_data
         seed_cipher_pilot_test_data(opened, source_root=root)
     return build_final_v4_encrypted_backup_service(opened_runtime=opened.runtime,
-        account_loader=lambda: account, product_paths=runtime_paths(root))
+        account_loader=lambda: account, environ=os.environ, product_paths=runtime_paths(root))
 
 
 def _seed(profile):
