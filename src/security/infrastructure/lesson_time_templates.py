@@ -2,7 +2,7 @@
 from contextlib import closing
 
 from src.core.database_compatibility import DatabaseCompatibilityInspector
-from src.core.lesson_time_templates import LessonTimeTemplate
+from src.core.lesson_time_templates import LessonTimeTemplate, LessonTimeTemplateError
 from src.core.lesson_times_schema import SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION
 
 
@@ -33,3 +33,27 @@ class SQLiteLessonTimeTemplateRepository:
                     "INSERT INTO lesson_time_templates(lesson_number,start_time,end_time) VALUES (?,?,?) "
                     "ON CONFLICT(lesson_number) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time",
                     (template.lesson_number, template.start_time, template.end_time))
+
+    def save_if_unchanged(self, template: LessonTimeTemplate,
+                          expected: LessonTimeTemplate | None) -> None:
+        """Compare and write atomically; a new number never overwrites a row."""
+        with closing(self._connect()) as connection:
+            try:
+                connection.execute("BEGIN IMMEDIATE")
+                self._require_target(connection)
+                row = connection.execute(
+                    "SELECT lesson_number,start_time,end_time FROM lesson_time_templates WHERE lesson_number=?",
+                    (template.lesson_number,),
+                ).fetchone()
+                actual = LessonTimeTemplate(*row) if row is not None else None
+                if actual != expected:
+                    raise LessonTimeTemplateError(
+                        "Diese Unterrichtszeit wurde inzwischen geändert. Bitte gespeicherte Zeiten neu laden.")
+                connection.execute(
+                    "INSERT INTO lesson_time_templates(lesson_number,start_time,end_time) VALUES (?,?,?) "
+                    "ON CONFLICT(lesson_number) DO UPDATE SET start_time=excluded.start_time,end_time=excluded.end_time",
+                    (template.lesson_number, template.start_time, template.end_time))
+                connection.commit()
+            except BaseException:
+                connection.rollback()
+                raise

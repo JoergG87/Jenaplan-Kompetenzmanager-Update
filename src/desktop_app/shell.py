@@ -99,6 +99,8 @@ from src.desktop_app.school_year_transition_activation import (
     SchoolYearTransitionActivationController,
 )
 from src.desktop_app.dialogs.timetable_entry_dialog import TimetableEntryDialog
+from src.desktop_app.adapters.lesson_time_templates_desktop_adapter import LessonTimeTemplatesDesktopAdapter
+from src.core.lesson_time_templates import LessonTimeTemplateError
 from src.desktop_app.navigation import NAVIGATION_ITEMS, resolve_navigation_target
 from src.desktop_app.icons import ICON_SIZE_MEDIUM, load_icon
 from src.desktop_app.motion import install_item_selection_motion
@@ -275,6 +277,7 @@ class AppShell(QMainWindow):
         student_adapter: StudentDesktopAdapter | None = None,
         backup_restore_available: bool = True,
         backup_restore_adapter: BackupRestoreDesktopAdapter | None = None,
+        lesson_time_templates_adapter: LessonTimeTemplatesDesktopAdapter | None = None,
         dashboard_screen_factory: Callable[[], OverviewScreen] | None = None,
         students_workspace_factory: Callable[[], StudentsWorkspace] | None = None,
         student_profile_screen_factory: Callable[..., StudentProfileScreen] | None = None,
@@ -295,6 +298,11 @@ class AppShell(QMainWindow):
             today_provider=lambda: self.now_provider().date(),
             now_provider=self.now_provider,
         )
+        if lesson_time_templates_adapter is not None:
+            if (type(lesson_time_templates_adapter) is not LessonTimeTemplatesDesktopAdapter
+                    or lesson_time_templates_adapter.database is not self.adapter.database):
+                raise ValueError("lesson_time_templates_runtime_database_mismatch")
+        self.lesson_time_templates_adapter = lesson_time_templates_adapter
         self.maintenance_gate = self.adapter.database.maintenance_gate
         self.exports_directory = self.runtime_paths.exports
         self.master_data_adapter = MasterDataDesktopAdapter(self.adapter)
@@ -487,7 +495,13 @@ class AppShell(QMainWindow):
             export_directory=self.exports_directory
         )
         self.master_data_screen = MasterDataScreen()
-        self.settings_screen = SettingsScreen(now_provider=self.now_provider)
+        self.settings_screen = SettingsScreen(
+            now_provider=self.now_provider,
+            lesson_time_templates_available=self.lesson_time_templates_adapter is not None,
+        )
+        if self.lesson_time_templates_adapter is not None:
+            self.settings_screen.lesson_time_templates_editor.save_requested.connect(self.save_lesson_time_template)
+            self.settings_screen.lesson_time_templates_editor.reload_requested.connect(self.reload_lesson_time_templates)
         self.settings_screen.set_backup_restore_available(
             self.backup_restore_available
         )
@@ -949,6 +963,9 @@ class AppShell(QMainWindow):
         """Refresh settings from SQLite-backed adapter data."""
         self.settings_screen.set_settings(self.adapter.settings_view_model())
         self.settings_screen.set_timetable(self.timetable_adapter.week_view_model())
+        if self.lesson_time_templates_adapter is not None:
+            self.settings_screen.lesson_time_templates_editor.set_view_model(
+                self.lesson_time_templates_adapter.view_model())
         current_school_year = self.adapter.current_school_year()
         self.settings_screen.set_current_school_year(
             (
@@ -1521,10 +1538,39 @@ class AppShell(QMainWindow):
             + " Die App bleibt geöffnet; der lokale Datenbestand wurde nicht ersetzt."
         )
 
+    def _lesson_time_template_dialog_options(self) -> dict:
+        if self.lesson_time_templates_adapter is None:
+            return {}
+        return {"templates": self.lesson_time_templates_adapter.view_model().templates}
+
+    def reload_lesson_time_templates(self) -> None:
+        if self.lesson_time_templates_adapter is None:
+            return
+        editor = self.settings_screen.lesson_time_templates_editor
+        try:
+            editor.set_view_model(self.lesson_time_templates_adapter.view_model())
+        except Exception:
+            editor.show_error("Die gespeicherten Unterrichtszeiten konnten nicht geladen werden.")
+
+    def save_lesson_time_template(self, number, start, end, expected) -> None:
+        if self.lesson_time_templates_adapter is None:
+            return
+        editor = self.settings_screen.lesson_time_templates_editor
+        try:
+            self.lesson_time_templates_adapter.save_template(number, start, end, expected)
+        except LessonTimeTemplateError as error:
+            editor.show_error(str(error))
+            return
+        except Exception:
+            editor.show_error("Die Unterrichtszeit konnte nicht gespeichert werden. Bitte erneut versuchen.")
+            return
+        editor.set_view_model(self.lesson_time_templates_adapter.view_model())
+        editor.message.set_message("Unterrichtszeit wurde gespeichert.", tone="success")
+
     def open_new_timetable_entry_dialog(self, weekday: int) -> None:
         """Create one timetable entry from the settings week."""
         week = self.timetable_adapter.week_view_model()
-        dialog = self._create_dialog(TimetableEntryDialog, week, weekday=weekday, parent=self)
+        dialog = self._create_dialog(TimetableEntryDialog, week, weekday=weekday, parent=self, **self._lesson_time_template_dialog_options())
         if self._exec_dialog(dialog) != QDialog.DialogCode.Accepted:
             return
         self._save_timetable_dialog(dialog)
@@ -1549,6 +1595,7 @@ class AppShell(QMainWindow):
             weekday=entry.weekday,
             entry=entry,
             parent=self,
+            **self._lesson_time_template_dialog_options(),
         )
         if self._exec_dialog(dialog) != QDialog.DialogCode.Accepted:
             return

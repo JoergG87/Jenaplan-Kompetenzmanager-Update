@@ -27,6 +27,7 @@ class LessonTimeTemplate:
 class LessonTimeTemplateRepository(Protocol):
     def list_templates(self) -> tuple[LessonTimeTemplate, ...]: ...
     def save(self, template: LessonTimeTemplate) -> None: ...
+    def save_if_unchanged(self, template: LessonTimeTemplate, expected: LessonTimeTemplate | None) -> None: ...
 
 
 class LessonTimeTemplateService:
@@ -35,6 +36,13 @@ class LessonTimeTemplateService:
 
     def set_times(self, lesson_number: int, start_time: str, end_time: str) -> None:
         self.repository.save(LessonTimeTemplate(lesson_number, start_time, end_time))
+
+    def set_times_if_unchanged(self, lesson_number: int, start_time: str, end_time: str,
+                               *, expected: LessonTimeTemplate | None) -> None:
+        template = LessonTimeTemplate(lesson_number, start_time, end_time)
+        if expected is not None and expected.lesson_number != lesson_number:
+            raise LessonTimeTemplateError("Die ausgewählte Unterrichtsstunde wurde verändert.")
+        self.repository.save_if_unchanged(template, expected)
 
     def suggest(self, lesson_number: int, *, start_time: str | None = None,
                 end_time: str | None = None) -> LessonTimeTemplate:

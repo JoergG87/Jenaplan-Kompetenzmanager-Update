@@ -9,7 +9,11 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QFrame,
+    QScrollArea,
     QLineEdit,
+    QLabel,
+    QPushButton,
     QTimeEdit,
     QVBoxLayout,
 )
@@ -20,7 +24,8 @@ from src.desktop_app.dialogs.dialog_buttons import (
 )
 
 from src.application.commands.timetable import SaveTimetableEntryCommand
-from src.desktop_app.components import AppCard, DialogHeader, SectionHeader
+from src.desktop_app.components import AppCard, DialogHeader, SectionHeader, configure_button
+from src.desktop_app.view_models.lesson_time_templates_view_model import LessonTimeTemplateOptionViewModel
 from src.desktop_app.motion import MotionDialog
 from src.desktop_app.view_models.timetable_view_model import (
     TARGET_TYPE_LABELS,
@@ -40,8 +45,10 @@ class TimetableEntryDialog(MotionDialog):
         weekday: int,
         entry: TimetableEntryViewModel | None = None,
         parent: object | None = None,
+        templates: tuple[LessonTimeTemplateOptionViewModel, ...] | None = None,
     ) -> None:
         super().__init__(parent)
+        self.templates = templates
         self.week = week
         self.entry = entry
         self.setWindowTitle("Stundenplaneintrag bearbeiten" if entry else "Stunde anlegen")
@@ -95,6 +102,24 @@ class TimetableEntryDialog(MotionDialog):
         self.weekday_combo.setCurrentIndex(max(0, weekday - 1))
         form.addRow("Wochentag", self.weekday_combo)
 
+        if self.templates is not None:
+            self.lesson_template_combo = QComboBox()
+            self.lesson_template_combo.setAccessibleName("Unterrichtsstunde als Zeitvorlage")
+            self.lesson_template_combo.addItem("Zeiten individuell festlegen", None)
+            for template in self.templates:
+                self.lesson_template_combo.addItem(template.label, template)
+            form.addRow("Unterrichtsstunde", self.lesson_template_combo)
+            self.apply_template_button = QPushButton("Zeiten übernehmen")
+            configure_button(self.apply_template_button, "secondary", "Ausgewählte Unterrichtszeit einmalig übernehmen")
+            self.apply_template_button.setEnabled(False)
+            self.lesson_template_combo.currentIndexChanged.connect(
+                lambda: self.apply_template_button.setEnabled(self.lesson_template_combo.currentData() is not None))
+            self.apply_template_button.clicked.connect(self._apply_template)
+            form.addRow("", self.apply_template_button)
+            hint = QLabel("Vorlagen werden nur mit „Zeiten übernehmen“ angewendet. Beginn und Ende bleiben frei änderbar.")
+            hint.setWordWrap(True)
+            form.addRow(hint)
+
         self.start_time = QTimeEdit(QTime(8, 0))
         self.start_time.setAccessibleName("Beginn der Stunde")
         self.start_time.setDisplayFormat("HH:mm")
@@ -132,7 +157,15 @@ class TimetableEntryDialog(MotionDialog):
         self.active_checkbox.setChecked(True)
         form.addRow("", self.active_checkbox)
         card_layout.addLayout(form)
-        layout.addWidget(card, 1)
+        if self.templates is not None:
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setFrameShape(QFrame.Shape.NoFrame)
+            scroll.setWidget(card)
+            self.form_scroll = scroll
+            layout.addWidget(scroll, 1)
+        else:
+            layout.addWidget(card, 1)
 
         buttons = DialogActionBar(
             QDialogButtonBox.StandardButton.Cancel
@@ -143,6 +176,12 @@ class TimetableEntryDialog(MotionDialog):
         buttons.accepted.connect(self.accept)
         layout.addWidget(buttons)
         self.weekday_combo.setFocus()
+
+    def _apply_template(self) -> None:
+        template = self.lesson_template_combo.currentData()
+        if template is not None:
+            self.start_time.setTime(QTime.fromString(template.start_time, "HH:mm"))
+            self.end_time.setTime(QTime.fromString(template.end_time, "HH:mm"))
 
     def _populate_targets(self) -> None:
         selected_id = self.target_combo.currentData() if hasattr(self, "target_combo") else None

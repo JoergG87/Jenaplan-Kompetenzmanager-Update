@@ -5514,3 +5514,10 @@ Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse 
 - Eigener V5-Manifestvertrag und READY v2 im unveränderten .jkmebackup-v1-Container; historische V4-Belege bleiben strikt V4.
 - Bestehende SQLCipher-/Dokument-/Companion-, Safetybackup-, Restore-/Rollbackmechanik synthetisch wiederverwendet; getrennte Handoffdomäne, kein Produktworker für V5.
 - Reale Restore-/Restart-/SIGKILL-/Konkurrenztests, falsche Schlüssel/DMK, beschädigte/unvollständige Belege und spätere legitime Writes geprüft. Pfad- und Recovery-P1 aus unabhängigem Review behoben.
+
+
+## Unterrichtszeitvorlagen in macOS-Oberflächen – 16.10.2026, synthetisch
+
+- Vorhandene Einstellungen mit geordneter verschlüsselter Unterrichtszeitverwaltung, verständlicher Eingabevalidierung, atomarer Konflikterkennung und ausdrücklichem Neuladen. Keine verbindlichen Schulzeitdefaults.
+- Stundenplaneditor übernimmt Vorlagen nur auf bewussten Klick, erhält individuelle Bestandszeiten und speichert unabhängige Start-/Endwerte; spätere globale Änderungen wirken nicht zurück. Bei geringer Höhe scrollbar mit erreichbaren Aktionen.
+- Explizite geprüfte synthetische V5-Adapterfähigkeit; produktive V4-Oberflächen unverändert ohne V5-Tabellenzugriff.

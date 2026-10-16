@@ -103,8 +103,9 @@ class SettingsScreen(QWidget):
     updates_page_opened = Signal()
     school_year_transition_preview_requested = Signal(str, object, object)
 
-    def __init__(self, *, now_provider: Callable[[], datetime] = datetime.now) -> None:
+    def __init__(self, *, now_provider: Callable[[], datetime] = datetime.now, lesson_time_templates_available: bool = False) -> None:
         super().__init__()
+        self.lesson_time_templates_available = lesson_time_templates_available
         self._now_provider = now_provider
         self._backup_summary: BackupSummaryViewModel | None = None
         self._backup_checked = False
@@ -148,6 +149,10 @@ class SettingsScreen(QWidget):
                 self._school_years_card(),
             )
         )
+        if self.lesson_time_templates_available:
+            from src.desktop_app.screens.lesson_time_templates_settings import LessonTimeTemplatesSettings
+            self.lesson_time_templates_editor = LessonTimeTemplatesSettings()
+            self.pages.addWidget(self._detail_page("lesson_time_templates", "Unterrichtszeiten", self.lesson_time_templates_editor))
         outer.addWidget(self.pages)
 
     def _scroll_page(self, content: QWidget) -> QWidget:
@@ -183,6 +188,9 @@ class SettingsScreen(QWidget):
                 "Aktuelles Schuljahr und Wechselvorschau",
             ),
         }
+        if self.lesson_time_templates_available:
+            self.settings_cards["lesson_time_templates"] = SettingsNavigationCard(
+                "lesson_time_templates", "Unterrichtszeiten", "Globale Zeitvorlagen für den Stundenplan festlegen")
         for card in self.settings_cards.values():
             card.activated.connect(self.show_page)
             layout.addWidget(card)
@@ -238,6 +246,8 @@ class SettingsScreen(QWidget):
             "updates": 5,
             "school_years": 6,
         }
+        if self.lesson_time_templates_available:
+            page_indexes["lesson_time_templates"] = 7
         if self.operation_active or key not in page_indexes:
             return
         self.current_page = key
