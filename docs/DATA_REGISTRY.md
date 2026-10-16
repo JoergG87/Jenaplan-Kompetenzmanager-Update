@@ -2683,3 +2683,7 @@ Die vorstehend vereinbarte Parent-/Linkform wird als zusätzliche exakte synthet
 ## D: tatsächlich gemessene Zielidentität – 16.10.2026
 
 `synthetic_v6_normalized_timetable`: user_version=6; Fingerprintalgorithmus unverändert gemäß SchemaRegistry; gemessener Fingerprint `4d8f4e056f5897114b3af8899947bce1f7362c52a3da96525f32baec3e9d2cc2`. Normalisierte Parent-/Linkform entspricht dem vorstehenden Modellvertrag. Explizite synthetische Kanten V4→V6 und altes V5→V6. Das bisherige V5 (Version 5 / `21f9af621c54a31e476161a6ee8c916bfd248acbd8d443bed979d27d67f9d1af`) und seine Registry bleiben unverändert. PRODUCT_SCHEMA_REGISTRY besitzt weiterhin ausschließlich Final V4 und keine Upgradekante.
+
+
+## V6-Desktopintegration – 16.10.2026
+Keine neue Quelle oder Schemaidentität: exaktes registriertes synthetic_v6_normalized_timetable bleibt Testziel; produktiv ausschließlich Final V4. Startup wählt die Fähigkeit anhand vollständiger keyed Identität im versiegelten synthetischen Testkontext, nie allein anhand user_version oder Dateinamen.

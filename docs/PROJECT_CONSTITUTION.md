@@ -1624,3 +1624,7 @@ Produktentscheidung dieses Auftrags: beide Fähigkeiten sollen gemeinsam in die 
 ## D-Umsetzung – PO-Auftrag 16.10.2026
 
 Autorisiert: normalisierte Stammgruppen-/Mehrfachfachstunden samt transaktionaler Migration und vollständiger Consumer-/Backup-/Restoreintegration ausschließlich synthetisch. Bisheriges V5 bleibt unverändert; eigenes exaktes synthetisches V6, Produktregistry weiterhin ausschließlich Final V4. Keine A/B-Wochen, Produktmigration oder Veröffentlichung.
+
+
+## V6-App-/Workerintegration – PO-Auftrag 16.10.2026
+Bestehende Final-V4-Produktruntime bleibt unverändert. Autorisiert ist die vollständige V6-Desktop-/Adapter-/Backup-/Worker-/Restartkomposition ausschließlich unter versiegeltem internal-test-Profil und bestehendem synthetic_test-Root. Keine neue Schemaidentität, keine produktive Migration oder Registryfreigabe. Explizite Quellenprüfung und Existing-only-Keys; alle unbekannten Zustände sperren.

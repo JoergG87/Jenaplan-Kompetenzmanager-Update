@@ -1641,3 +1641,7 @@ Insbesondere shell.py dashboard_documentation_refresh und overview_screen.py erw
 ## D-Umsetzung – Consumer 16.10.2026
 
 TimetableEntry/ViewModel projizieren unveränderliche subject_ids und einzelne Fachoptionen. Das Legacy-subject_id ist nur für genau ein Fach belegt, niemals mit dem ersten kombinierten Fach. Dashboard zeigt alle Fachnamen; vor kombinierter Beobachtungsaktion ist eine explizite konkrete Fachwahl erforderlich. Organisatorische Stunden erzeugen keine Fachvorschläge; der vorhandene Beobachtungsdialog verlangt bei fachbezogener Erfassung ein reales Fach. Fachauswertungen bleiben durch konkrete Beobachtungs-/Kompetenzreferenzen bestimmt.
+
+
+## V6-Desktopintegration – 16.10.2026
+Keine neue Ansicht: Einstellungen und Stundenplan erhalten die vorhandene LessonTimeTemplatesDesktopAdapter-Fähigkeit ausschließlich von der vollständig geprüften V6-Runtime. Main und AppShell bleiben Kompositions-/Projektionsschicht ohne neue Fachlogik.

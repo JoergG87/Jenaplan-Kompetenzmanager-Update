@@ -132,8 +132,9 @@ def test_authenticated_synthetic_evidence_has_real_valid_codecs(tmp_path):
 
 def test_native_module_is_spec_selected_only_for_internal_profile():
     spec = Path("packaging/macos_pilot.spec").read_text()
-    assert '] + (["scripts.macos_native_acceptance"] if TEST_PROFILE is not None else [])' in spec
-    assert '] + (["scripts.macos_native_acceptance"] if TEST_PROFILE is None else [])' in spec
+    modules = '["scripts.macos_native_acceptance", "scripts.macos_native_v6_acceptance"]'
+    assert f'] + ({modules} if TEST_PROFILE is not None else [])' in spec
+    assert f'] + ({modules} if TEST_PROFILE is None else [])' in spec
     assert '"src.security.packaged_integration_smoke"' in spec
 
 

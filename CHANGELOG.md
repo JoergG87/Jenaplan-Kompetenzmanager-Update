@@ -5555,3 +5555,10 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## V6-Nativabnahme – Vorprüfung 16.10.2026
 
 - NO-GO: normale Frozen-V6-Desktop-/Workerkomposition fehlt; Produktstart bleibt sicher Final V4. Neues isoliertes Profil und 132 Profil-/Registrytests bestanden. Kein Build bei unzureichendem Speicher, keine native Gesamtfreigabe. Readinessbefunde, offene Gates und menschliche Prüfliste in docs/RELEASE_AUTOMATION.md dokumentiert; keine Code-/Versions-/Feedänderung.
+
+
+## V6-App-/Workerintegration – 16.10.2026
+
+- Autorisierte interne V6-Runtime in den tatsächlichen Desktopstart integriert; vorhandener Prozesslock, Existing-only-Schlüssel und exakte keyed Schemaauswahl. Unterrichtszeitenadapter an Einstellungen/Editor durchgereicht. Produkt-Final-V4 bleibt unverändert.
+- Bestehenden Restore-Worker/Restart um den profilgebundenen V6-Vertrag ergänzt; vorhandener authentisierter Recovery-Bootstrap bei fehlender Live-Keymetadatenposition, keine Schlüsselanlage oder V4-Umdeutung.
+- Historische Backupprüfung hält Installationsinventar unverändert; verschlüsselte Prüfkopie ausschließlich im privaten Tempbereich. Quellenintegration, reale Lock-/SIGKILL-Prüfungen und interne native V6-Prüfmodi ergänzt. Native Qualifikation und offene Grenzen in docs/RELEASE_AUTOMATION.md.

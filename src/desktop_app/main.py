@@ -9,6 +9,7 @@ import os
 import sys
 import tempfile
 from dataclasses import replace
+from contextlib import ExitStack
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Mapping
 
@@ -379,6 +380,7 @@ def main() -> int:
     if "--restore-worker" in arguments:
         from src.desktop_app.restore_worker import (
             RESTORE_MODE_FINAL_V4_ENCRYPTED,
+            RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED,
             run as run_restore_worker,
         )
 
@@ -387,7 +389,7 @@ def main() -> int:
             restore_mode = arguments[mode_index + 1]
         except (ValueError, IndexError):
             restore_mode = None
-        if restore_mode != RESTORE_MODE_FINAL_V4_ENCRYPTED:
+        if restore_mode not in {RESTORE_MODE_FINAL_V4_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED}:
             print(
                 "App-Start abgelehnt: cipher_backup_restore_not_available.",
                 file=sys.stderr,
@@ -414,8 +416,12 @@ def main() -> int:
 
     try:
         final_v4_restore_confirm = "--final-v4-restore-confirm" in arguments
-        if final_v4_restore_confirm:
-            arguments.remove("--final-v4-restore-confirm")
+        synthetic_v6_restore_confirm = "--synthetic-v6-restore-confirm" in arguments
+        if final_v4_restore_confirm and synthetic_v6_restore_confirm:
+            raise RuntimeStorageError("cipher_restore_confirm_arguments_conflict")
+        restore_confirm = final_v4_restore_confirm or synthetic_v6_restore_confirm
+        if restore_confirm:
+            arguments.remove("--synthetic-v6-restore-confirm" if synthetic_v6_restore_confirm else "--final-v4-restore-confirm")
             restore_runtime_root = _argument_value(arguments, "--runtime-root")
             restore_confirm_id = _argument_value(arguments, "--restore-id")
             restore_confirm_token = _argument_value(arguments, "--restore-token")
@@ -433,11 +439,11 @@ def main() -> int:
             restore_confirm_token = None
         resume_restore_id = _argument_value(arguments, "--restore-resume")
         resume_token = _argument_value(arguments, "--restore-token")
-        if not final_v4_restore_confirm:
+        if not restore_confirm:
             inherited_lock_value = _argument_value(arguments, "--restore-lock-fd")
         if resume_restore_id is not None or resume_token is not None:
             raise RuntimeStorageError("cipher_backup_restore_not_available")
-        if inherited_lock_value is not None and not final_v4_restore_confirm:
+        if inherited_lock_value is not None and not restore_confirm:
             raise RuntimeStorageError("cipher_backup_restore_not_available")
         inherited_lock_fd = (
             None if inherited_lock_value is None else int(inherited_lock_value)
@@ -456,7 +462,19 @@ def main() -> int:
     )
 
     try:
-        inventory_port = ProductStartupInventory()
+        from src.core.macos_test_package_profile import test_identity
+        internal_test = test_identity() is not None
+        if internal_test:
+            from src.security.internal_test_v6_composition import (
+                InternalTestStartupInventory, InternalTestStartupGuard,
+                require_internal_test_v6_context,
+            )
+            require_internal_test_v6_context(data_root)
+            inventory_port = InternalTestStartupInventory()
+        else:
+            if synthetic_v6_restore_confirm:
+                raise RuntimeRootProtectionError("synthetic_v6_sealed_context_required")
+            inventory_port = ProductStartupInventory()
         before_inventory = inventory_port.before_lock(data_root)
         root_protection, fresh_unmarked_root = _preflight_desktop_runtime_root(
             data_root,
@@ -465,7 +483,7 @@ def main() -> int:
     except UpgradeStartupBlocked:
         _show_upgrade_startup_blocked(arguments, packaged_smoke=packaged_smoke)
         return 3
-    except (RuntimeRootProtectionError, OSError) as error:
+    except (RuntimeRootProtectionError, OSError, RuntimeError, ValueError) as error:
         print(f"App-Start blockiert: {getattr(error, 'code', 'runtime_root_unreadable')}", file=sys.stderr)
         _show_upgrade_startup_blocked(arguments, packaged_smoke=packaged_smoke)
         return 3
@@ -474,11 +492,12 @@ def main() -> int:
     )
 
     lock = None
+    runtime_stack = ExitStack()
     new_database_initialization_candidate = False
     try:
         lock = RuntimeInstanceLock(data_root, inherited_fd=inherited_lock_fd)
         lock.acquire()
-        startup_guard = ProductUpgradeStartupGuard(lock, inventory=inventory_port)
+        startup_guard = (InternalTestStartupGuard if internal_test else ProductUpgradeStartupGuard)(lock, inventory=inventory_port)
         startup_guard.evaluate(before=before_inventory)
         if fresh_unmarked_root:
             root_protection = publish_pilot_product_root(
@@ -494,25 +513,45 @@ def main() -> int:
             recover_interrupted_final_v4_restore,
         )
 
-        if final_v4_restore_confirm:
-            confirm_final_v4_restore_startup(
-                runtime_root=data_root,
-                restore_id=str(restore_confirm_id),
-                token=str(restore_confirm_token),
-                product_paths=runtime_paths(data_root),
+        if internal_test:
+            from src.desktop_app.synthetic_v6_runtime_adapters import (
+                recover_internal_test_v6_restore, confirm_internal_test_v6_restore,
             )
+            # Restore kind comes from existing transaction evidence. A foreign
+            # contract is never retried using another schema's verifier.
+            from src.security.internal_test_v6_composition import internal_test_restore_is_v6
+            v6_restore = synthetic_v6_restore_confirm or internal_test_restore_is_v6(data_root)
         else:
-            recovery = recover_interrupted_final_v4_restore(
-                runtime_root=data_root,
-                product_paths=runtime_paths(data_root),
-            )
-            if recovery.status == "resume_required":
+            v6_restore = False
+        if v6_restore:
+            if final_v4_restore_confirm:
+                raise RuntimeStorageError("cipher_restore_schema_mismatch")
+            if synthetic_v6_restore_confirm:
+                confirm_internal_test_v6_restore(data_root, str(restore_confirm_id), str(restore_confirm_token))
+            else:
+                recovery = recover_internal_test_v6_restore(data_root)
+                if recovery.status == "resume_required":
+                    confirm_internal_test_v6_restore(data_root, str(recovery.restore_id), str(recovery.resume_token))
+        else:
+            if final_v4_restore_confirm:
                 confirm_final_v4_restore_startup(
                     runtime_root=data_root,
-                    restore_id=str(recovery.restore_id),
-                    token=str(recovery.resume_token),
+                    restore_id=str(restore_confirm_id),
+                    token=str(restore_confirm_token),
                     product_paths=runtime_paths(data_root),
                 )
+            else:
+                recovery = recover_interrupted_final_v4_restore(
+                    runtime_root=data_root,
+                    product_paths=runtime_paths(data_root),
+                )
+                if recovery.status == "resume_required":
+                    confirm_final_v4_restore_startup(
+                        runtime_root=data_root,
+                        restore_id=str(recovery.restore_id),
+                        token=str(recovery.resume_token),
+                        product_paths=runtime_paths(data_root),
+                    )
         # Recovery may legitimately replace components. Reinventory its result;
         # never use the pre-recovery snapshot to authorize a fresh installation.
         startup_guard.evaluate()
@@ -524,11 +563,13 @@ def main() -> int:
         )
     except UpgradeStartupBlocked:
         if lock is not None:
+            runtime_stack.close()
             lock.release()
         _show_upgrade_startup_blocked(arguments, packaged_smoke=packaged_smoke)
         return 3
     except (RuntimeError, OSError) as error:
         if lock is not None:
+            runtime_stack.close()
             lock.release()
         print(
             "App-Start wegen eines unsicheren Runtime-Zustands abgelehnt: "
@@ -657,6 +698,7 @@ def main() -> int:
                     pass
         if session is None:
             discard_pre_auth_security_logging(security_event_buffer)
+            runtime_stack.close()
             lock.release()
             return 0
     except (
@@ -670,6 +712,7 @@ def main() -> int:
         if packaged_smoke:
             print("Security-Pakettest blockiert.", file=sys.stderr)
             discard_pre_auth_security_logging(security_event_buffer)
+            runtime_stack.close()
             lock.release()
             return 1
         security_decision = SecurityStartupDecision(
@@ -682,6 +725,7 @@ def main() -> int:
             decision=security_decision,
         ).exec()
         discard_pre_auth_security_logging(security_event_buffer)
+        runtime_stack.close()
         lock.release()
         return 1
 
@@ -704,15 +748,31 @@ def main() -> int:
             account=account,
             security_epoch=security_runtime.repository.security_epoch(),
         )
-        product_runtime = open_cipher_product_runtime(
-            paths=security_paths,
-            account_loader=lambda: account,
-            authentication_confirmed=True,
-            first_run_allowed=(
-                new_database_initialization_candidate
-                and security_decision.state is SecurityStartState.FIRST_RUN
-            ),
-        )
+        v6_service = None
+        lesson_time_templates_adapter = None
+        if internal_test and not new_database_initialization_candidate:
+            from src.security.internal_test_v6_composition import (
+                build_internal_test_v6_backup_service, internal_test_schema_identity,
+                open_internal_test_v6_runtime,
+            )
+            from src.core.timetable_schema import SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION
+            candidate = build_internal_test_v6_backup_service(data_root, authenticated_account=account)
+            if internal_test_schema_identity(candidate) == SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity:
+                v6_service = candidate
+        if v6_service is not None:
+            product_runtime = runtime_stack.enter_context(open_internal_test_v6_runtime(v6_service, lock=lock))
+            from src.desktop_app.adapters.lesson_time_templates_desktop_adapter import LessonTimeTemplatesDesktopAdapter
+            lesson_time_templates_adapter = LessonTimeTemplatesDesktopAdapter(product_runtime.runtime)
+        else:
+            product_runtime = open_cipher_product_runtime(
+                paths=security_paths,
+                account_loader=lambda: account,
+                authentication_confirmed=True,
+                first_run_allowed=(
+                    new_database_initialization_candidate
+                    and security_decision.state is SecurityStartState.FIRST_RUN
+                ),
+            )
         if product_runtime.installation_id != session.installation_id:
             raise CipherProductRuntimeError(
                 "cipher_product_session_context_mismatch",
@@ -747,25 +807,35 @@ def main() -> int:
             and root_protection.kind is RuntimeRootKind.PILOT_PRODUCT
         ):
             root_protection = activate_pilot_product_root(data_root)
-        encrypted_backup_service = build_final_v4_encrypted_backup_service(
-            opened_runtime=product_runtime.runtime,
-            account_loader=lambda: account,
-            environ=os.environ,
-            product_paths=security_paths,
-        )
-        support_reset_backup_factory = FinalV4SupportResetBackupFactory(
-            service=encrypted_backup_service,
-            backup_root=paths.backups,
-        )
-        encrypted_backup_application = FinalV4EncryptedBackupApplicationService(
-            encrypted_backup_service
-        )
+        if v6_service is None:
+            encrypted_backup_service = build_final_v4_encrypted_backup_service(
+                opened_runtime=product_runtime.runtime,
+                account_loader=lambda: account,
+                environ=os.environ,
+                product_paths=security_paths,
+            )
+            support_reset_backup_factory = FinalV4SupportResetBackupFactory(
+                service=encrypted_backup_service,
+                backup_root=paths.backups,
+            )
+            restore_application_type = FinalV4EncryptedRestoreApplicationService
+            worker_launcher = DesktopFinalV4RestoreWorkerLauncher()
+        else:
+            from src.application.commands.synthetic_v6_backup_restore import SyntheticV6EncryptedRestoreApplicationService
+            from src.desktop_app.synthetic_v6_runtime_adapters import DesktopSyntheticV6RestoreWorkerLauncher
+            encrypted_backup_service = v6_service
+            # The existing support-reset backup strategy is V4-specific. No
+            # V4 reset capability is passed into a V6 session.
+            support_reset_backup_factory = None
+            restore_application_type = SyntheticV6EncryptedRestoreApplicationService
+            worker_launcher = DesktopSyntheticV6RestoreWorkerLauncher()
+        encrypted_backup_application = FinalV4EncryptedBackupApplicationService(encrypted_backup_service)
         from src.security.startup import finalize_security_runtime
-        encrypted_restore_application = FinalV4EncryptedRestoreApplicationService(
-            encrypted_backup_service,
-            lock=lock,
-            worker_launcher=DesktopFinalV4RestoreWorkerLauncher(),
-            before_handoff=lambda: finalize_security_runtime(security_runtime, paths, lock),
+        def before_restore_handoff():
+            finalize_security_runtime(security_runtime, paths, lock)
+        encrypted_restore_application = restore_application_type(
+            encrypted_backup_service, lock=lock, worker_launcher=worker_launcher,
+            before_handoff=before_restore_handoff,
         )
         build_info = load_build_info()
         backup_restore_adapter = BackupRestoreDesktopAdapter(
@@ -792,6 +862,7 @@ def main() -> int:
             student_adapter=student_adapter,
             backup_restore_available=True,
             backup_restore_adapter=backup_restore_adapter,
+            lesson_time_templates_adapter=lesson_time_templates_adapter,
         )
         window.configure_school_year_transition_activation(
             security_runtime.service
@@ -819,6 +890,7 @@ def main() -> int:
     except RuntimeStorageError as error:
         if packaged_smoke:
             print("Runtime-Pakettest blockiert.", file=sys.stderr)
+            runtime_stack.close()
             lock.release()
             return 1
         QMessageBox.critical(
@@ -826,6 +898,7 @@ def main() -> int:
             "App-Daten nicht zugänglich",
             f"{error}\n\nDie App wurde nicht gestartet, damit keine Daten gefährdet werden.",
         )
+        runtime_stack.close()
         lock.release()
         return 1
     except CipherProductRuntimeError as error:
@@ -836,6 +909,7 @@ def main() -> int:
         )
         if packaged_smoke:
             print(f"Cipher-Pakettest blockiert: {error.code}", file=sys.stderr)
+            runtime_stack.close()
             lock.release()
             return 4
         QMessageBox.critical(
@@ -844,12 +918,14 @@ def main() -> int:
             "Die verschlüsselte lokale Datenablage konnte nicht sicher geöffnet "
             f"werden. Technischer Code: {error.code}",
         )
+        runtime_stack.close()
         lock.release()
         return 4
     except Exception as error:  # pragma: no cover - startup/platform feedback
         logging.exception("Die App konnte nicht initialisiert werden.")
         if packaged_smoke:
             print("Pakettest-Initialisierung blockiert.", file=sys.stderr)
+            runtime_stack.close()
             lock.release()
             return 1
         QMessageBox.critical(
@@ -858,6 +934,7 @@ def main() -> int:
             "Die lokale Datenbank oder eine benötigte Ressource konnte nicht "
             f"geöffnet werden.\n\nDatenordner: {data_root}\nFehler: {error}",
         )
+        runtime_stack.close()
         lock.release()
         return 1
 
@@ -881,6 +958,7 @@ def main() -> int:
                 finalize_security_runtime(security_runtime, paths, lock)
             return result
         finally:
+            runtime_stack.close()
             lock.release()
     window.showMaximized()
     try:
@@ -889,6 +967,7 @@ def main() -> int:
             finalize_security_runtime(security_runtime, paths, lock)
         return result
     finally:
+        runtime_stack.close()
         lock.release()
 
 
@@ -983,6 +1062,8 @@ def _run_packaged_smoke(
         "data_root": str(paths.root),
         "dmk_fingerprint_sha256": product_runtime.dmk_fingerprint_sha256,
         "final_v4": compatibility.sqlite_user_version,
+        "schema_version": compatibility.sqlite_user_version,
+        "lesson_time_templates_available": window.lesson_time_templates_adapter is not None,
         "first_run": product_runtime.first_run,
         "login_authenticated": login_authenticated,
         "mode": mode,
@@ -1059,10 +1140,14 @@ def _run_packaged_smoke(
                 started.process.terminate()
             started.process.wait(timeout=5)
             os.close(started.parent_lifetime_fd)
-        recovery = recover_interrupted_final_v4_restore(
-            runtime_root=paths.root,
-            product_paths=paths,
-        )
+        if compatibility.sqlite_user_version == 6:
+            from src.desktop_app.synthetic_v6_runtime_adapters import recover_internal_test_v6_restore
+            recovery = recover_internal_test_v6_restore(paths.root)
+        else:
+            recovery = recover_interrupted_final_v4_restore(
+                runtime_root=paths.root,
+                product_paths=paths,
+            )
         payload["restore"]["recovery"] = recovery.status
     elif mode == "cleanup":
         from src.security.data_keys import DataMasterKeyService

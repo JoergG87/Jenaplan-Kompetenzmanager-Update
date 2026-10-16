@@ -110,6 +110,11 @@ class FinalV4EncryptedBackupApplicationService:
 class FinalV4EncryptedRestoreApplicationService:
     """Bind READY staging and the existing live worker to desktop commands."""
 
+    schema_version = FINAL_SCHEMA_VERSION
+    schema_fingerprint = FINAL_SCHEMA_FINGERPRINT
+    def prepare_restore(self, **kwargs):
+        return prepare_final_v4_live_restore(**kwargs)
+
     def __init__(
         self,
         service: FinalV4EncryptedBackupService,
@@ -166,16 +171,16 @@ class FinalV4EncryptedRestoreApplicationService:
             ) from None
         compatibility = RestoreCompatibility(
             status=DatabaseCompatibilityStatus.EXACT,
-            database_compatibility_version=FINAL_SCHEMA_VERSION,
-            sqlite_user_version=FINAL_SCHEMA_VERSION,
-            schema_fingerprint=FINAL_SCHEMA_FINGERPRINT,
+            database_compatibility_version=self.schema_version,
+            sqlite_user_version=self.schema_version,
+            schema_fingerprint=self.schema_fingerprint,
         )
         preview = RestorePreview(
             created_at=verified.manifest.created_at,
             app_version=verified.manifest.app_version,
             backup_format_version=verified.manifest.format_version,
-            database_compatibility_version=FINAL_SCHEMA_VERSION,
-            sqlite_user_version=FINAL_SCHEMA_VERSION,
+            database_compatibility_version=self.schema_version,
+            sqlite_user_version=self.schema_version,
             compatibility_status=DatabaseCompatibilityStatus.EXACT,
             students_count=counts.students,
             observations_count=counts.observations,
@@ -229,7 +234,7 @@ class FinalV4EncryptedRestoreApplicationService:
         try:
             if self._before_handoff is not None:
                 self._before_handoff()
-            preparation = prepare_final_v4_live_restore(
+            preparation = self.prepare_restore(
                 backup_service=self.service,
                 lock=self.lock,
                 staging_root=session.staging_root,

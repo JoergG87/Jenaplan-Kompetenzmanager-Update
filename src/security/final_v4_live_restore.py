@@ -1321,6 +1321,8 @@ def _bootstrap_handoff_context(
     *,
     account_loader,
     key_store=None,
+    restore_kind=FINAL_V4_LIVE_RESTORE_KIND,
+    handoff_service_type=FinalV4EncryptedRestoreHandoffService,
 ) -> tuple[dict[str, object], LoadedDatabaseKeyRuntime]:
     handoff_path = (
         paths.consumed_handoff
@@ -1329,7 +1331,7 @@ def _bootstrap_handoff_context(
     )
     handoff = _read_canonical_json(handoff_path, RestoreHandoffError)
     if (
-        handoff.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
+        handoff.get("restore_kind") != restore_kind
         or handoff.get("runtime_root") != str(paths.runtime_root)
         or handoff.get("restore_id") != paths.transaction.name
     ):
@@ -1367,7 +1369,7 @@ def _bootstrap_handoff_context(
                 metadata_root=metadata_root,
                 immutable_metadata_read=True,
             )
-            service = FinalV4EncryptedRestoreHandoffService(
+            service = handoff_service_type(
                 runtime_root=paths.runtime_root,
                 loaded_keys=loaded,
                 installation_id=account.installation_id,

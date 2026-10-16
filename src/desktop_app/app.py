@@ -28,6 +28,7 @@ class JenaplanDesktopApp(AppShell):
         student_adapter: StudentDesktopAdapter | None = None,
         backup_restore_available: bool = True,
         backup_restore_adapter: BackupRestoreDesktopAdapter | None = None,
+        lesson_time_templates_adapter=None,
     ) -> None:
         database = database_path or default_database_path()
         super().__init__(
@@ -39,4 +40,5 @@ class JenaplanDesktopApp(AppShell):
             student_adapter=student_adapter,
             backup_restore_available=backup_restore_available,
             backup_restore_adapter=backup_restore_adapter,
+            lesson_time_templates_adapter=lesson_time_templates_adapter,
         )

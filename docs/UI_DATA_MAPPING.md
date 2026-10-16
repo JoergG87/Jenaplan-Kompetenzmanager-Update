@@ -1153,3 +1153,7 @@ Noch keine Felder implementiert: Eintragsart → timetable_entries.entry_kind; F
 ## D-Umsetzung – Editor und Beobachtung 16.10.2026
 
 Die freigegebene Eintragsart-/Mehrfachfachauswahl wird nur mit exakter synthetischer V6-Fähigkeit eingeblendet. Organisatorische Stammgruppenstunde deaktiviert Fachwahl und verwendet vorhandene Stammgruppe. Kombinierte Fachnamen werden einzeln aus Katalogoptionen projiziert. Dashboardfachwahl beginnt ohne konkretes Fach; Abbruch erzeugt keine Aktion. Zeitübernahme bleibt ausdrückliche einmalige Kopie.
+
+
+## V6-Desktopintegration – 16.10.2026
+Keine neuen Felder: normaler autorisierter V6-Teststart verbindet die bestehenden Unterrichtszeitenfelder über LessonTimeTemplatesDesktopAdapter mit lesson_time_templates und die vorhandenen Stundenplan-/Beobachtungsfelder mit demselben geöffneten V6-Datenbankkontext. V4 blendet die V6-Fähigkeit weiterhin aus.

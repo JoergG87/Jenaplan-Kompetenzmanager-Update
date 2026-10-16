@@ -3,6 +3,9 @@ from contextlib import closing, contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 import threading
+import tempfile
+import shutil
+import os
 import weakref
 
 from src.core.database_compatibility import DatabaseCompatibilityInspector
@@ -218,8 +221,19 @@ class SyntheticV6Runtime:
                 continue
             for service_type in allowed_services:
                 try:
-                    with service_type(**arguments).verified_snapshot(path):
-                        pass
+                    # Existing backup verification extracts temporary encrypted
+                    # artifacts beside its input. Keep startup installation
+                    # inventory unchanged: authenticate an exclusive encrypted
+                    # copy outside the installation instead.
+                    with tempfile.TemporaryDirectory(prefix="jkm-v6-history-verify-") as temporary:
+                        copied = Path(temporary) / "source.jkmebackup"
+                        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+                        with os.fdopen(descriptor, "rb") as source:
+                            with copied.open("xb") as target:
+                                copied.chmod(0o600)
+                                shutil.copyfileobj(source, target)
+                        with service_type(**arguments).verified_snapshot(copied):
+                            pass
                     break
                 except Exception:
                     continue
@@ -262,12 +276,20 @@ class SyntheticV6Runtime:
                 raise SyntheticV6RuntimeError("synthetic_v6_separate_recovery_required")
 
     @contextmanager
-    def open_existing(self):
+    def open_existing(self, *, lock=None):
         self._require_scope()
         if self._used:
             raise SyntheticV6RuntimeError("synthetic_v6_session_used")
         self._used = True
-        self._session_lock = RuntimeInstanceLock(self.root).acquire()
+        owns_lock = lock is None
+        if lock is None:
+            self._session_lock = RuntimeInstanceLock(self.root).acquire()
+        else:
+            from src.security.upgrade_startup import ProductUpgradeStartupGuard
+            if lock.runtime_root != self.root:
+                raise SyntheticV6RuntimeError("synthetic_v6_lock_root_mismatch")
+            ProductUpgradeStartupGuard(lock)._require_lock()
+            self._session_lock = lock
         self._thread = threading.get_ident()
         try:
             self._preflight()
@@ -306,5 +328,6 @@ class SyntheticV6Runtime:
             self._connections.clear()
             if close_errors:
                 raise SyntheticV6RuntimeError("synthetic_v6_connection_close_failed")
-            self._session_lock.release()
+            if owns_lock:
+                self._session_lock.release()
             self._session_lock = None

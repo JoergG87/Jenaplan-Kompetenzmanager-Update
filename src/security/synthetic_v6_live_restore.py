@@ -39,12 +39,31 @@ class SyntheticV6EncryptedRestoreHandoffService(FinalV4EncryptedRestoreHandoffSe
     restore_kind = SYNTHETIC_V6_LIVE_RESTORE_KIND
     authentication_purpose = SYNTHETIC_V6_LIVE_RESTORE_AUTH_PURPOSE
 
-    def __init__(self, backup_service):
-        _require_service(backup_service)
-        super().__init__(backup_service)
+    def __init__(self, backup_service=None, **context):
+        if backup_service is not None:
+            _require_service(backup_service)
+        else:
+            # Recovery may need retained key metadata while the live metadata
+            # directory is between renames. This loads no keys and grants no
+            # runtime admission; the existing bootstrap authenticates the DMK
+            # and exact HMAC before using the context.
+            from src.core.runtime_root_protection import require_mutable_test_root, RuntimeRootKind
+            root = Path(context["runtime_root"])
+            if root.resolve(strict=True) != root:
+                raise RestoreHandoffError("Der synthetische V6-Restoreroot ist ungueltig.")
+            protection = require_mutable_test_root(root)
+            if protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
+                raise RestoreHandoffError("Der synthetische V6-Restoreroot fehlt.")
+        super().__init__(backup_service, **context)
 
     def _runtime_root(self):
-        return _require_service(self.backup_service)
+        if self.backup_service is not None:
+            return _require_service(self.backup_service)
+        from src.core.runtime_root_protection import require_mutable_test_root, RuntimeRootKind
+        protection = require_mutable_test_root(self.runtime_root)
+        if protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
+            raise RestoreHandoffError("Der synthetische V6-Restoreroot fehlt.")
+        return self.runtime_root
 
 
 class SyntheticV6EncryptedLiveRestoreService(FinalV4EncryptedLiveRestoreService):

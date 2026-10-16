@@ -44,6 +44,7 @@ WORKER_READY_TIMEOUT_SECONDS = 5.0
 WORKER_TERMINATE_TIMEOUT_SECONDS = 2.0
 RESTORE_MODE_ZIP_V1 = "zip_v1"
 RESTORE_MODE_FINAL_V4_ENCRYPTED = "final_v4_encrypted"
+RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED = "synthetic_v6_encrypted"
 
 
 class RestoreWorkerLaunchError(RuntimeError):
@@ -284,6 +285,11 @@ def _abort_unconfirmed_restore(
     restore_id: str | None,
     restore_mode: str,
 ) -> None:
+    if restore_mode == RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED:
+        # Preserve all evidence on an unconfirmed synthetic worker start. The
+        # authenticated V6 parent/recovery path owns journal transitions; never
+        # fall back to the unrelated ZIP restore recovery implementation.
+        return
     if restore_mode == RESTORE_MODE_FINAL_V4_ENCRYPTED:
         # A failed worker must not turn an upgrade/restore conflict into an
         # automatic restore-journal transition in the parent process either.
@@ -371,7 +377,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--parent-lifetime-fd", type=int)
     parser.add_argument(
         "--restore-mode",
-        choices=(RESTORE_MODE_ZIP_V1, RESTORE_MODE_FINAL_V4_ENCRYPTED),
+        choices=(RESTORE_MODE_ZIP_V1, RESTORE_MODE_FINAL_V4_ENCRYPTED,
+                 RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED),
         default=RESTORE_MODE_ZIP_V1,
     )
     return parser
@@ -403,6 +410,14 @@ def run(
         else None
     )
     try:
+        if args.restore_mode == RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED:
+            from src.security.internal_test_v6_composition import (
+                require_internal_test_v6_context, InternalTestStartupInventory,
+                InternalTestStartupGuard,
+            )
+            require_internal_test_v6_context(runtime_root)
+            inventory_port = InternalTestStartupInventory()
+            before_inventory = inventory_port.before_lock(runtime_root)
         if args.restore_mode == RESTORE_MODE_FINAL_V4_ENCRYPTED:
             from src.security.upgrade_startup import (
                 ProductStartupInventory, ProductUpgradeStartupGuard,
@@ -431,6 +446,16 @@ def run(
                     )
                 else:
                     service = encrypted_service_factory(runtime_root)
+            elif args.restore_mode == RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED:
+                from src.desktop_app.synthetic_v6_runtime_adapters import (
+                    build_internal_test_v6_restore_worker_service,
+                )
+                # The sealed test context and complete inventory guard remain
+                # mandatory even for injected factories.
+                InternalTestStartupGuard(lock, inventory=inventory_port).evaluate(before=before_inventory)
+                service = (build_internal_test_v6_restore_worker_service(runtime_root, lock=lock)
+                           if encrypted_service_factory is None
+                           else encrypted_service_factory(runtime_root))
             else:
                 service = ProductiveRestoreService()
             service.execute(

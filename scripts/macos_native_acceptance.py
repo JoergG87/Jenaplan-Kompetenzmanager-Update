@@ -597,7 +597,10 @@ def _unsafe_child(executable):
 def run_frozen(mode):
     try:
         profile = _active(mode)
-        if mode == "matrix":
+        if mode.startswith("v6-"):
+            from scripts.macos_native_v6_acceptance import run_frozen as run_v6
+            payload = run_v6(mode); code = 0
+        elif mode == "matrix":
             payload = _matrix(profile)
             code = 0 if payload["status"] == "automated_gates_passed" else 1
         elif mode == "existing-keys":
@@ -625,12 +628,16 @@ def run_frozen(mode):
             payload["error_code"] = str(error)
         if isinstance(error, RuntimeError) and str(error).startswith("native_"):
             payload["error_code"] = str(error).split(":", 1)[0]
-        if mode == "matrix" and test_identity() is not None:
-            path = Path(test_identity().runtime_root).parent / "native-matrix-progress.json"
+        if mode in {"matrix", "v6-matrix"} and test_identity() is not None:
+            filename = "native-v6-matrix.json" if mode == "v6-matrix" else "native-matrix-progress.json"
+            path = Path(test_identity().runtime_root).parent / filename
             if path.is_file() and not path.is_symlink():
                 progress = json.loads(path.read_text())
                 progress.update(payload)
-                _checkpoint(test_identity(), progress)
+                if mode == "v6-matrix":
+                    path.write_text(json.dumps(progress, indent=2))
+                else:
+                    _checkpoint(test_identity(), progress)
                 payload = progress
         print(json.dumps(payload), flush=True)
         return 1
@@ -643,7 +650,7 @@ def main():
     parser.add_argument("--mode", choices=sorted(NATIVE_TEST_MODES), default="matrix")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    result = run_profile(args.app, args.test_profile, args.mode, timeout=1200 if args.mode == "matrix" else 180)
+    result = run_profile(args.app, args.test_profile, args.mode, timeout=1200 if args.mode in {"matrix", "v6-matrix"} else 240)
     if args.output:
         with args.output.open("x") as stream: json.dump(result, stream, indent=2)
     print(json.dumps(result, indent=2))

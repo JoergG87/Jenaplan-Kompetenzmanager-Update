@@ -16,6 +16,7 @@ PRODUCT_BUNDLE_ID = "de.jenaplan.kompetenzmanager"
 PRODUCT_APP_NAME = "Jenaplan-Kompetenzmanager"
 SERVICES = ("data-master-key", "device-credential", "monotonic-security-anchor")
 NATIVE_TEST_MODES = frozenset({
+    "v6-seed", "v6-migrate", "v6-check", "v6-crash", "v6-matrix",
     "initialize", "restart", "restart-denied", "cleanup", "existing-keys", "matrix", "hold-lock", "acl-preflight",
     "restore-worker", "restore-ready", "restore-parent-exit",
     "restore-crash-before_swap", "restore-crash-between_main_and_companion",
@@ -235,6 +236,7 @@ def _validate_arguments(profile, arguments):
     parser = argparse.ArgumentParser(add_help=False, exit_on_error=False)
     parser.add_argument("--restore-worker", action="store_true")
     parser.add_argument("--final-v4-restore-confirm", action="store_true")
+    parser.add_argument("--synthetic-v6-restore-confirm", action="store_true")
     for name in ("handoff", "nonce", "lock-fd", "ready-fd", "parent-lifetime-fd",
                  "restore-mode", "runtime-root", "restore-id", "restore-token", "restore-lock-fd"):
         parser.add_argument(f"--{name}")
@@ -246,10 +248,11 @@ def _validate_arguments(profile, arguments):
         args, unknown = parser.parse_known_args(arguments)
     except (argparse.ArgumentError, SystemExit):
         _reject()
-    if unknown or args.restore_worker == args.final_v4_restore_confirm:
+    if unknown or sum((args.restore_worker, args.final_v4_restore_confirm,
+                       args.synthetic_v6_restore_confirm)) != 1:
         _reject()
     if args.restore_worker:
-        if args.restore_mode != "final_v4_encrypted" or not args.handoff:
+        if args.restore_mode not in {"final_v4_encrypted", "synthetic_v6_encrypted"} or not args.handoff:
             _reject()
         handoff = Path(args.handoff)
         if handoff.parent != Path(profile.runtime_root) / "restore-handoffs" or handoff.suffix != ".json":
