@@ -5544,3 +5544,9 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## Stundenplan D – Editor und Beobachtungsconsumer, synthetisch
 
 - Stammgruppenstunden ohne Kompetenzfach und kombinierte Fachstunden im vorhandenen Editor vollständig anlegen, anzeigen, bearbeiten und löschen. Vor Beobachtungen konkrete Fachwahl; keine automatische Doppelbeobachtung und kein künstliches Standardfach. Unbekannte Schemas und widersprüchliche Fachangaben sperren. Zeitvorlagen bleiben ausdrückliche einmalige Kopien; spätere Vorlagenänderungen verändern keine Einträge.
+
+## Stundenplan D – Runtime/Backup/Restore und Gesamtprüfung, synthetisch
+
+- Eigene exakte V6-Runtime und verschlüsselte Vollbackups mit separatem Manifest/READY/Handoff. Kontrollierter Restore einschließlich echtem V4→V5→V6→Backup→Restore-Verlauf, Dokument-/Companion-/Keybindungen und Crashprüfungen. Produktives V4 und 0.4.4/Build 404 unverändert. Abschließende Prüfzahlen, Cocoa-Quell-Smoke und offene native Paketgates stehen in PROJECT; keine Veröffentlichung.
+
+- Finale serielle Produktsuite: 3395 bestanden, 104 bestehende Skips, 120 Untertests; gezielte Integration 200 bestanden/2 Untertests ohne Skips. Native Cocoa-Quellbedienung und sichtbare Mehrfachfachauswahl bestanden; frische eingefrorene Paket- und menschliche Pilotabnahme bleiben offen.

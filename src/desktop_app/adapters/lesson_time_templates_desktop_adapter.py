@@ -1,4 +1,4 @@
-"""Explicit synthetic V5 capability adapter; never composed by product startup."""
+"""Explicit exact synthetic V5/V6 capability adapter; never composed by product startup."""
 from src.core.maintenance_gate import product_writer
 from src.core.lesson_time_templates import LessonTimeTemplate
 from src.desktop_app.view_models.lesson_time_templates_view_model import (
@@ -9,7 +9,8 @@ from src.desktop_app.view_models.lesson_time_templates_view_model import (
 class LessonTimeTemplatesDesktopAdapter:
     def __init__(self, runtime) -> None:
         from src.security.synthetic_v5_runtime import OpenedSyntheticV5Runtime
-        if type(runtime) is not OpenedSyntheticV5Runtime:
+        from src.security.synthetic_v6_runtime import OpenedSyntheticV6Runtime
+        if type(runtime) not in (OpenedSyntheticV5Runtime, OpenedSyntheticV6Runtime):
             raise ValueError("synthetic_v5_runtime_required")
         self.database = runtime.database
         self.service = runtime.lesson_time_templates
