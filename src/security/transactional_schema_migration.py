@@ -143,6 +143,22 @@ class SyntheticTransactionalMigration:
             if row is None or str(row[0]).lower() != value:
                 raise UpgradeError("transaction_configuration_invalid")
 
+    def _require_source_connection(self, connection):
+        KeyedFinalV4CompatibilityInspector().inspect_connection(connection)
+
+    def _apply_schema(self, connection):
+        connection.execute(LESSON_TIME_TEMPLATE_STATEMENT)
+        self._emit("schema_changed")
+        connection.execute("PRAGMA user_version=5")
+
+    def _require_upgrade(self):
+        SYNTHETIC_LESSON_TIMES_REGISTRY.require_upgrade(
+            FINAL_V4_SCHEMA_REGISTRATION.identity, SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION.identity)
+
+    def _require_inventory(self, inventory):
+        if inventory.restore_evidence or inventory.upgrade_evidence:
+            raise UpgradeError("transaction_existing_evidence")
+
     def execute(self):
         self._require_synthetic()
         if self.service.opened is None:
@@ -150,16 +166,14 @@ class SyntheticTransactionalMigration:
         if self._used:
             raise UpgradeError("transaction_restart_required")
         self._used = True
-        SYNTHETIC_LESSON_TIMES_REGISTRY.require_upgrade(
-            FINAL_V4_SCHEMA_REGISTRATION.identity, SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION.identity)
+        self._require_upgrade()
         gate = self.service._gate
         owner = "synthetic-transaction-v1"
         with RuntimeInstanceLock(self.root):
             inventory = ReadOnlyInstallationInventory().inspect(self.root)
-            if inventory.restore_evidence or inventory.upgrade_evidence:
-                raise UpgradeError("transaction_existing_evidence")
             if inventory.status.value in {"unsafe", "changed"}:
                 raise UpgradeError("transaction_inventory_unsafe")
+            self._require_inventory(inventory)
             capability = gate.request_maintenance(owner_id=owner, purpose=MaintenancePurpose.SCHEMA_UPGRADE)
             try:
                 if not gate.activate(capability, owner_id=owner):
@@ -192,12 +206,10 @@ class SyntheticTransactionalMigration:
                                 self._configure_transaction(connection)
                                 try:
                                     connection.execute("BEGIN EXCLUSIVE")
-                                    KeyedFinalV4CompatibilityInspector().inspect_connection(connection)
+                                    self._require_source_connection(connection)
                                     require_same_content(source, database_content_evidence(connection))
                                     self._emit("transaction_begun")
-                                    connection.execute(LESSON_TIME_TEMPLATE_STATEMENT)
-                                    self._emit("schema_changed")
-                                    connection.execute("PRAGMA user_version=5")
+                                    self._apply_schema(connection)
                                     self._target(connection, source)
                                     self._emit("target_verified")
                                     self._emit("before_commit")
@@ -208,13 +220,17 @@ class SyntheticTransactionalMigration:
                                         connection.rollback()
                                     raise
                             with drain.maintenance_connections():
+                                with closing(self._connect(self.main, read_only=True)) as reopened:
+                                    self._target(reopened, source)
                                 require_same_content(companion, self._companion_content(self.companion))
                         self._emit("connection_closed")
             finally:
                 # This maintenance process must exit. Never resume stale V4
                 # adapters, even after a successful rollback or commit error.
                 gate.mark_recovery_required()
-        return SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION.identity
+        return self.target_identity
+
+    target_identity = SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION.identity
 
     def inspect_restart(self):
         """Explicit synthetic inspection, no application/First-Run admission.

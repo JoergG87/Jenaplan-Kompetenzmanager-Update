@@ -3964,3 +3964,15 @@ Backup-/Restorefolgen: Manifest und READY müssen die neu gemessene Identität b
 Pflichtmatrix vor Umsetzungsgenehmigung/Abnahme: echte SQLCipher-4.17-Läufe aus beiden exakten Quellen mit identischem Zielfingerprint; keyed Reopen und Vollinhalts-/Dokument-/Companionvergleich; Crash vor/nach CREATE/COPY/DROP/COMMIT ergibt vollständige Quelle oder Ziel; falsche/fehlende/duplizierte Fachreferenzen, falsche Stammgruppenziele und beide Kardinalitätsverletzungen sperren; atomare Updates/Softdelete/Reaktivierung; bestehende Einzelfachstunden, Beobachtungen, Ratings und Bericht-/LEG-Snapshots unverändert; keine Verdopplung und kein stilles erstes Fach; V4-/alt-V5-READY sowie Build-404-Runtime weisen neues Ziel zurück. Diese zukünftige Matrix wurde in diesem Auftrag nicht als implementierte Migration ausgeführt.
 
 Sicherheits-UI-Lebensdauerfix aus Gesamtsuite: appweiter Aktivitätsfilter endet mit seinem SecurityUiCoordinator/Ownerfenster. Nach dessen Qt-Destruktion werden keine Sessionaktivitätscallbacks mehr geliefert. Keine Änderung von Authentifizierung, Sperrentscheidung oder Persistenz.
+
+
+## D-Umsetzung – synthetischer Schreibpfad 16.10.2026
+
+Der vorstehende Rebuildvertrag wird mit SyntheticTimetableMigration implementiert: verschlüsseltes unabhängig geprüftes Quellbackup, Drain, BEGIN EXCLUSIVE, typgetreue Parent-/Linkübernahme, Vollprüfung, Identität im selben Commit, keyed Reopen. V5-Vorlagen bleiben erhalten. Normale Parent-/Linkwrites und Abschlussprüfung sind atomar; Legacy-V4 bleibt Einzelfach. Fachmengen erzeugen weder Beobachtungen noch Ratings. V6 besitzt eigene Backup-/READY-/Restorebindung; keine produktive Freigabe.
+
+
+## D: historische Evidenz und Abbruchgrenzen – 16.10.2026
+
+Eigener erhaltener Quellpfad `schema-upgrade-source/transaction-timetable-v1/source.jkmebackup`; ein tatsächlich früher migriertes V5 darf zusätzlich exakt `transaction-v1/source.jkmebackup` enthalten, nach unabhängiger V4-Containerprüfung. V6-Runtime authentifiziert jeden vorhandenen historischen Quellcontainer separat mit dessen exaktem V4-/V5-Service. Fehlende/unvollständige/fremde Evidenz sperrt; Historie verleiht keine V6-Restoreautorität.
+
+Geprüfte reale SIGKILL-Grenzen aus beiden Quellen: nach CREATE, COPY, DROP, Linkübernahme, vor COMMIT, unmittelbar vor/nach nativer Rollbackjournal-Löschung und nach COMMIT. Ergebnis vollständig alte oder neue Identität mit erhaltenen typisierten Fachdaten. Nach normalem Commit folgt unabhängiges keyed Reopen vor Rückgabe; der Wartungsprozess bleibt terminal gesperrt und muss enden. Keine Wiederaufnahme alter Adapter. V6-Vollbackup und Restore prüfen Companion-/Dokument-/Schlüsselbindungen, eigene READY-Identität und echten Restart. Der reale V4→V5→V6→Backup→Live-Restore-Verlauf wird separat geprüft.

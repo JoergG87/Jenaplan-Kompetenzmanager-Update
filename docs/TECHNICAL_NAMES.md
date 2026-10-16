@@ -3688,3 +3688,13 @@ Nur Zielvertrag, keine Registryzulassung: timetable_entries.entry_kind mit subje
 AppShell.reload_lesson_time_templates lädt nach ausdrücklichem reload_requested die frische geordnete Projektion. SyntheticV5RuntimeError ist der sanitisierte isolierte Runtimefehler. _SessionDocumentFactory und _SessionDocuments sind private Lebensdaueradapter ohne Produktcapability.
 
 ApplicationActivityFilter akzeptiert optionalen QObject-parent; SecurityUiCoordinator besitzt den appweiten Aktivitätsfilter als Qt-Kind. Kein neuer Authentifizierungs- oder Sessionport.
+
+
+## D-Umsetzung – technische Zuordnung 16.10.2026
+
+SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION und SYNTHETIC_TIMETABLE_REGISTRY in core/timetable_schema binden das neue synthetische V6. SyntheticTimetableMigration benutzt denselben transaktionalen SQLCipherpfad aus exakt V4 oder bisherigem synthetischem V5. SyntheticV6Runtime und OpenedSyntheticV6Runtime sowie SyntheticV6EncryptedBackupService, SyntheticV6EncryptedBackupManifestV1 und SyntheticV6EncryptedLiveRestoreService sind ausschließlich synthetische Fähigkeiten. Eigener Manifestentry synthetic-v6-backup-manifest-v1.json, READY-Version 3 und eigener Handoff-purpose/restore_kind verhindern historische READY-Umdeutung. entry_kind und subject_ids setzen den bereits registrierten Fachvertrag um.
+
+
+## D: implementierte Ports – 16.10.2026
+
+`SyntheticTimetableMigration` liegt in security/transactional_timetable_migration. `timetable_instructional_subject_ids` und `verify_timetable_target_references` in core/upgrade_validation prüfen reale Unterrichtsfächer und die unabhängige vollständige Zielprojektion; überfachliche Entwicklungsbereiche sind keine Stundenplanfächer. `KeyedSyntheticV6CompatibilityInspector`, `SyntheticV6ConnectionFactory`, `SyntheticV6RuntimeError` und `OpenedSyntheticV6Runtime` gehören zur isolierten V6-Runtime. `SYNTHETIC_V6_RESTORE_READY_VERSION=3`, eigener Manifestentry ...000006, `SyntheticV6EncryptedRestoreHandoffService`, `prepare_synthetic_v6_live_restore`, `recover_interrupted_synthetic_v6_restore`, `confirm_synthetic_v6_restore_startup` und `classify_terminal_synthetic_v6_restore_artifacts` binden V6 exakt. Handoff-purpose `synthetic-v6-live-restore-handoff-v1`, restore_kind `synthetic_v6_encrypted_same_installation`. Bestehende V5-Namen behalten unveränderte Semantik.

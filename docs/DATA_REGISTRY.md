@@ -2673,3 +2673,13 @@ Zusätzliche fachliche Invarianten über beide Tabellen: subject_lesson hat mind
 Die Tabelle lesson_time_templates bleibt unabhängig; kein Link vom Eintrag auf eine Vorlage. Beobachtungen, konkrete Kompetenz-FKs und Bewertungen bleiben unverändert. Keine automatischen Beobachtungen oder doppelten Ratings. Historische Snapshottexte werden nicht auf neue Fachmengen umgeschrieben.
 
 Identität: bisherige synthetische Registrierung 5 / 21f9af621c54a31e476161a6ee8c916bfd248acbd8d443bed979d27d67f9d1af bleibt unverändert nachvollziehbar. Erst real implementierte Ziel-DDL und mit SQLCipher gemessener vollständiger Fingerprint erlauben eine zusätzliche eigene schema_id. Kein hypothetischer Fingerprint und kein Versions-only-Zulassungsweg. Beide geplanten Quellpfade (exaktes V4 und altes synthetisches V5) müssen dieselbe neue Zielidentität erzeugen.
+
+
+## D-Umsetzung – synthetische Registrierung 16.10.2026
+
+Die vorstehend vereinbarte Parent-/Linkform wird als zusätzliche exakte synthetische V6-Identität umgesetzt. V4 und V5 sind explizite getrennte Testquellen; beide führen auf dasselbe V6. Die V5-DDL und ihr Fingerprint bleiben unverändert. Der gemessene V6-Fingerprint wird mit der Implementation und Tests dokumentiert. Keine produktive Registrykante.
+
+
+## D: tatsächlich gemessene Zielidentität – 16.10.2026
+
+`synthetic_v6_normalized_timetable`: user_version=6; Fingerprintalgorithmus unverändert gemäß SchemaRegistry; gemessener Fingerprint `4d8f4e056f5897114b3af8899947bce1f7362c52a3da96525f32baec3e9d2cc2`. Normalisierte Parent-/Linkform entspricht dem vorstehenden Modellvertrag. Explizite synthetische Kanten V4→V6 und altes V5→V6. Das bisherige V5 (Version 5 / `21f9af621c54a31e476161a6ee8c916bfd248acbd8d443bed979d27d67f9d1af`) und seine Registry bleiben unverändert. PRODUCT_SCHEMA_REGISTRY besitzt weiterhin ausschließlich Final V4 und keine Upgradekante.

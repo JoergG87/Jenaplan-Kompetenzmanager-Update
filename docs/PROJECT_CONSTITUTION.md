@@ -1619,3 +1619,8 @@ Autorisiert sind ausschließlich synthetische vorhandene Installationen: exakte 
 ## Fachliches Zielmodell Stammgruppen-/Mehrfachfachstunden – 16.10.2026
 
 Produktentscheidung dieses Auftrags: beide Fähigkeiten sollen gemeinsam in die spätere vollständige produktive V5-Migration eingehen. Dieser Schritt spezifiziert Modell und Migrationsvertrag; keine neue Schemaidentität, Migration, Writer oder entsprechende Oberfläche werden implementiert. A–C prüfen weiterhin exakt das bestehende synthetische V5 nur mit Unterrichtszeitvorlagen. Vor produktiver V5-Freigabe müssen alle unten benannten Consumer, Writer, Backups und Wiederherstellungen an der tatsächlichen erweiterten Zielidentität abgenommen werden. A/B-Wochen einschließlich Ferienwechsel bleiben fachlich offen und unimplementiert.
+
+
+## D-Umsetzung – PO-Auftrag 16.10.2026
+
+Autorisiert: normalisierte Stammgruppen-/Mehrfachfachstunden samt transaktionaler Migration und vollständiger Consumer-/Backup-/Restoreintegration ausschließlich synthetisch. Bisheriges V5 bleibt unverändert; eigenes exaktes synthetisches V6, Produktregistry weiterhin ausschließlich Final V4. Keine A/B-Wochen, Produktmigration oder Veröffentlichung.

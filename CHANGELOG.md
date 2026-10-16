@@ -5535,3 +5535,8 @@ Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse 
 - Verhaltensregression vor Korrektur rot (Aktivität nach Ownerlöschung), danach grün; unabhängige native Ereignisprobe bestätigt keine Restfilteraufrufe. Aus Gesamtsuite-SIGSEGV abgeleiteter enger Befund, exakte Crashkausalität nicht behauptet.
 
 Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehende Skips, 120 Untertests; keine neue Skipregel. Produktive V5-Migration weiterhin gesperrt.
+
+
+## Stundenplan D – Schema/Migration, synthetisch nach Build 404
+
+- Zusätzliches exaktes synthetisches V6 mit Stundenart und normalisierten realen Fachlinks; explizite transaktionale Testkanten aus Final V4 und bisherigem synthetischem V5. Bestehendes V5 bleibt unverändert. Vollständige historische Datenübernahme, unabhängig geprüftes verschlüsseltes Quellbackup, keyed Reopen und echte SIGKILL-Grenzen. Keine produktive Upgradekante.
