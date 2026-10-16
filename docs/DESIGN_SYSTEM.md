@@ -1341,3 +1341,8 @@ Freigegebene Ausnahme ausschließlich im Kompetenz-PDF: vier neu erzeugte transp
 Bestehende macOS-Einstellungen um Unterrichtszeiten ergänzen, mit verständlicher geordneter Stundenauswahl, Beginn/Ende, Hinzufügen und Speichern. Keine technische Schemaeingabe. Validierungs-/Konflikttexte handlungsorientiert. Stundenplaneditor zeigt vorgeschlagene Zeiten vor dem Speichern, erlaubt individuelle Anpassung und übernimmt nur durch ausdrückliche Aktion. Produktives V4 zeigt die gesperrte Funktion nicht an.
 
 Synthetischer V5-Stundenplaneditor: Formular bei geringer Fensterhöhe scrollbar, Header und Aktionen erreichbar. Vorlagenkonflikte lassen sich über die ausdrückliche Aktion „Gespeicherte Zeiten neu laden“ auflösen; diese ersetzt die ungespeicherten Eingaben durch aktuellen DB-Stand.
+
+
+## Stammgruppen-/Mehrfachfachstunden: UX-Zielvertrag – 16.10.2026
+
+Noch unimplementiert: verständliche Wahl zwischen Fachunterricht und organisatorischer Stammgruppenstunde; klar getrennt von bisherigem Unterrichtsziel Stammgruppe. Mehrfachfachstunden zeigen Fachnamen einzeln. Fachbezogene Aktionen fragen bei mehreren Fächern bewusst das konkrete Fach ab; keine automatische Bewertung und kein implizites erstes Fach. Bestehende Überlappungs-/Wochenregeln bleiben bestehen, keine A/B-Simulation durch doppelte Einträge.

@@ -2634,3 +2634,42 @@ Die einzige zusätzliche UI-Datenquelle bleibt die bestehende verschlüsselte Ta
 
 
 Synthetisches V5-Vollbackup: unverändertes .jkmebackup-Containerformat v1, eigener innerer Manifestvertrag mit exakter V5-Mainidentität und vollständigen Schlüssel-/Dokument-/Companionbindungen. Eigenes READY v2; V4-Manifest und READY v1 bleiben ausschließlich historische V4-Belege. Eine V4-Quellsicherung nach Migration ist kein V5-Zielbackup.
+
+
+## Fachliches Stundenplanziel – vollständiger Modellvertrag, noch unimplementiert – 16.10.2026
+
+Keine neue Fachdefinitionsquelle. competencies.subject_id ist absichtlich nicht UNIQUE (vorhandener Index nur subject_id/sort_order) und kein zulässiges FK-Ziel. Reale Fachreferenzen werden wie bisher gegen den vorhandenen kanonischen Fach-/Kompetenzkatalog geprüft, im Domain-Service sowie unabhängig bei keyed Restart, Backup und Restore. Keine erfundenen Fächer, IDs oder Kompetenzen.
+
+Geplante finale Tabellenform (alle nicht ausdrücklich geänderten Bestandsfelder und Indexverträge bleiben erhalten):
+
+```sql
+CREATE TABLE timetable_entries (
+    timetable_entry_id TEXT PRIMARY KEY NOT NULL,
+    weekday INTEGER NOT NULL CHECK (weekday BETWEEN 1 AND 5),
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    entry_kind TEXT NOT NULL CHECK (entry_kind IN ('subject_lesson', 'homeroom_session')),
+    target_type TEXT NOT NULL CHECK (target_type IN ('group', 'course', 'course_group')),
+    target_id TEXT NOT NULL,
+    room TEXT NOT NULL DEFAULT '',
+    active INTEGER NOT NULL CHECK (active IN (0, 1)),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT NOT NULL DEFAULT '',
+    CHECK (entry_kind <> 'homeroom_session' OR target_type = 'group')
+);
+CREATE TABLE timetable_entry_subjects (
+    timetable_entry_id TEXT NOT NULL,
+    subject_id TEXT NOT NULL CHECK (length(trim(subject_id)) > 0),
+    PRIMARY KEY (timetable_entry_id, subject_id),
+    FOREIGN KEY (timetable_entry_id) REFERENCES timetable_entries(timetable_entry_id)
+        ON UPDATE RESTRICT ON DELETE CASCADE
+);
+```
+
+Zusätzliche fachliche Invarianten über beide Tabellen: subject_lesson hat mindestens ein verschiedenes reales Unterrichtsfach; homeroom_session hat exakt null Fächer und ein vorhandenes Stammgruppenziel. Parent-IDs nicht leer; Zeitformat/positive Spanne, bestehende Mo–Fr-, Zielreferenz-, Aktivitäts-/Lösch- und Überlappungsregeln bleiben erhalten. Keine leere oder doppelte Fachliste, keine stillschweigende Reparatur. Kardinalität ist keine durch ein einfaches SQL-CHECK beweisbare Eigenschaft: jeder Repositorywrite muss sie innerhalb derselben Transaktion prüfen, unabhängige Verifikation ebenfalls. Fachreihenfolge wird deterministisch aus vorhandener Katalogreihenfolge projiziert, nicht als zweiter fachlicher Datenbestand gepflegt.
+
+Die Tabelle lesson_time_templates bleibt unabhängig; kein Link vom Eintrag auf eine Vorlage. Beobachtungen, konkrete Kompetenz-FKs und Bewertungen bleiben unverändert. Keine automatischen Beobachtungen oder doppelten Ratings. Historische Snapshottexte werden nicht auf neue Fachmengen umgeschrieben.
+
+Identität: bisherige synthetische Registrierung 5 / 21f9af621c54a31e476161a6ee8c916bfd248acbd8d443bed979d27d67f9d1af bleibt unverändert nachvollziehbar. Erst real implementierte Ziel-DDL und mit SQLCipher gemessener vollständiger Fingerprint erlauben eine zusätzliche eigene schema_id. Kein hypothetischer Fingerprint und kein Versions-only-Zulassungsweg. Beide geplanten Quellpfade (exaktes V4 und altes synthetisches V5) müssen dieselbe neue Zielidentität erzeugen.

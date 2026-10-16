@@ -3680,4 +3680,11 @@ Tatsächlicher Vorlagen-Speicherport: LessonTimeTemplatesSettings.save_requested
 
 classify_terminal_synthetic_v5_restore_artifacts ist die enge synthetische Terminalklassifikation; sie erzeugt keine Restore-/Migrationsautorität. expected_backup_service_type bindet Handoff-Strategie an den exakten V4- beziehungsweise synthetischen V5-Service. VerifiedCipherSchoolYearTransitionBackupAdapter bleibt V4-only.
 
+
+## Geplante technische Namen des fachlichen Stundenplanziels – 16.10.2026
+
+Nur Zielvertrag, keine Registryzulassung: timetable_entries.entry_kind mit subject_lesson und homeroom_session; timetable_entry_subjects(timetable_entry_id, subject_id). Das einzelne timetable_entries.subject_id entfällt erst bei vollständiger Umsetzung. Interne transaktionale Rebuildtabelle timetable_entries_v5_target existiert ausschließlich im noch zu implementierenden Migrationsvertrag. subject_ids ist die zukünftige unveränderliche Domain-/ViewModel-Fachmenge, keine kombinierte Zeichenkette. Die bestehenden target_type-Werte group/course/course_group bleiben Zieltypen; homeroom_session ist davon getrennt. Keine A/B-Namen/Felder eingeführt.
+
+AppShell.reload_lesson_time_templates lädt nach ausdrücklichem reload_requested die frische geordnete Projektion. SyntheticV5RuntimeError ist der sanitisierte isolierte Runtimefehler. _SessionDocumentFactory und _SessionDocuments sind private Lebensdaueradapter ohne Produktcapability.
+
 ApplicationActivityFilter akzeptiert optionalen QObject-parent; SecurityUiCoordinator besitzt den appweiten Aktivitätsfilter als Qt-Kind. Kein neuer Authentifizierungs- oder Sessionport.

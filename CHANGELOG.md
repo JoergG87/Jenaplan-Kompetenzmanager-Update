@@ -5523,7 +5523,15 @@ Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse 
 - Explizite geprüfte synthetische V5-Adapterfähigkeit; produktive V4-Oberflächen unverändert ohne V5-Tabellenzugriff.
 
 
+## Fachliches Stundenplanziel – 16.10.2026, Vertragsvorbereitung
+
+- Vollständiger Zielmodell-/Migrationsvertrag für organisatorische Stammgruppenstunden und mehrere tatsächliche Fächer in bestehenden kanonischen Registern. Noch keine Schema-/Consumer-/UI-Implementierung.
+- Bevorzugt ein einziges späteres produktives V5 mit allen vollständigen Fähigkeiten; bisheriges synthetisches V5 bleibt exakt unverändert nachvollziehbar. A/B-Wochen weiterhin offen.
+
+
 ## Security-UI: Lebensdauer des Aktivitätsfilters – 16.10.2026
 
 - Ein bestehender appweiter ActivityFilter blieb nach Zerstören von Fenster/Coordinator aktiv. QObject-Parentbindung beendet den Filter nun mit seiner Sessionoberfläche; Klassifikation und Sicherheitsentscheidungen unverändert.
 - Verhaltensregression vor Korrektur rot (Aktivität nach Ownerlöschung), danach grün; unabhängige native Ereignisprobe bestätigt keine Restfilteraufrufe. Aus Gesamtsuite-SIGSEGV abgeleiteter enger Befund, exakte Crashkausalität nicht behauptet.
+
+Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehende Skips, 120 Untertests; keine neue Skipregel. Produktive V5-Migration weiterhin gesperrt.

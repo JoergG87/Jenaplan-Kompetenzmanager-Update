@@ -1614,3 +1614,8 @@ PO-Auftrag: bestehende macOS-Pipeline ausschließlich um bewusst ausgewähltes i
 ## V5-Zielruntime, Backup/Restore und Zeitvorlagen – PO-Auftrag 15.10.2026
 
 Autorisiert sind ausschließlich synthetische vorhandene Installationen: exakte V5-Identität, keyed Vollprüfung, verschlüsselte Zielbackups und kontrollierter Restore sowie schemafähigkeitsgebundene macOS-Zeitvorlagen. Final V4 bleibt einziges Produktschema; kein Produktupgrade, First Run, Schlüsselersatz, Release oder Reaktivieren stillgelegter Austausch-/Journal-APIs. Die frühere Sperre synthetischer Zielruntime wird nur für diesen ausdrücklich isolierten Pfad ersetzt. Paket D wird nach vollständigem Consumerreview als Zielmodell-/Migrationsvertrag spezifiziert; keine halbfertige Mehrfachfachoberfläche.
+
+
+## Fachliches Zielmodell Stammgruppen-/Mehrfachfachstunden – 16.10.2026
+
+Produktentscheidung dieses Auftrags: beide Fähigkeiten sollen gemeinsam in die spätere vollständige produktive V5-Migration eingehen. Dieser Schritt spezifiziert Modell und Migrationsvertrag; keine neue Schemaidentität, Migration, Writer oder entsprechende Oberfläche werden implementiert. A–C prüfen weiterhin exakt das bestehende synthetische V5 nur mit Unterrichtszeitvorlagen. Vor produktiver V5-Freigabe müssen alle unten benannten Consumer, Writer, Backups und Wiederherstellungen an der tatsächlichen erweiterten Zielidentität abgenommen werden. A/B-Wochen einschließlich Ferienwechsel bleiben fachlich offen und unimplementiert.

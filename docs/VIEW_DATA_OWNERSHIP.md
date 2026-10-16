@@ -1629,3 +1629,10 @@ Keine neue Ansicht. Core besitzt reine technische Identitätsprojektion; bestehe
 ## V5-Unterrichtszeiten in vorhandenen Einstellungen – 15.10.2026
 
 LessonTimeTemplatesSettings ist eine Seite der vorhandenen SettingsScreen, ausschließlich bei explizitem OpenedSyntheticV5Runtime-Adapter. ViewModels projizieren Nummern und Zeittexte; Adapter/Domain besitzen Validierung und atomare Konfliktbehandlung, Repository persistiert. Stundenplaneditor besitzt nur flüchtige Auswahl und kopierte unabhängige Zeiten. Shell komponiert optionale geprüfte Fähigkeit; produktives V4 erhält keinen Adapter und spricht keine V5-Tabelle an. Keine zweite Einstellungsarchitektur.
+
+
+## Stammgruppen-/Mehrfachfachstunden: Consumervertrag – noch unimplementiert – 16.10.2026
+
+Domain/Application besitzen Eintragsart, Fachmenge, Kardinalität und konkreten Fachbezug. SQLiteRepository schreibt Parent und Links atomar; ViewModels projizieren Art/Fachlabels. Widgets besitzen keine Ersatzfächer oder SQLiteabfragen. Betroffen sind core/timetable, application/commands/timetable, SQLiteTimetableRepository, TimetableDesktopAdapter/ViewModel, Stundenplaneditor, Overview/Dashboard und Beobachtungsvorbelegung.
+
+Insbesondere shell.py dashboard_documentation_refresh und overview_screen.py erwarten heute genau ein subject_id. Zukünftig: homeroom_session zeigt organisatorische Stunde ohne Fachabdeckung/-vorschläge; kombinierte Stunde zeigt alle realen Fächer und verlangt vor fachbezogener Aktion eine bewusste konkrete Fachauswahl. Kein stilles erstes Fach. Beobachtung/Rating bleibt genau einem konkreten Fach bzw. Kompetenz zugeordnet. Bestehende Consumer werden erst gemeinsam mit neuem Schema umgestellt; aktuelle V5-Zeitvorlagenfunktion behauptet diese Fähigkeit nicht.

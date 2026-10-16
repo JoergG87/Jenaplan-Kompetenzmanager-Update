@@ -1143,3 +1143,8 @@ Keine neuen Fachfelder. Testprofil projiziert unterscheidbaren technischen Appna
 ## V5-Unterrichtszeiten – 15.10.2026
 
 Einstellungen/Unterrichtszeiten: Unterrichtsstunde → lesson_number; Beginn → start_time; Ende → end_time. Bestehende Nummer beim Bearbeiten unveränderlich; neue Nummer überschreibt keine vorhandene. Geordnete Liste nach Nummer, leere Installation ohne verbindliche Beispielwerte. Speichern über erwarteten vollständigen Istwert. Stundenplaneditor: optionale Unterrichtsstundenauswahl plus ausdrückliches Übernehmen → bestehende Start-/Endfelder. Initial manuell, auch beim erneuten Öffnen; keine stille Vorlagenanwendung. Nur synthetische exakte V5-Fähigkeit stellt diese Daten bereit.
+
+
+## Fachliches Stundenplanziel: zukünftige UI-Zuordnung – 16.10.2026
+
+Noch keine Felder implementiert: Eintragsart → timetable_entries.entry_kind; Fachauswahl (mehrfach) → timetable_entry_subjects.subject_id; Unterrichtsziel bleibt target_type/target_id. Stammgruppenstunde verlangt vorhandene Stammgruppe, blendet Fachauswahl aus und speichert null Links; normale Fachstunde verlangt mindestens ein reales Fach. Deutsch und Mathematik sind zwei tatsächliche Links. Keine künstliche Deutsch/Mathe-Fach-ID. Vor fachbezogener Dashboard-/Beobachtungsaktion bei mehreren Fächern ausdrückliche Einzelfachauswahl. Vorlagen bleiben einmalige Zeitkopie; keine A/B-Auswahl, Ferienwechsel fachlich offen.

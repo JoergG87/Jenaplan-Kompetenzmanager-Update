@@ -4720,3 +4720,10 @@ Terminale Restorebelege authentisieren Geschichte, nicht ewige Bytegleichheit de
 ## Unterrichtszeiten: bestehende Architektur und einmalige Kopie – 16.10.2026
 
 Vorhandener Domain-Service und verschlüsseltes Repository werden über immutable ViewModels und expliziten SyntheticV5Runtime-Adapter in die bestehende SettingsScreen/AppShell integriert. Keine zweite Einstellungsarchitektur oder Preferencespersistenz. Atomarer expected-current-Vergleich schützt neue Nummern und konkurrierende Änderungen. Explizites Neuladen verwirft kenntlich ungespeicherte Eingaben. Editorinitialisierung bleibt individuell; nur bewusste Übernahme kopiert Zeiten, keine Datenmodellrelation zur Vorlage. Unabhängiges statisches Review P0/P1=0, gemeldete P2 Konfliktauflösung und Dialoghöhe korrigiert. Native Paket-/menschliche macOS-Bedienabnahme bleiben eigene Gates.
+
+
+## Fachliches Stundenplanziel im späteren produktiven V5 – 16.10.2026
+
+Eine gemeinsame spätere produktive Migration ist sinnvoll. Der aktuelle Auftrag spezifiziert das vollständige normalisierte Modell und Migrations-/Consumer-/Prüfvertrag in den bestehenden kanonischen Registern. Keine sofortige neue synthetische Zielidentität: sämtliche Writer, Dashboard-/Beobachtungsconsumer und Backup-/Restoreprüfungen müssten gemeinsam angepasst werden; nullable subject_id oder isolierte Linktabelle allein wäre inkonsistent.
+
+Geprüftes Ziel: entry_kind trennt organisatorische homeroom_session von subject_lesson; echte Fachmenge in Parent-Linktabelle, keine FK auf nicht eindeutiges competencies.subject_id. Keine neue Fachquelle. Kardinalitäten und Referenzen in jeder Transaktion und unabhängiger Vollprüfung. Historische Einzelstunden werden verlustfrei als subject_lesson plus genau ein Link übernommen. Alte synthetische Identität bleibt unverändert registriert; neue erst nach realer Implementierung und Fingerprintmessung. Vollständige D-UI und Migration sind ausdrücklich noch offen, A/B-Wochen bleiben offen. Unabhängiger read-only Modell-/Consumerreview bestätigt diese Grenze.
