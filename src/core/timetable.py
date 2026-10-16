@@ -33,6 +33,16 @@ class TimetableEntry:
     created_at: str
     updated_at: str
     deleted_at: str = ""
+    entry_kind: str = "subject_lesson"
+    subject_ids: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        subjects = tuple(self.subject_ids)
+        if self.subject_id and subjects and subjects != (self.subject_id,):
+            raise TimetableValidationError("Widersprüchliche Fachzuordnungen im Stundenplaneintrag.")
+        subjects = subjects or ((self.subject_id,) if self.subject_id else ())
+        object.__setattr__(self, "subject_ids", subjects)
+        object.__setattr__(self, "subject_id", subjects[0] if len(subjects) == 1 else "")
 
 
 @dataclass(frozen=True)
@@ -82,7 +92,17 @@ class TimetableValidator:
         end = self.parse_time(entry.end_time, "Ende")
         if start >= end:
             raise TimetableValidationError("Beginn muss vor Ende liegen.")
-        if entry.subject_id not in set(valid_subject_ids):
+        if entry.entry_kind not in ("subject_lesson", "homeroom_session"):
+            raise TimetableValidationError("Unbekannte Stundenart.")
+        if entry.entry_kind == "homeroom_session":
+            if entry.subject_ids or entry.target_type != "group":
+                raise TimetableValidationError("Eine Stammgruppenstunde verlangt eine Stammgruppe und keine Fächer.")
+        elif not entry.subject_ids:
+            raise TimetableValidationError("Bitte mindestens ein Fach auswählen.")
+        if len(set(entry.subject_ids)) != len(entry.subject_ids):
+            raise TimetableValidationError("Ein Fach darf nur einmal ausgewählt werden.")
+        valid_subjects = set(valid_subject_ids)
+        if any(subject not in valid_subjects for subject in entry.subject_ids):
             raise TimetableValidationError("Das ausgewählte Fach ist nicht mehr vorhanden.")
         if entry.target_type not in TIMETABLE_TARGET_TYPES:
             raise TimetableValidationError("Unbekannte Zielart.")
@@ -142,7 +162,9 @@ class TimetableService:
         weekday: int,
         start_time: str,
         end_time: str,
-        subject_id: str,
+        subject_id: str = "",
+        entry_kind: str = "subject_lesson",
+        subject_ids: tuple[str, ...] = (),
         target_type: str,
         target_id: str,
         room: str = "",
@@ -163,6 +185,8 @@ class TimetableService:
             self.repository.next_sort_order(weekday) if sort_order is None else sort_order,
             timestamp,
             timestamp,
+            entry_kind=entry_kind,
+            subject_ids=subject_ids,
         )
         self._validate(entry)
         return self.repository.create_entry(entry)

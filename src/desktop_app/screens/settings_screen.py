@@ -866,11 +866,12 @@ class SettingsScreen(QWidget):
     def _timetable_entry_card(self, entry: TimetableEntryViewModel) -> QFrame:
         card = create_card(); card.setObjectName(f"TimetableEntry_{entry.timetable_entry_id}"); layout = QHBoxLayout(card)
         time = QLabel(entry.time_label); time.setMinimumWidth(105); set_label_style(time, "card_title"); layout.addWidget(time)
-        details = QVBoxLayout(); subject = QLabel(entry.subject_label); set_label_style(subject, "card_title")
+        details = QVBoxLayout(); subject = QLabel(entry.subject_label); subject.setWordWrap(True); set_label_style(subject, "card_title")
         subject_row = QHBoxLayout()
         subject_row.setContentsMargins(0, 0, 0, 0)
         subject_row.setSpacing(6)
-        subject_row.addWidget(SubjectAccentMarker(entry.subject_id))
+        for subject_id in entry.subject_ids:
+            subject_row.addWidget(SubjectAccentMarker(subject_id))
         subject_row.addWidget(subject)
         subject_row.addStretch(1)
         details.addLayout(subject_row)

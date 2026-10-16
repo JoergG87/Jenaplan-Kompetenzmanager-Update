@@ -44,6 +44,17 @@ class TimetableEntryViewModel:
     room: str
     active: bool
     sort_order: int
+    entry_kind: str = "subject_lesson"
+    subject_ids: tuple[str, ...] = ()
+    subject_options: tuple[TimetableOptionViewModel, ...] = ()
+
+    def __post_init__(self) -> None:
+        subjects = tuple(self.subject_ids)
+        if self.subject_id and subjects and subjects != (self.subject_id,):
+            raise ValueError("Widersprüchliche Fachzuordnungen im Stundenplaneintrag.")
+        subjects = subjects or ((self.subject_id,) if self.subject_id else ())
+        object.__setattr__(self, "subject_ids", subjects)
+        object.__setattr__(self, "subject_id", subjects[0] if len(subjects) == 1 else "")
 
     @property
     def time_label(self) -> str:
@@ -70,6 +81,8 @@ class TimetableWeekViewModel:
     days: tuple[TimetableDayViewModel, ...]
     subjects: tuple[TimetableOptionViewModel, ...]
     targets_by_type: dict[str, tuple[TimetableOptionViewModel, ...]]
+
+    supports_extended_entries: bool = False
 
     @property
     def is_empty(self) -> bool:

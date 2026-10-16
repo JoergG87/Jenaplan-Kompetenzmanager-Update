@@ -68,6 +68,7 @@ class TimetableDesktopAdapter:
             ),
             subjects=self._subject_options(),
             targets_by_type=self._target_options(),
+            supports_extended_entries=self.repository.supports_extended_entries,
         )
 
     @product_writer
@@ -97,6 +98,8 @@ class TimetableDesktopAdapter:
                 existing.room,
                 active,
                 existing.sort_order,
+                entry_kind=existing.entry_kind,
+                subject_ids=existing.subject_ids,
             )
         )
 
@@ -125,6 +128,8 @@ class TimetableDesktopAdapter:
 
     def _entry_view_model(self, entry: TimetableEntry) -> TimetableEntryViewModel:
         subjects = dict((item.item_id, item.label) for item in self._subject_options())
+        selected_options = tuple(option for option in self._subject_options() if option.item_id in entry.subject_ids)
+        selected_options += tuple(TimetableOptionViewModel(subject, subject) for subject in entry.subject_ids if subject not in subjects)
         targets = {
             target_type: dict((item.item_id, item.label) for item in options)
             for target_type, options in self._target_options().items()
@@ -135,13 +140,18 @@ class TimetableDesktopAdapter:
             entry.start_time,
             entry.end_time,
             entry.subject_id,
-            subjects.get(entry.subject_id, entry.subject_id),
+            "Stammgruppenstunde" if entry.entry_kind == "homeroom_session" else " / ".join(
+                option.label for option in selected_options
+            ),
             entry.target_type,
             entry.target_id,
             targets.get(entry.target_type, {}).get(entry.target_id, entry.target_id),
             entry.room,
             entry.active,
             entry.sort_order,
+            entry_kind=entry.entry_kind,
+            subject_ids=tuple(option.item_id for option in selected_options),
+            subject_options=selected_options,
         )
 
     def _subject_options(self) -> tuple[TimetableOptionViewModel, ...]:

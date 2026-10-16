@@ -1357,72 +1357,99 @@ class SQLiteDocumentRepository:
 
 
 class SQLiteTimetableRepository:
-    """Persist recurring timetable entries without resolving display names."""
+    """Persist one parent and its real subject references atomically."""
 
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
 
+    @staticmethod
+    def _extended(connection) -> bool:
+        from src.core.timetable_schema import SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION
+        identity = SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity
+        version = connection.execute("PRAGMA user_version").fetchone()[0]
+        fingerprint = DatabaseCompatibilityInspector.schema_identity_for_connection(connection).fingerprint
+        if version == identity.schema_version and fingerprint == identity.fingerprint:
+            return True
+        from src.core.schema_registry import FINAL_V4_SCHEMA_REGISTRATION
+        from src.core.lesson_times_schema import SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION
+        for registration in (FINAL_V4_SCHEMA_REGISTRATION, SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION):
+            if version == registration.identity.schema_version and fingerprint == registration.identity.fingerprint:
+                return False
+        raise DatabaseCompatibilityError("Unbekanntes Stundenplanschema.")
+
+    @property
+    def supports_extended_entries(self) -> bool:
+        with closing(self.database.connect()) as connection:
+            return self._extended(connection)
+
+    @staticmethod
+    def _read_entry(connection, row, extended):
+        if row is None:
+            return None
+        if not extended:
+            return _timetable_entry_from_row(row)
+        subjects = tuple(item[0] for item in connection.execute(
+            "SELECT subject_id FROM timetable_entry_subjects WHERE timetable_entry_id = ? ORDER BY subject_id",
+            (row["timetable_entry_id"],)))
+        values = dict(row)
+        values["active"] = bool(values["active"])
+        return TimetableEntry(subject_id="", subject_ids=subjects, **values)
+
     def list_entries(self) -> tuple[TimetableEntry, ...]:
         with closing(self.database.connect()) as connection:
-            rows = connection.execute(
-                """
-                SELECT *
-                FROM timetable_entries
+            extended = self._extended(connection)
+            rows = connection.execute("""SELECT * FROM timetable_entries
                 WHERE deleted_at = ''
-                ORDER BY weekday, start_time, end_time, sort_order, timetable_entry_id
-                """
-            ).fetchall()
-        return tuple(_timetable_entry_from_row(row) for row in rows)
+                ORDER BY weekday, start_time, end_time, sort_order, timetable_entry_id""").fetchall()
+            return tuple(self._read_entry(connection, row, extended) for row in rows)
 
     def get_entry(self, timetable_entry_id: str) -> TimetableEntry | None:
         with closing(self.database.connect()) as connection:
-            row = connection.execute(
-                """
-                SELECT * FROM timetable_entries
-                WHERE timetable_entry_id = ? AND deleted_at = ''
-                """,
-                (timetable_entry_id,),
-            ).fetchone()
-        return _timetable_entry_from_row(row) if row is not None else None
+            extended = self._extended(connection)
+            row = connection.execute("""SELECT * FROM timetable_entries
+                WHERE timetable_entry_id = ? AND deleted_at = ''""", (timetable_entry_id,)).fetchone()
+            return self._read_entry(connection, row, extended)
 
     def create_entry(self, entry: TimetableEntry) -> TimetableEntry:
-        with closing(self.database.connect()) as connection:
-            with connection:
-                connection.execute(
-                    """
-                    INSERT INTO timetable_entries (
-                        timetable_entry_id, weekday, start_time, end_time,
-                        subject_id, target_type, target_id, room, active,
-                        sort_order, created_at, updated_at, deleted_at
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    _timetable_entry_values(entry),
-                )
-        return entry
+        return self._write(entry, create=True)
 
     def update_entry(self, entry: TimetableEntry) -> TimetableEntry:
+        return self._write(entry, create=False)
+
+    def _write(self, entry: TimetableEntry, *, create: bool) -> TimetableEntry:
+        from src.core.timetable import TimetableValidationError
+        from src.core.upgrade_validation import verify_timetable_target_references
         with closing(self.database.connect()) as connection:
             with connection:
-                cursor = connection.execute(
-                    """
-                    UPDATE timetable_entries
-                    SET weekday = ?, start_time = ?, end_time = ?, subject_id = ?,
-                        target_type = ?, target_id = ?, room = ?, active = ?,
-                        sort_order = ?, created_at = ?, updated_at = ?, deleted_at = ?
-                    WHERE timetable_entry_id = ?
-                    """,
-                    (*_timetable_entry_values(entry)[1:], entry.timetable_entry_id),
-                )
-                if cursor.rowcount != 1:
-                    raise RuntimeError("Stundenplaneintrag konnte nicht aktualisiert werden.")
+                connection.execute("BEGIN IMMEDIATE")
+                extended = self._extended(connection)
+                if not extended and (entry.entry_kind != "subject_lesson" or len(entry.subject_ids) != 1):
+                    raise TimetableValidationError("Diese Stundenart benötigt die freigegebene Testinstallation.")
+                columns = ("timetable_entry_id", "weekday", "start_time", "end_time",
+                    "entry_kind" if extended else "subject_id", "target_type", "target_id",
+                    "room", "active", "sort_order", "created_at", "updated_at", "deleted_at")
+                values = list(_timetable_entry_values(entry))
+                if extended:
+                    values[4] = entry.entry_kind
+                if create:
+                    connection.execute(f"INSERT INTO timetable_entries ({', '.join(columns)}) VALUES ({', '.join('?' for _ in columns)})", values)
+                else:
+                    cursor = connection.execute(f"UPDATE timetable_entries SET {', '.join(column + ' = ?' for column in columns[1:])} WHERE timetable_entry_id = ?",
+                        (*values[1:], values[0]))
+                    if cursor.rowcount != 1:
+                        raise RuntimeError("Stundenplaneintrag konnte nicht aktualisiert werden.")
+                if extended:
+                    connection.execute("DELETE FROM timetable_entry_subjects WHERE timetable_entry_id = ?", (entry.timetable_entry_id,))
+                    connection.executemany("INSERT INTO timetable_entry_subjects (timetable_entry_id, subject_id) VALUES (?, ?)",
+                        ((entry.timetable_entry_id, subject) for subject in entry.subject_ids))
+                    verify_timetable_target_references(connection)
+                    if connection.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                        raise TimetableValidationError("Ungültige Stundenplanreferenz.")
         return entry
 
     def next_timetable_entry_id(self) -> str:
         with closing(self.database.connect()) as connection:
-            rows = connection.execute(
-                "SELECT timetable_entry_id FROM timetable_entries"
-            ).fetchall()
+            rows = connection.execute("SELECT timetable_entry_id FROM timetable_entries").fetchall()
         largest = 0
         for row in rows:
             value = row["timetable_entry_id"]
@@ -1434,14 +1461,8 @@ class SQLiteTimetableRepository:
 
     def next_sort_order(self, weekday: int) -> int:
         with closing(self.database.connect()) as connection:
-            row = connection.execute(
-                """
-                SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_sort_order
-                FROM timetable_entries
-                WHERE weekday = ?
-                """,
-                (weekday,),
-            ).fetchone()
+            row = connection.execute("""SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_sort_order
+                FROM timetable_entries WHERE weekday = ?""", (weekday,)).fetchone()
         return int(row["next_sort_order"])
 
 

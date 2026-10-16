@@ -28,6 +28,8 @@ class SaveTimetableEntryCommand:
     room: str
     active: bool
     sort_order: int = 0
+    entry_kind: str = "subject_lesson"
+    subject_ids: tuple[str, ...] = ()
 
 
 class TimetableApplicationService:
@@ -48,6 +50,8 @@ class TimetableApplicationService:
                 start_time=command.start_time,
                 end_time=command.end_time,
                 subject_id=command.subject_id,
+                entry_kind=command.entry_kind,
+                subject_ids=command.subject_ids,
                 target_type=command.target_type,
                 target_id=command.target_id,
                 room=command.room,
@@ -71,6 +75,8 @@ class TimetableApplicationService:
                 command.sort_order,
                 existing.created_at,
                 existing.updated_at,
+                entry_kind=command.entry_kind,
+                subject_ids=command.subject_ids,
             )
         )
 

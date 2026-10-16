@@ -1346,3 +1346,10 @@ Synthetischer V5-Stundenplaneditor: Formular bei geringer Fensterhöhe scrollbar
 ## Stammgruppen-/Mehrfachfachstunden: UX-Zielvertrag – 16.10.2026
 
 Noch unimplementiert: verständliche Wahl zwischen Fachunterricht und organisatorischer Stammgruppenstunde; klar getrennt von bisherigem Unterrichtsziel Stammgruppe. Mehrfachfachstunden zeigen Fachnamen einzeln. Fachbezogene Aktionen fragen bei mehreren Fächern bewusst das konkrete Fach ab; keine automatische Bewertung und kein implizites erstes Fach. Bestehende Überlappungs-/Wochenregeln bleiben bestehen, keine A/B-Simulation durch doppelte Einträge.
+
+
+## D-Umsetzung – Bedienung 16.10.2026
+
+Bestehender Editor erhält einfache Eintragsartwahl und sichtbare Mehrfachfachauswahl. Fachnamen werden umbrochen angezeigt, Stammgruppenstunde klar benannt. Kombinierte Beobachtungsaktionen verlangen eine bewusste Fachwahl mit anfänglich leerer Auswahl. Bestehende Formularscrollbarkeit und Zeitvorlagenaktionen bleiben erhalten.
+
+Native D-Sichtprüfung: Die Fachliste verwendet lokal einen separaten Qt-Listenstil, damit Cocoa ausgewählte Checkboxindikatoren nicht übereinander zeichnet. Beide gewählten Fächer bleiben einzeln sichtbar; das übrige App-Theme bleibt unverändert. Header und Speichern/Abbrechen bleiben bei 540 × 680 erreichbar; die Fachliste und Zielwahl liegen im scrollbar gehaltenen Formular.

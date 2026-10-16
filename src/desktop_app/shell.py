@@ -750,8 +750,10 @@ class AppShell(QMainWindow):
                     self.adapter.dashboard_documentation_refresh(
                         target_type=occurrence.entry.target_type,
                         target_id=occurrence.entry.target_id,
-                        subject_id=occurrence.entry.subject_id,
-                        subject_label=occurrence.entry.subject_label,
+                        subject_id=(occurrence.entry.subject_id
+                            if len(occurrence.entry.subject_ids) == 1 else ""),
+                        subject_label=(occurrence.entry.subject_label
+                            if len(occurrence.entry.subject_ids) == 1 else ""),
                         at=instant,
                     )
                 )
@@ -773,6 +775,7 @@ class AppShell(QMainWindow):
             not week.is_empty,
             suggested_students,
             self.display_name,
+            observation_subjects=week.subjects,
         )
         if self.stack.currentWidget() is self.dashboard_screen:
             self.status_label.setText("")
@@ -1571,9 +1574,9 @@ class AppShell(QMainWindow):
         """Create one timetable entry from the settings week."""
         week = self.timetable_adapter.week_view_model()
         dialog = self._create_dialog(TimetableEntryDialog, week, weekday=weekday, parent=self, **self._lesson_time_template_dialog_options())
-        if self._exec_dialog(dialog) != QDialog.DialogCode.Accepted:
-            return
-        self._save_timetable_dialog(dialog)
+        while self._exec_dialog(dialog) == QDialog.DialogCode.Accepted:
+            if self._save_timetable_dialog(dialog):
+                return
 
     def open_edit_timetable_entry_dialog(self, timetable_entry_id: str) -> None:
         """Edit one selected timetable entry."""
@@ -1597,9 +1600,9 @@ class AppShell(QMainWindow):
             parent=self,
             **self._lesson_time_template_dialog_options(),
         )
-        if self._exec_dialog(dialog) != QDialog.DialogCode.Accepted:
-            return
-        self._save_timetable_dialog(dialog)
+        while self._exec_dialog(dialog) == QDialog.DialogCode.Accepted:
+            if self._save_timetable_dialog(dialog):
+                return
 
     def delete_timetable_entry(self, timetable_entry_id: str) -> None:
         """Delete one entry after an explicit confirmation."""
@@ -1641,14 +1644,15 @@ class AppShell(QMainWindow):
             else "Stundenplaneintrag wurde deaktiviert."
         )
 
-    def _save_timetable_dialog(self, dialog: TimetableEntryDialog) -> None:
+    def _save_timetable_dialog(self, dialog: TimetableEntryDialog) -> bool:
         try:
             self.timetable_adapter.save_entry(dialog.command())
         except (ValueError, RuntimeError) as error:
             QMessageBox.warning(dialog, "Stundenplan", str(error))
-            return
+            return False
         self.refresh_settings()
         self.status_label.setText("Stundenplaneintrag wurde gespeichert.")
+        return True
 
     def save_documentation_subject_settings(
         self,

@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QInputDialog,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -47,6 +48,7 @@ from src.desktop_app.view_models.timetable_view_model import (
     WEEKDAY_LABELS,
     TimetableOccurrenceViewModel,
     TimetableReadProjectionViewModel,
+    TimetableOptionViewModel,
 )
 
 
@@ -133,6 +135,7 @@ class DashboardLessonCard(AppCard):
         header.addStretch(1)
         header.addWidget(status)
         subject = QLabel(occurrence.entry.subject_label)
+        subject.setWordWrap(True)
         set_label_style(subject, "card_title")
         meta = QLabel(self._meta_text(occurrence))
         meta.setWordWrap(True)
@@ -141,7 +144,8 @@ class DashboardLessonCard(AppCard):
         subject_row = QHBoxLayout()
         subject_row.setContentsMargins(0, 0, 0, 0)
         subject_row.setSpacing(6)
-        subject_row.addWidget(SubjectAccentMarker(occurrence.entry.subject_id))
+        for subject_id in occurrence.entry.subject_ids:
+            subject_row.addWidget(SubjectAccentMarker(subject_id))
         subject_row.addWidget(subject)
         subject_row.addStretch(1)
         layout.addLayout(subject_row)
@@ -316,8 +320,10 @@ class OverviewScreen(QWidget):
         has_timetable_entries: bool,
         suggested_students: tuple[DashboardSuggestedStudentViewModel, ...] = (),
         display_name: str | None = None,
+        observation_subjects: tuple[TimetableOptionViewModel, ...] = (),
     ) -> None:
         """Render canonical read projections for one explicit point in time."""
+        self._observation_subjects = observation_subjects
         self.greeting_label.setText(dashboard_greeting(at, display_name))
         self._clear_layout(self.hero_layout)
         self._clear_layout(self.today_layout)
@@ -398,6 +404,7 @@ class OverviewScreen(QWidget):
         title = QLabel("Für diese Stunde")
         title.setObjectName("DashboardHeroTitle")
         subject = QLabel(entry.subject_label)
+        subject.setWordWrap(True)
         subject.setObjectName("DashboardHeroSubject")
         time = QLabel(entry.time_label)
         time.setObjectName("DashboardHeroTime")
@@ -409,7 +416,8 @@ class OverviewScreen(QWidget):
         subject_row = QHBoxLayout()
         subject_row.setContentsMargins(0, 0, 0, 0)
         subject_row.setSpacing(6)
-        subject_row.addWidget(SubjectAccentMarker(entry.subject_id))
+        for subject_id in entry.subject_ids:
+            subject_row.addWidget(SubjectAccentMarker(subject_id))
         subject_row.addWidget(subject)
         subject_row.addStretch(1)
         left_layout.addLayout(subject_row)
@@ -444,14 +452,42 @@ class OverviewScreen(QWidget):
         if self._hero_occurrence is not None:
             self._emit_observation(self._hero_occurrence.entry)
 
-    def _emit_observation(self, entry: object) -> None:
-        self.timetable_observation_requested.emit(
-            entry.subject_id,
-            entry.subject_label,
-            entry.target_type,
-            entry.target_id,
-            entry.target_label,
+    def _choose_observation_subject(self, entry: object) -> tuple[str, str] | None:
+        """Require a deliberate concrete subject when the lesson has no single one."""
+        if len(entry.subject_ids) == 1:
+            return entry.subject_id, entry.subject_label
+        options = (
+            entry.subject_options
+            if entry.subject_ids
+            else getattr(self, "_observation_subjects", ())
         )
+        if not options:
+            return None
+        labels = ["Bitte Fach wählen"] + [option.label for option in options]
+        label, accepted = QInputDialog.getItem(
+            self, "Beobachtungsfach wählen",
+            "Für welches Fach möchtest du eine Beobachtung erfassen?",
+            labels, 0, False,
+        )
+        if not accepted or label == labels[0]:
+            return None
+        option = options[labels.index(label) - 1]
+        return option.item_id, option.label
+
+    def _emit_observation(self, entry: object) -> None:
+        selected = self._choose_observation_subject(entry)
+        if selected is None:
+            return
+        self.timetable_observation_requested.emit(
+            *selected, entry.target_type, entry.target_id, entry.target_label,
+        )
+
+    def _emit_student_observation(self, student_id: str, entry: object) -> None:
+        selected = self._choose_observation_subject(entry)
+        if selected is not None:
+            self.timetable_student_observation_requested.emit(
+                student_id, *selected, entry.target_label,
+            )
 
     def _hero_visual(
         self,
@@ -740,7 +776,11 @@ class OverviewScreen(QWidget):
         entry = occurrence.entry
         if not suggested_students:
             empty = QLabel(
-                "Für diesen Unterrichtskontext sind keine aktiven Kinder zugeordnet. "
+                "Für diese Stunde wird kein einzelnes Fach vorausgewählt. "
+                "Über „Beobachtung“ wählst du das konkrete Fach; "
+                "„Alle Kinder anzeigen“ öffnet die zugeordneten Kinder."
+                if len(entry.subject_ids) != 1
+                else "Für diesen Unterrichtskontext sind keine aktiven Kinder zugeordnet. "
                 "Prüfe bei Bedarf Stammgruppen, Kurse oder Kursverbünde."
             )
             empty.setWordWrap(True)
@@ -767,11 +807,8 @@ class OverviewScreen(QWidget):
             )
             observe.clicked.connect(
                 lambda _checked=False,
-                student_id=student.student_id: self.timetable_student_observation_requested.emit(
-                    student_id,
-                    entry.subject_id,
-                    entry.subject_label,
-                    entry.target_label,
+                student_id=student.student_id: self._emit_student_observation(
+                    student_id, entry,
                 )
             )
             layout.addWidget(observe)

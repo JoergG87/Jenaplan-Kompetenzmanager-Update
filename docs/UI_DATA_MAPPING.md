@@ -1148,3 +1148,8 @@ Einstellungen/Unterrichtszeiten: Unterrichtsstunde → lesson_number; Beginn →
 ## Fachliches Stundenplanziel: zukünftige UI-Zuordnung – 16.10.2026
 
 Noch keine Felder implementiert: Eintragsart → timetable_entries.entry_kind; Fachauswahl (mehrfach) → timetable_entry_subjects.subject_id; Unterrichtsziel bleibt target_type/target_id. Stammgruppenstunde verlangt vorhandene Stammgruppe, blendet Fachauswahl aus und speichert null Links; normale Fachstunde verlangt mindestens ein reales Fach. Deutsch und Mathematik sind zwei tatsächliche Links. Keine künstliche Deutsch/Mathe-Fach-ID. Vor fachbezogener Dashboard-/Beobachtungsaktion bei mehreren Fächern ausdrückliche Einzelfachauswahl. Vorlagen bleiben einmalige Zeitkopie; keine A/B-Auswahl, Ferienwechsel fachlich offen.
+
+
+## D-Umsetzung – Editor und Beobachtung 16.10.2026
+
+Die freigegebene Eintragsart-/Mehrfachfachauswahl wird nur mit exakter synthetischer V6-Fähigkeit eingeblendet. Organisatorische Stammgruppenstunde deaktiviert Fachwahl und verwendet vorhandene Stammgruppe. Kombinierte Fachnamen werden einzeln aus Katalogoptionen projiziert. Dashboardfachwahl beginnt ohne konkretes Fach; Abbruch erzeugt keine Aktion. Zeitübernahme bleibt ausdrückliche einmalige Kopie.

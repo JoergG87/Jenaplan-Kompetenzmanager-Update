@@ -1636,3 +1636,8 @@ LessonTimeTemplatesSettings ist eine Seite der vorhandenen SettingsScreen, aussc
 Domain/Application besitzen Eintragsart, Fachmenge, Kardinalität und konkreten Fachbezug. SQLiteRepository schreibt Parent und Links atomar; ViewModels projizieren Art/Fachlabels. Widgets besitzen keine Ersatzfächer oder SQLiteabfragen. Betroffen sind core/timetable, application/commands/timetable, SQLiteTimetableRepository, TimetableDesktopAdapter/ViewModel, Stundenplaneditor, Overview/Dashboard und Beobachtungsvorbelegung.
 
 Insbesondere shell.py dashboard_documentation_refresh und overview_screen.py erwarten heute genau ein subject_id. Zukünftig: homeroom_session zeigt organisatorische Stunde ohne Fachabdeckung/-vorschläge; kombinierte Stunde zeigt alle realen Fächer und verlangt vor fachbezogener Aktion eine bewusste konkrete Fachauswahl. Kein stilles erstes Fach. Beobachtung/Rating bleibt genau einem konkreten Fach bzw. Kompetenz zugeordnet. Bestehende Consumer werden erst gemeinsam mit neuem Schema umgestellt; aktuelle V5-Zeitvorlagenfunktion behauptet diese Fähigkeit nicht.
+
+
+## D-Umsetzung – Consumer 16.10.2026
+
+TimetableEntry/ViewModel projizieren unveränderliche subject_ids und einzelne Fachoptionen. Das Legacy-subject_id ist nur für genau ein Fach belegt, niemals mit dem ersten kombinierten Fach. Dashboard zeigt alle Fachnamen; vor kombinierter Beobachtungsaktion ist eine explizite konkrete Fachwahl erforderlich. Organisatorische Stunden erzeugen keine Fachvorschläge; der vorhandene Beobachtungsdialog verlangt bei fachbezogener Erfassung ein reales Fach. Fachauswertungen bleiben durch konkrete Beobachtungs-/Kompetenzreferenzen bestimmt.

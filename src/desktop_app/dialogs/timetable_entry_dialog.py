@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QTime
+from PySide6.QtCore import QTime, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -11,8 +11,11 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QFrame,
     QScrollArea,
+    QStyleFactory,
     QLineEdit,
     QLabel,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QTimeEdit,
     QVBoxLayout,
@@ -65,12 +68,18 @@ class TimetableEntryDialog(MotionDialog):
             int(self.weekday_combo.currentData()),
             self.start_time.time().toString("HH:mm"),
             self.end_time.time().toString("HH:mm"),
-            str(self.subject_combo.currentData()),
+            "" if self.week.supports_extended_entries else str(self.subject_combo.currentData()),
             str(self.target_type_combo.currentData()),
             str(self.target_combo.currentData()),
             self.room_input.text(),
             self.active_checkbox.isChecked(),
             self.entry.sort_order if self.entry else 0,
+            entry_kind=str(self.entry_kind_combo.currentData()) if self.week.supports_extended_entries else "subject_lesson",
+            subject_ids=tuple(
+                str(self.subject_list.item(index).data(Qt.ItemDataRole.UserRole))
+                for index in range(self.subject_list.count())
+                if self.subject_list.item(index).checkState() == Qt.CheckState.Checked
+            ) if self.week.supports_extended_entries and self.entry_kind_combo.currentData() == "subject_lesson" else (),
         )
 
     def _build(self, weekday: int) -> None:
@@ -129,11 +138,34 @@ class TimetableEntryDialog(MotionDialog):
         form.addRow("Beginn", self.start_time)
         form.addRow("Ende", self.end_time)
 
+        if self.week.supports_extended_entries:
+            self.entry_kind_combo = QComboBox()
+            self.entry_kind_combo.setAccessibleName("Stundenart")
+            self.entry_kind_combo.addItem("Fachunterricht", "subject_lesson")
+            self.entry_kind_combo.addItem("Stammgruppenstunde", "homeroom_session")
+            form.addRow("Stundenart", self.entry_kind_combo)
+            self.subject_list = QListWidget()
+            self.subject_list.setAccessibleName("Fächer auswählen")
+            # Cocoa's item-view checkbox renderer overlaps indicators. Keep the
+            # style local so each checked subject remains visibly distinct.
+            self._subject_list_style = QStyleFactory.create("Fusion")
+            self.subject_list.setStyle(self._subject_list_style)
+            self.subject_list.setMinimumHeight(150)
+            for option in self.week.subjects:
+                item = QListWidgetItem(option.label, self.subject_list)
+                item.setData(Qt.ItemDataRole.UserRole, option.item_id)
+                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                item.setCheckState(Qt.CheckState.Unchecked)
+            form.addRow("Fächer", self.subject_list)
+
         self.subject_combo = QComboBox()
         self.subject_combo.setAccessibleName("Fach")
         for option in self.week.subjects:
             self.subject_combo.addItem(option.label, option.item_id)
-        form.addRow("Fach", self.subject_combo)
+        if self.week.supports_extended_entries:
+            self.subject_combo.hide()
+        else:
+            form.addRow("Fach", self.subject_combo)
 
         self.target_type_combo = QComboBox()
         self.target_type_combo.setAccessibleName("Zielart")
@@ -146,6 +178,8 @@ class TimetableEntryDialog(MotionDialog):
         self.target_combo.setAccessibleName("Unterrichtsziel")
         form.addRow("Ziel", self.target_combo)
         self._populate_targets()
+        if self.week.supports_extended_entries:
+            self.entry_kind_combo.currentIndexChanged.connect(self._entry_kind_changed)
 
         self.room_input = QLineEdit()
         self.room_input.setAccessibleName("Raum oder Ort")
@@ -157,7 +191,7 @@ class TimetableEntryDialog(MotionDialog):
         self.active_checkbox.setChecked(True)
         form.addRow("", self.active_checkbox)
         card_layout.addLayout(form)
-        if self.templates is not None:
+        if self.templates is not None or self.week.supports_extended_entries:
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
             scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -176,6 +210,13 @@ class TimetableEntryDialog(MotionDialog):
         buttons.accepted.connect(self.accept)
         layout.addWidget(buttons)
         self.weekday_combo.setFocus()
+
+    def _entry_kind_changed(self) -> None:
+        organizational = self.entry_kind_combo.currentData() == "homeroom_session"
+        self.subject_list.setEnabled(not organizational)
+        if organizational:
+            self.target_type_combo.setCurrentIndex(self.target_type_combo.findData("group"))
+        self.target_type_combo.setEnabled(not organizational)
 
     def _apply_template(self) -> None:
         template = self.lesson_template_combo.currentData()
@@ -207,3 +248,9 @@ class TimetableEntryDialog(MotionDialog):
         self.target_combo.setCurrentIndex(self.target_combo.findData(entry.target_id))
         self.room_input.setText(entry.room)
         self.active_checkbox.setChecked(entry.active)
+        if self.week.supports_extended_entries:
+            for index in range(self.subject_list.count()):
+                item = self.subject_list.item(index)
+                item.setCheckState(Qt.CheckState.Checked if item.data(Qt.ItemDataRole.UserRole) in entry.subject_ids else Qt.CheckState.Unchecked)
+            self.entry_kind_combo.setCurrentIndex(self.entry_kind_combo.findData(entry.entry_kind))
+            self._entry_kind_changed()

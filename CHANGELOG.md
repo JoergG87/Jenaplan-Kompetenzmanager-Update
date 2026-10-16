@@ -5540,3 +5540,7 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## Stundenplan D – Schema/Migration, synthetisch nach Build 404
 
 - Zusätzliches exaktes synthetisches V6 mit Stundenart und normalisierten realen Fachlinks; explizite transaktionale Testkanten aus Final V4 und bisherigem synthetischem V5. Bestehendes V5 bleibt unverändert. Vollständige historische Datenübernahme, unabhängig geprüftes verschlüsseltes Quellbackup, keyed Reopen und echte SIGKILL-Grenzen. Keine produktive Upgradekante.
+
+## Stundenplan D – Editor und Beobachtungsconsumer, synthetisch
+
+- Stammgruppenstunden ohne Kompetenzfach und kombinierte Fachstunden im vorhandenen Editor vollständig anlegen, anzeigen, bearbeiten und löschen. Vor Beobachtungen konkrete Fachwahl; keine automatische Doppelbeobachtung und kein künstliches Standardfach. Unbekannte Schemas und widersprüchliche Fachangaben sperren. Zeitvorlagen bleiben ausdrückliche einmalige Kopien; spätere Vorlagenänderungen verändern keine Einträge.

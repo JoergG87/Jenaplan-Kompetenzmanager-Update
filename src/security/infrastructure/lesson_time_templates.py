@@ -4,6 +4,7 @@ from contextlib import closing
 from src.core.database_compatibility import DatabaseCompatibilityInspector
 from src.core.lesson_time_templates import LessonTimeTemplate, LessonTimeTemplateError
 from src.core.lesson_times_schema import SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION
+from src.core.timetable_schema import SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION
 
 
 class SQLiteLessonTimeTemplateRepository:
@@ -13,10 +14,11 @@ class SQLiteLessonTimeTemplateRepository:
     @staticmethod
     def _require_target(connection):
         result = DatabaseCompatibilityInspector().inspect_connection(connection)
-        target = SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION.identity
+        targets = (SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION.identity,
+            SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity)
         if (str(connection.execute("PRAGMA cipher_status").fetchone()[0]) != "1"
-                or result.version.sqlite_user_version != target.schema_version
-                or result.schema_identity.fingerprint != target.fingerprint):
+                or not any(result.version.sqlite_user_version == target.schema_version
+                    and result.schema_identity.fingerprint == target.fingerprint for target in targets)):
             raise ValueError("lesson_times_encrypted_target_required")
 
     def list_templates(self) -> tuple[LessonTimeTemplate, ...]:
