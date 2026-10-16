@@ -5550,3 +5550,8 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 - Eigene exakte V6-Runtime und verschlüsselte Vollbackups mit separatem Manifest/READY/Handoff. Kontrollierter Restore einschließlich echtem V4→V5→V6→Backup→Restore-Verlauf, Dokument-/Companion-/Keybindungen und Crashprüfungen. Produktives V4 und 0.4.4/Build 404 unverändert. Abschließende Prüfzahlen, Cocoa-Quell-Smoke und offene native Paketgates stehen in PROJECT; keine Veröffentlichung.
 
 - Finale serielle Produktsuite: 3395 bestanden, 104 bestehende Skips, 120 Untertests; gezielte Integration 200 bestanden/2 Untertests ohne Skips. Native Cocoa-Quellbedienung und sichtbare Mehrfachfachauswahl bestanden; frische eingefrorene Paket- und menschliche Pilotabnahme bleiben offen.
+
+
+## V6-Nativabnahme – Vorprüfung 16.10.2026
+
+- NO-GO: normale Frozen-V6-Desktop-/Workerkomposition fehlt; Produktstart bleibt sicher Final V4. Neues isoliertes Profil und 132 Profil-/Registrytests bestanden. Kein Build bei unzureichendem Speicher, keine native Gesamtfreigabe. Readinessbefunde, offene Gates und menschliche Prüfliste in docs/RELEASE_AUTOMATION.md dokumentiert; keine Code-/Versions-/Feedänderung.

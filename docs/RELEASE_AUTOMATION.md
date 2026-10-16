@@ -613,3 +613,85 @@ Produktdaten/-schlüssel in diesem Abschlussauftrag weder geöffnet noch veränd
 | `ui-upgrade-existing-result.json` | `11103bf91aebf7a7c7828f4d3364cb8523769aa1624d269806b6c1657eb2c391` |
 | `ui-upgrade-result.json` | `ef2926bb7e97461429b68bf2ddfc3ed29b8821040c3d647aa015e02446422733` |
 | `closure-bundle-verification.json` | `deb72755a88cc82db10e9598381c2bf1efecf2b62656667db7894fe2aaa17e1b` |
+
+
+### V6-Gesamtabnahme – Vorprüfung 16.10.2026 – NO-GO / Auftrag nicht abgeschlossen
+
+Auftrag: frische isolierte native V6-Abnahme und Vorbereitung eines späteren regulären Feature-Releases. Keine Veröffentlichung. Ausgangs-HEAD `e56a5287768aa5aeb7c0aeb455390dac46914ce1`, Branch `spike/python-gui`, erwartete Baseline exakt bestätigt. Fünf vorbestehende Dokumentänderungen in CHANGELOG, DECISIONS, PROJECT, DATA_LIFECYCLE und PROJECT_CONSTITUTION vollständig erhalten; insbesondere fremde Speicherbereinigungsnotiz nicht gestagt. Kein ausführbarer Code geändert.
+
+**Abbruchgrund:** Eine bloße Paketierung dieses HEAD liefert keine normale V6-Testanwendung. Die synthetischen V6-Services und die gesondert komponierte AppShell sind implementiert, aber die eingefrorene Desktop-/Workerkomposition fehlt. Das ist eine grundlegende Integrationslücke für den Abnahmeauftrag; kein Anlass, die produktiven Guards oder Registry zu lockern. Zusätzlich zunächst nur 832 MiB verfügbar; spätere Messung 2.29 GiB. Historisches fertiges Testbundle allein 538 MiB, zusätzlich braucht die bestehende Pipeline neue venv, PyInstaller-Zwischenprodukte und Bundlekopien. Kein aussichtsloser Build und keine eigenmächtige Speicherbereinigung gestartet. Speicherfreigabe angefragt; keine Löschfreigabe angenommen.
+
+#### Unabhängiges Architektur-/Security-Review
+
+Separater read-only Reviewer, anschließend Quellprüfung durch Hauptagent; keine Reviewer-Testläufe. P0 im geprüften Quellumfang nicht gefunden. Keine neue P1-Sicherheitslücke im synthetischen Servicepfad bestätigt. **P1-Releaseblocker: V6-Desktopkomposition und V6-Workerintegration fehlen. Deshalb ist die geforderte gesamte P1=0-Abnahme nicht erreicht.** Kein neuer konkret bestätigter P2-Defekt; bestehende lokale Koordinations-/Stromausfall-/Rollbackgrenzen bleiben.
+
+- `src/security/cipher_product_runtime.py:312` baut weiterhin ausschließlich FinalV4SQLCipherRuntimeCoordinator. Die exakte V4-Prüfung bleibt richtig und darf nicht global V6 zulassen.
+- `src/desktop_app/main.py:760` komponiert V4-Backup/Restore. `src/desktop_app/restore_worker.py:374` akzeptiert nur ZIP/V4. `src/core/macos_test_package_profile.py:252` erlaubt Worker ebenfalls nur mit final_v4_encrypted. Vorhandene V6-Handoffservices ersetzen diese fehlende Prozessverdrahtung nicht.
+- Normaler Appstart liefert keinen lesson_time_templates_adapter. `src/desktop_app/shell.py:280,500` lässt diesen optional und blendet Unterrichtszeiten ohne ihn aus. Die funktionalen AppShelltests injizieren ihn ausdrücklich.
+- `src/core/schema_registry.py:165` bleibt Final-V4-only ohne Produktkante. UpgradeStartupGuard hält vorhandene Upgradeevidenz nach Prüfung weiterhin an. Eine neue Produktregistry allein würde weder Startup noch Recovery/Writeradmission freigeben.
+
+#### Profilvorbereitung und tatsächlich ausgeführte Prüfungen
+
+Neues Profil: `229d6f32-3846-4c33-bcfa-753f81f0f033`; Installation `82549014-cc02-4254-9feb-1dfc24652266`; Bundle/Worker/Restart `de.jenaplan.kompetenzmanager.internaltest.t229d6f3238464c33bcfa753f81f0f033`; Appname `JKM-Interner-Test-229d6f3238464c33bcfa753f81f0f033`. Snapshotdigest `b6655a7078732f56523853f8fd28e577a2a034d440b92c344e6d919439ea9173`. Drei getrennte Test-Keychainservices, eigener Accountpräfix, updates=false, ad-hoc, entitlements=null. Keine produktidentische Zwischenapp.
+
+Privater Container im kanonischen Systemtemp: `/private/var/folders/61/nxlq0vm9311gvx30ztnpj63r0000gn/T/jkm-internal-test-229d6f3238464c33bcfa753f81f0f033/`. `data` ausschließlich mit synthetic_test-Marker; `build` und `artifacts` nicht erzeugt. Dort liegen profile.json, source-provenance.json (474 aktuelle Quell-/Test-/Builddateihashes), preflight-result.json und protection-check.json. Flüchtige Rohbelege sind keine Paketfreigabe.
+
+Ausgeführt:
+
+- Alle sechs geforderten Git-Baselineprüfungen; erwarteter HEAD/Branch, fünf Fremddokumente, Staging leer.
+- Bestehende Pipeline `rtk proxy bash scripts/build_macos_pilot.sh --package-profile internal-test --test-profile <obiges profile.json> --validate-profile-only`: Exit 0, keine Buildwrites.
+- `rtk proxy python3 -m pytest tests/test_macos_test_package_profile.py tests/test_schema_registry.py -q --tb=short`: **132 bestanden, 0 Skips, 1.96 s**.
+- Schutz-/Quellhashprüfung: 474/474 unverändert; Versionsdatei, Builder, Spec und Pilotfeeddatei bytegleich HEAD. Fünf fremde Dokumentstände vor eigener Dokumentation hashgleich zum Eingang.
+
+Die vorhandene finale Quellsuite ist laut PROJECT und vorhandenem `/private/tmp/jkm-d-full-suite-serial-final.log` 3395 bestanden / 104 bestehende Skips / 120 Untertests / 754.75 s. Der PO ordnet sie dem identischen erwarteten V6-HEAD zu; keine neue Codeänderung hier. Dies ist übernommene Quellprovenienz, keine neu unabhängig rekonstruierte damalige Hashattestation und keine native Paketprovenienz. Keine unnötige Wiederholung der bisherigen Migration-/SIGKILL-/AppShellkampagnen. Vor späterer Codeintegration betroffene Regressionen und vollständige Suite erneut bzw. mit eindeutiger identischer Provenienz. Alte A2-Paketabnahme gilt nicht für einen frischen V6-Build.
+
+#### Abnahmestatus zu den 23 Berichtspunkten
+
+| Punkt | Ergebnis dieses Auftrags |
+| --- | --- |
+| 1. HEAD vorher/nachher | Vorher e56a5287768aa5aeb7c0aeb455390dac46914ce1; nachher separater reiner Dokumentationscommit, siehe git log. Keine Codeänderung. |
+| 2. Commits/Git | Nur eigener Abnahmebericht und eigene Changelogergänzung im Dokumentationscommit; fünf Fremdänderungen bleiben ungestagt. Kein Push/Tag. |
+| 3. Testpaket/Profil | Neues Profil wie oben validiert; **keine neue App gebaut**. |
+| 4. Bundle/Signatur/Provider | Am neuen Paket nicht ausgeführt; SQLCipher 4.17/CommonCrypto aus Quellnachweisen sind kein neuer Bundlebeleg. |
+| 5. Startupmatrix A–O | Sämtliche Fälle am neuen V6-Paket offen; keine alte A2-Matrix als neues Ergebnis ausgegeben. |
+| 6. V4→V6 End-to-End | Vorhandener synthetischer Servicenachweis; paketierter Wartungs-/Login-/Restartverlauf nicht ausgeführt. |
+| 7. Datenvollständigkeit | Historische Quelltests prüfen vollständige Fachdaten/Dokumente; neuer Paketbestand und dessen vollständiger Vorher-/Nachhervergleich offen. |
+| 8. V6 Backup/Restore | Synthetische Services geprüft im Vorauftrag; paketierter Worker/Restart fehlt, Abnahme offen. |
+| 9. Unterrichtszeiten | In gesonderter AppShell geprüft; normaler Paketstart ohne Adapter, daher hier nicht vollständig bedienbar qualifiziert. |
+| 10. Stammgruppenstunden | Quell-/AppShellnachweis vorhanden; native Paketbedienung offen. |
+| 11. Kombinierte Fachstunden | Quell-/AppShellnachweis vorhanden; native Paketbedienung offen. |
+| 12. Beobachtungszuordnung | Quellnachweise: bewusste Fachwahl, genau eine Beobachtung; paketierter Persistenznachweis offen. |
+| 13. UI/Bediennachweise | Historischer automatisierter Cocoa-Quell-Smoke vorhanden; keine neue Frozen-UI und keine menschliche Abnahme. |
+| 14. Neue Tests | 132 Tests und reines Pipeline-Profilgate bestanden, siehe oben. |
+| 15. Befunde | P0 nicht gefunden; P1-Releaseblocker Desktop/Worker; kein neuer bestätigter P2. Keine Gesamtfreigabe P1=0. |
+| 16. Menschliche Prüfung | Vollständig offen; reproduzierbare Liste unten. |
+| 17. Native Paketgates | Build, Inhalts-/Signatur-/Entitlement-/Provider-/Modulinventur, Startup A–O, ACL/Keychain, Migration, Persistenz, Worker/Restart und Crashmatrix offen. |
+| 18. Produktintegration vorbereitet | Readinessanalyse erstellt; vollständige technische Produktintegration **nein**, keine Aktivierungsimplementierung. |
+| 19. Produktmigration gesperrt | Ja: Registry, Runtime und Startupguard unverändert. |
+| 20. Feature-Releaseempfehlung | **NO-GO** bis Integrations-/Paket-/Migrations-/PO-Gates erfüllt sind. |
+| 21. Produktdaten/Schlüssel | Nicht geöffnet oder verwendet; keine Keychainoperation in diesem Auftrag. |
+| 22. Build 404/Pilotfeed | Keine Installations-/Artefakt-/Feedmutation, keine Versionsänderung. Historisches DMG in dieser Vorprüfung nicht erneut lokalisiert/gehasht; keine pauschale neue Artefaktattestation. |
+| 23. Pflanzenbilder-ZIP | Unverändert: 439602 Bytes, SHA256 ef06e04c4bbc4803fb036f8dfa61151f8556a2a3f647c89b5fbe9d7dec9a31d4. |
+
+#### Konkrete weitere Integrations- und Releasegates
+
+1. Platz für den bestehenden Builder freigeben; Quellen, Produkt-/Pilotdaten, Schlüssel, Releaseartefakte und alte Evidenz erhalten.
+2. Profilgebundene Frozen-V6-Testkomposition implementieren: bestehende synthetische Autorität, Existing-only-Keys, exakte Zielruntime, Templateadapter, V6-Backup/Restore, eigener authentisierter Worker/Restartkontext. Normaler Produktstart bleibt V4. Keine globale Umgebungsvariable oder Registryfreigabe als Ersatz.
+3. Frischen Source-/Package-gebundenen Build mit vorhandener Pipeline durchführen; ausgehend davon alle im Auftrag geforderten nativen Gates abnehmen. SQL-/Commit-/SIGKILL-/ENOSPC-/Parallel-/Korruptionsfehler nur als echte geprüfte Fälle zählen; V4-READY darf V6 nie direkt ersetzen, DMK bleibt unverändert.
+4. Produktiver Wartungsstart benötigt vor Freigabe einen expliziten, noch geschlossenen Vertrag: exakte bestehende V4-Quelle und vorhandene Schlüssel, geprüftes unabhängiges Vollbackup, Connection-Drain, registrierte V4→V6-Kante, transaktionaler Commit/Rollback, exakte Zielprüfung, terminaler Wartungsabschluss, neue V6-Runtime und authentisierte Recovery-/Writeradmission. Kein normaler Start darf still migrieren oder bei unbekanntem Zustand First Run erreichen.
+5. Build 404 weist V6 zurück; daraus folgt kein automatischer Downgrade. Vor erster V6-Nutzung muss Wiederherstellung des vollständigen geprüften V4-Bestands dokumentiert sein; nach V6-Nutzung bedeutet Rückkehr zum V4-Backup Verlust späterer Änderungen. Keine Main-Einzeldateirückkopie oder Schlüsselrotation als Recovery. Fehlgeschlagener Upgradezustand bleibt sicher gesperrt bis eindeutiger geprüfter Wiederherstellung.
+6. Regulärer Produktbuild separat gegen bestehende Build-404-Gates qualifizieren: Produkt-Keychain/Provider, vollständiger V6-Restore, Developer-ID/Hardened-Runtime/Entitlements, Notarisierung/Stapling/Gatekeeper, Sparkle-Framework/Bridge/Feed/Signatur und Update vom tatsächlich eingesetzten Pilotstand. Verteilung erst nach gesonderter PO-Freigabe. Profiltest mit ad-hoc/Updates aus qualifiziert diese Produktgates nicht.
+7. Tatsächlich eingesetzte Pilotversionen und ihr Daten-/Backup-/Updatezustand im späteren autorisierten Releaseprozess erfassen; hier keine realen Installationen inventarisieren. Neue monoton höhere Buildnummer und Version erst im separaten Releaseauftrag festlegen. Keine neue Releaseinfrastruktur nötig.
+
+#### Kompakte menschliche Prüfliste für Laura – erst nach bestandener Frozen-Testkomposition
+
+Nur neue isolierte synthetische Test-App/angegebene Testdaten verwenden. Pro Schritt Soll-/Ist, Screenshot und Neustartresultat festhalten; alles derzeit **offen**.
+
+- Mit bereitgestelltem synthetischem Konto anmelden; Dashboard, Stundenplanübersicht, vorhandene Bewertungen/Beobachtungen, Fachauswertung und Bericht öffnen. Fenster-/Dialogaktionen und Fehlermeldungen auf Lesbarkeit prüfen.
+- Unterrichtszeit 08:00–08:45 anlegen, bearbeiten/speichern; ungültige bzw. umgekehrte Zeiten abweisen lassen; neu starten und laden. Zeitvorschlag ausdrücklich in Stunde übernehmen, individuell ändern, Vorlage erneut ändern; Bestandsstunde bleibt unverändert.
+- Stammgruppenstunde ohne Fach anlegen; Anzeige, Bearbeiten, Deaktivieren/Reaktivieren, Neustart und Löschen prüfen. Keine künstliche Bewertung/Fachzuordnung.
+- Deutsch+Mathematik als einen Eintrag speichern; beide Namen prüfen, bearbeiten und nach Neustart laden. Ein Parent, keine Verdoppelung. Dazu technische Persistenzkontrolle durch Runner.
+- Aus kombinierter Stunde Beobachtung starten, Fachwahl zunächst abbrechen (keine Speicherung), erneut Mathematik bewusst wählen, passende Kompetenzliste prüfen und genau eine Beobachtung speichern. Organisatorische Stunde darf kein Fach erfinden.
+- V6-Vollbackup/Restore mit kontrolliertem Worker-/Restart durchlaufen; nach Anmeldung alle vorgenannten Bestände und synthetisches Dokument wiederfinden. Technische Manifest-/READY-/Key-/Integritäts-/Vollständigkeitsbelege zusätzlich erforderlich.
+
+Keine menschliche Bedienprüfung oder Gesamtfreigabe behauptet. Keine Produktmigration, kein Push/Tag/Release/Appcastupdate. A/B-Wochen bleiben zurückgestellt.
