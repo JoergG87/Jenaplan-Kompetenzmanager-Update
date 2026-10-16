@@ -5574,3 +5574,5 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 - Implementierung 002123e und Harnesskorrektur 767afb1 gesichert; zwei isolierte Pakete gebaut, Signatur/Provider/Codebindung/Integrität bestanden. Realistische native Schreibfixture deckt P1 auf: regulär erhaltene COMPLETE-Beobachtungs-/Dokumentjournale werden vom Startupinventar als UNKNOWN gesperrt. Native Migration und normale Wiederanmeldung am Bestand nicht freigegeben; keine unsichere Bereinigung oder Folgeimplementierung. Vollständiger Befund in docs/RELEASE_AUTOMATION.md.
 
 - P1-Startupkorrektur: aufbewahrte abgeschlossene Beobachtungs-, Dokument- und PDF-Operationsbelege werden strukturell sowie gegen keyed Persistenzevidenz geprüft; offene, beschädigte, ungebundene und unbekannte Bestände bleiben gesperrt. Native V6-Nachprüfung erfolgt aus frischem isoliertem Testpaket; keine produktive Aktivierung.
+
+- Native V6-Prüffolge: vorhandenen Security-Metadatenabschluss nach Migration und vor unabhängigem Backup-Reopen ergänzen; feste Testdiagnosecodes erlauben. Produktcode und Produktregistry unverändert.

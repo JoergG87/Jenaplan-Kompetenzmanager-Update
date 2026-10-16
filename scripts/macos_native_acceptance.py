@@ -628,6 +628,14 @@ def run_frozen(mode):
             payload["error_code"] = str(error)
         if isinstance(error, RuntimeError) and str(error).startswith("native_"):
             payload["error_code"] = str(error).split(":", 1)[0]
+        from src.security.synthetic_v6_runtime import SyntheticV6RuntimeError
+        if isinstance(error, SyntheticV6RuntimeError) and str(error) in {
+            "synthetic_v6_existing_keys_unavailable", "synthetic_v6_unknown_schema",
+            "synthetic_v6_inventory_invalid", "synthetic_v6_unknown_evidence",
+            "synthetic_v6_historical_source_invalid", "synthetic_v6_recovery_required",
+            "synthetic_v6_separate_recovery_required", "synthetic_v6_restore_contract_conflict",
+        }:
+            payload["error_code"] = str(error)
         if mode in {"matrix", "v6-matrix"} and test_identity() is not None:
             filename = "native-v6-matrix.json" if mode == "v6-matrix" else "native-matrix-progress.json"
             path = Path(test_identity().runtime_root).parent / filename

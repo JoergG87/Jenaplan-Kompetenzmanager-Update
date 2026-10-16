@@ -99,6 +99,8 @@ def _migrate(profile):
     boundaries = []
     migration = SyntheticTimetableMigration(service, fault_hook=boundaries.append)
     identity = migration.execute()
+    with RuntimeInstanceLock(root) as lock:
+        _finalize(profile, lock)
     result = {"status": "ok", "target": asdict(identity), "boundaries": boundaries,
         "backup": str(migration.backup), "process_must_exit": True}
     _record(profile, "native-v6-migration.json", result)
@@ -144,6 +146,7 @@ def _check(profile):
                 raise RuntimeError("native_v6_template_persistence_failed")
             opened.documents.validate_restart()
             target = service.create(root.parent / "native-v6-qualified.jkmebackup")
+            _finalize(profile, lock)
             independent = build_internal_test_v6_backup_service(root)
             verified = independent.verify(target.path)
             if verified != target:
@@ -494,7 +497,9 @@ def _matrix(profile):
     result["native_feature_persistence"] = child("v6-functions-reopen")
     result.update(status="native_v6_automated_gates_passed",
         full_post_restore_domain_and_documents=True, full_post_restore_typed_row_equality=True,
-        open_gates=["human_ui_acceptance", "separate_production_migration_release"])
+        open_gates=["human_ui_acceptance", "remaining_startup_matrix_cases",
+            "packaged_migration_failure_matrix", "separate_production_migration_release",
+            "production_signing_notarization_update"])
     _record(profile, "native-v6-matrix.json", result)
     return result
 
