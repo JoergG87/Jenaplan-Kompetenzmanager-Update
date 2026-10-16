@@ -5507,3 +5507,10 @@ Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse 
 
 - Existing-only SQLCipher-4.17/CommonCrypto-Zielruntime für exaktes synthetisches V5; bestehende Schlüssel, Vollintegrität, Fachreferenzen und Dokument-/Companionbindungen. Kein produktiver V5-Start.
 - Sessionverbindungen/Cursor vor Lockfreigabe geschlossen, Dokumentmethoden sessiongebunden, keine Reaktivierung alter Adapter. Unabhängig gefundene Lebensdauer-/Negativtest-P1 behoben.
+
+
+## Synthetisches V5-Backup/Restore – 16.10.2026, unveröffentlicht
+
+- Eigener V5-Manifestvertrag und READY v2 im unveränderten .jkmebackup-v1-Container; historische V4-Belege bleiben strikt V4.
+- Bestehende SQLCipher-/Dokument-/Companion-, Safetybackup-, Restore-/Rollbackmechanik synthetisch wiederverwendet; getrennte Handoffdomäne, kein Produktworker für V5.
+- Reale Restore-/Restart-/SIGKILL-/Konkurrenztests, falsche Schlüssel/DMK, beschädigte/unvollständige Belege und spätere legitime Writes geprüft. Pfad- und Recovery-P1 aus unabhängigem Review behoben.

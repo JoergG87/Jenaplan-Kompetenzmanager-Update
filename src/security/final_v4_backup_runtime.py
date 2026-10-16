@@ -19,7 +19,7 @@ from pathlib import Path
 import shutil
 import stat
 import tempfile
-from typing import TYPE_CHECKING, Any, Callable, Mapping
+from typing import TYPE_CHECKING, Any, Callable, Mapping, ClassVar
 
 if TYPE_CHECKING:
     from src.security.cipher_product_runtime import CipherProductPaths
@@ -229,6 +229,9 @@ class FinalV4BackupDocumentV1:
 
 @dataclass(frozen=True, slots=True)
 class FinalV4EncryptedBackupManifestV1:
+    expected_main_schema_version: ClassVar[int] = FINAL_SCHEMA_VERSION
+    expected_main_schema_fingerprint: ClassVar[str] = FINAL_SCHEMA_FINGERPRINT
+    expected_manifest_entry_id: ClassVar[str] = FINAL_V4_BACKUP_MANIFEST_ENTRY_ID
     created_at: str
     installation_id: str
     database_context_id: str
@@ -467,6 +470,13 @@ class _StagedDocumentFactory:
 class FinalV4EncryptedBackupService:
     """Create, verify and stage same-installation encrypted Final-V4 backups."""
 
+    manifest_type = FinalV4EncryptedBackupManifestV1
+    manifest_filename = FINAL_V4_BACKUP_MANIFEST_FILENAME
+    manifest_entry_id = FINAL_V4_BACKUP_MANIFEST_ENTRY_ID
+    main_schema_version = FINAL_SCHEMA_VERSION
+    main_schema_fingerprint = FINAL_SCHEMA_FINGERPRINT
+    restore_ready_version = FINAL_V4_RESTORE_READY_VERSION
+
     def __init__(
         self,
         *,
@@ -665,7 +675,7 @@ class FinalV4EncryptedBackupService:
                             database_key_rewrap_revision
                         ),
                     )
-                    manifest_path = workspace / FINAL_V4_BACKUP_MANIFEST_FILENAME
+                    manifest_path = workspace / self.manifest_filename
                     _write_exclusive(manifest_path, manifest.to_bytes())
                     service = self._container_service()
                     workspace_container = workspace / "payload.jkmebackup"
@@ -786,13 +796,13 @@ class FinalV4EncryptedBackupService:
                     ),
                     "container_sha256": extraction.verification.container_sha256,
                     "database_context_id": materialized.manifest.database_context_id,
-                    "database_schema_fingerprint": FINAL_SCHEMA_FINGERPRINT,
-                    "database_schema_version": FINAL_SCHEMA_VERSION,
+                    "database_schema_fingerprint": self.main_schema_fingerprint,
+                    "database_schema_version": self.main_schema_version,
                     "installation_id": materialized.manifest.installation_id,
                     "manifest_sha256": hashlib.sha256(
                         materialized.manifest.to_bytes()
                     ).hexdigest(),
-                    "ready_version": FINAL_V4_RESTORE_READY_VERSION,
+                    "ready_version": self.restore_ready_version,
                     "state": "RESTORE_READY",
                     "total_document_generation_count": len(
                         materialized.manifest.documents
@@ -852,17 +862,17 @@ class FinalV4EncryptedBackupService:
             not isinstance(ready, dict)
             or set(ready) != required
             or canonical_json(ready) != ready_bytes
-            or ready.get("ready_version") != FINAL_V4_RESTORE_READY_VERSION
+            or ready.get("ready_version") != self.restore_ready_version
             or ready.get("state") != "RESTORE_READY"
             or ready.get("container_sha256") != expected_container_sha256
-            or ready.get("database_schema_version") != FINAL_SCHEMA_VERSION
+            or ready.get("database_schema_version") != self.main_schema_version
             or ready.get("database_schema_fingerprint")
-            != FINAL_SCHEMA_FINGERPRINT
+            != self.main_schema_fingerprint
         ):
             raise FinalV4EncryptedBackupError("restore_ready_invalid")
 
-        manifest_path = root / FINAL_V4_BACKUP_MANIFEST_FILENAME
-        manifest = FinalV4EncryptedBackupManifestV1.from_bytes(
+        manifest_path = root / self.manifest_filename
+        manifest = self.manifest_type.from_bytes(
             _read_regular(manifest_path)
         )
         self._validate_context(manifest)
@@ -998,7 +1008,7 @@ class FinalV4EncryptedBackupService:
             final_paths.database,
             staged_loaded.database_key.key_material,
         )
-        if main_report.schema_fingerprint != FINAL_SCHEMA_FINGERPRINT:
+        if main_report.schema_fingerprint != self.main_schema_fingerprint:
             raise FinalV4EncryptedBackupError("restore_main_schema_mismatch")
         self._inspect_companion(
             paths.database,
@@ -1044,10 +1054,10 @@ class FinalV4EncryptedBackupService:
     def _materialize_and_validate(
         self, extraction: EncryptedBackupExtractionResult
     ) -> _MaterializedStaging:
-        manifest_path = extraction.entry_paths.get(FINAL_V4_BACKUP_MANIFEST_ENTRY_ID)
+        manifest_path = extraction.entry_paths.get(self.manifest_entry_id)
         if manifest_path is None:
             raise FinalV4EncryptedBackupError("backup_manifest_entry_missing")
-        manifest = FinalV4EncryptedBackupManifestV1.from_bytes(
+        manifest = self.manifest_type.from_bytes(
             _read_regular(manifest_path)
         )
         self._validate_context(manifest)
@@ -1073,8 +1083,8 @@ class FinalV4EncryptedBackupService:
             artifact_by_role[
                 FinalV4BackupArtifactRole.DATABASE_KEY_ENVELOPE_REGISTRY
             ].entry_id: key_paths.envelope_registry,
-            FINAL_V4_BACKUP_MANIFEST_ENTRY_ID:
-                root / FINAL_V4_BACKUP_MANIFEST_FILENAME,
+            self.manifest_entry_id:
+                root / self.manifest_filename,
         }
         for document in manifest.documents:
             moves[document.entry_id] = document_paths.storage_root / (
@@ -1104,7 +1114,7 @@ class FinalV4EncryptedBackupService:
         main_report = self._inspect_main(
             final_paths.database, staged_loaded.database_key.key_material
         )
-        if main_report.schema_fingerprint != FINAL_SCHEMA_FINGERPRINT:
+        if main_report.schema_fingerprint != self.main_schema_fingerprint:
             raise FinalV4EncryptedBackupError("restore_main_schema_mismatch")
         self._inspect_companion(
             document_paths.database, staged_loaded.database_key.key_material
@@ -1174,11 +1184,15 @@ class FinalV4EncryptedBackupService:
             with closing(
                 self._provider.connect_read_only(path, key_material=database_key)
             ) as connection:
-                return KeyedFinalV4CompatibilityInspector().inspect_connection(
-                    connection
-                )
+                return self._inspect_main_connection(connection)
         except Exception:
             raise FinalV4EncryptedBackupError("restore_main_database_invalid") from None
+
+    def _inspect_main_connection(self, connection):
+        return KeyedFinalV4CompatibilityInspector().inspect_connection(connection)
+
+    def read_manifest(self, root: Path):
+        return self.manifest_type.from_bytes(_read_regular(root / self.manifest_filename))
 
     def _inspect_companion(self, path: Path, database_key: bytes) -> None:
         try:
@@ -1315,7 +1329,7 @@ class FinalV4EncryptedBackupService:
                 self.loaded.database_context_id,
                 FinalV4BackupArtifactRole.MAIN_DATABASE,
                 application_id=0,
-                schema_version=FINAL_SCHEMA_VERSION,
+                schema_version=self.main_schema_version,
                 schema_fingerprint=main_schema_fingerprint,
             ),
             _artifact(
@@ -1345,7 +1359,7 @@ class FinalV4EncryptedBackupService:
             size, digest = _file_size_sha256(path)
             if size != document.container_size or digest != document.container_sha256:
                 raise FinalV4EncryptedBackupError("document_container_changed")
-        return FinalV4EncryptedBackupManifestV1(
+        return self.manifest_type(
             created_at=_format_utc(self._clock.utc_now()),
             installation_id=self.installation_id,
             database_context_id=self.loaded.database_context_id,
@@ -1377,7 +1391,7 @@ class FinalV4EncryptedBackupService:
             (FINAL_V4_COMPANION_ENTRY_ID, companion_path),
             (FINAL_V4_KEYSET_ENTRY_ID, keyset_path),
             (FINAL_V4_ENVELOPE_REGISTRY_ENTRY_ID, registry_path),
-            (FINAL_V4_BACKUP_MANIFEST_ENTRY_ID, manifest_path),
+            (self.manifest_entry_id, manifest_path),
             *( (item.entry_id, copied_documents[item.storage_id]) for item in manifest.documents ),
         )
 
@@ -1403,10 +1417,10 @@ class FinalV4EncryptedBackupService:
             }
         )
         manifest_size, manifest_hash = _file_size_sha256(manifest_path)
-        expected[FINAL_V4_BACKUP_MANIFEST_ENTRY_ID] = (
+        expected[self.manifest_entry_id] = (
             manifest_size,
             manifest_hash,
-            _outer_restore_name(FINAL_V4_BACKUP_MANIFEST_ENTRY_ID, False),
+            _outer_restore_name(self.manifest_entry_id, False),
         )
         if set(outer) != set(expected):
             raise FinalV4EncryptedBackupError("backup_entry_inventory_mismatch")
@@ -1420,6 +1434,9 @@ class FinalV4EncryptedBackupService:
                 raise FinalV4EncryptedBackupError("backup_entry_crossbinding_invalid")
 
     def _validate_context(self, manifest: FinalV4EncryptedBackupManifestV1) -> None:
+        if type(manifest) is not self.manifest_type:
+            raise FinalV4EncryptedBackupError("backup_manifest_schema_contract_mismatch")
+        _validate_manifest(manifest)
         if (
             manifest.installation_id != self.installation_id
             or manifest.database_context_id != self.loaded.database_context_id
@@ -1546,12 +1563,11 @@ class FinalV4EncryptedBackupService:
             sqlcipher_guard_validator=self._validate_outer_main_connection,
         )
 
-    @staticmethod
     def _validate_outer_main_connection(
-        connection: Any, _context: BackupContainerContextV1
+        self, connection: Any, _context: BackupContainerContextV1
     ) -> None:
         connection.execute("PRAGMA foreign_keys = ON")
-        KeyedFinalV4CompatibilityInspector().inspect_connection(connection)
+        self._inspect_main_connection(connection)
 
     def _container_fault(self, boundary: str) -> None:
         mapped = {
@@ -1805,7 +1821,7 @@ def _validate_manifest(manifest: FinalV4EncryptedBackupManifestV1) -> None:
             validate_uuid4(value)
         except Exception:
             raise FinalV4EncryptedBackupError("backup_manifest_identity_invalid") from None
-    if manifest.manifest_entry_id != FINAL_V4_BACKUP_MANIFEST_ENTRY_ID:
+    if manifest.manifest_entry_id != manifest.expected_manifest_entry_id:
         raise FinalV4EncryptedBackupError("backup_manifest_identity_invalid")
     if type(manifest.dmk_generation) is not int or manifest.dmk_generation < 1:
         raise FinalV4EncryptedBackupError("backup_manifest_generation_invalid")
@@ -1833,8 +1849,8 @@ def _validate_manifest(manifest: FinalV4EncryptedBackupManifestV1) -> None:
     )
     if (
         main_artifact.application_id != 0
-        or main_artifact.schema_version != FINAL_SCHEMA_VERSION
-        or main_artifact.schema_fingerprint != FINAL_SCHEMA_FINGERPRINT
+        or main_artifact.schema_version != manifest.expected_main_schema_version
+        or main_artifact.schema_fingerprint != manifest.expected_main_schema_fingerprint
     ):
         raise FinalV4EncryptedBackupError(
             "backup_manifest_main_schema_incompatible"

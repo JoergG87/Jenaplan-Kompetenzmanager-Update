@@ -1810,3 +1810,10 @@ Smoke-Quellpfad und expliziter Runner verwenden dieselbe versiegelte internal-te
 ## V5-Auftrag: Paket A – 16.10.2026
 
 SyntheticV5Runtime bietet vorhandene exakte V5-Datenbanken nur innerhalb einer gehaltenen, einmaligen synthetischen Sitzung an. Full keyed Reopen mit echtem SQLCipher 4.17/CommonCrypto, Cipher-/SQLite-/FK-/Fach-/Dokumentprüfungen; kein First Run, keine Schlüsselanlage/Reparatur oder Produktfreigabe. Gezielter kombinierter Lauf Runtime/Transaktionsmigration/Vorlagen-UI: 53 bestanden, 56.24 s, keine Skips. Enthält echte Prozesse, Migrationcrashnachweise und Lifetime-/Negativregressionen; native Paketfreigabe daraus folgt nicht.
+
+
+## V5-Auftrag: Paket B – 16.10.2026
+
+27 gezielte echte SQLCipher-4.17/CommonCrypto-Backuptests bestanden (31.38 s, keine Skips): verschlüsselter Vollbestand, unabhängige Verifikation, READY2, realer Restore-/Restartprozess, SIGKILL vor Austausch/zwischen Main und Companion/nach Austausch, bestehender Rollback, konkurrierender Prozess, Kapazitätsabweisung, beschädigter Container, falscher Database-Key/DMK, falsche Installation, fremdes Manifest, unvollständiges Staging, historische V4-Abweisung, keine Rotation und unveränderte Originale. Speichermangel wird als OS-Kapazitätswert injiziert, keine physisch volle Platte behauptet. Unabhängig wiederholter SIGKILL-Zwischenfall: 1 bestanden, 3.35 s. Breiter gezielter Lauf: 184 bestanden, 41 bestehende Skips, 2 Untertests, 85.47 s; die qualifizierten neuen Tests haben keine Skips.
+
+Build-404-Kompatibilitätsquelle aus Commit 825e844 ist zu aktuellem src/core/database_compatibility.py bytegleich; dessen reale keyed Abweisung von V5 wird durch bestehende Transaktionsregression geprüft. Historisches veröffentlichtes App-Bundle wurde nicht gestartet. Produktives V5, native neue Paketzulassung und historisches V4→V5-Restore bleiben gesperrt.

@@ -101,6 +101,9 @@ class VerifiedCipherSchoolYearTransitionBackupAdapter:
     def create_and_verify_during_maintenance(
         self,
     ) -> SchoolYearTransitionBackupEvidence:
+        if (self.service.main_schema_version != 4
+                or self.service.main_schema_fingerprint != FINAL_SCHEMA_FINGERPRINT):
+            raise RuntimeError("transition_final_v4_backup_required")
         target_root = Path(self.target_directory).expanduser().resolve(strict=True)
         timestamp = self.now_provider().astimezone(UTC).strftime(
             "%Y%m%dT%H%M%SZ"

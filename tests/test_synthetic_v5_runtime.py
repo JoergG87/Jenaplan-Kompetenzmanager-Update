@@ -122,3 +122,24 @@ def test_existing_only_full_runtime(mode, tmp_path):
     finally:
         if process.is_alive(): process.kill(); process.join(10)
         parent.close()
+
+
+@pytest.mark.parametrize('part', ['main','companion','keyset','envelope','storage'])
+def test_runtime_requires_entire_canonical_path_composition(tmp_path, part):
+    _, service = _seed_case(tmp_path)
+    before = _protected(service)
+    original = service.paths
+    outside = tmp_path / 'outside'
+    outside.mkdir(mode=0o700)
+    if part == 'main':
+        service.paths = replace(original, final_v4=replace(original.final_v4, database=outside/'main'))
+    elif part == 'companion': service.paths = replace(original, database=outside/'companion')
+    elif part == 'storage': service.paths = replace(original, storage_root=outside)
+    else:
+        keys = original.final_v4.key_runtime
+        keys = replace(keys, **{('keyset_metadata' if part == 'keyset' else 'envelope_registry'): outside/part})
+        service.paths = replace(original, final_v4=replace(original.final_v4, key_runtime=keys))
+    with pytest.raises(SyntheticV5RuntimeError, match='paths_invalid'):
+        with SyntheticV5Runtime(service).open_existing(): pass
+    service.paths = original
+    assert _protected(service) == before and not tuple(outside.iterdir())

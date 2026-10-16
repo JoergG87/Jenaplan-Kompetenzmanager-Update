@@ -4706,3 +4706,12 @@ A2 FINAL 15.10.2026: Qt-Fehlerport mit frischem Paket 5d58c6e0 nativ sichtbar ab
 ## Synthetische V5-Runtime – 16.10.2026
 
 Isolierte Existing-only-Komposition unter bestehendem RuntimeInstanceLock, keine Erweiterung der Produktregistry. Alle keyed Verbindungen sind sessiongebunden und vor Lockfreigabe geschlossen; einmalige Runtimeobjekte und Dokumentproxy verhindern spätere Writes alter Adapter. Schwache Connectionreferenzen vermeiden Wachstum bereits geschlossener Handles. Unabhängiges statisches Nachreview: P0/P1=0 nach Behebung zweier im Zwischenstand gefundener P1 (Connectionlebensdauer und fälschlich akzeptierte AssertionError-Negativtests). Keine hostile-process-Lockkontinuität behauptet.
+
+
+## V5-Backup/Restore – synthetische Vertragsstrategie – 16.10.2026
+
+Containerformat v1 bleibt unverändert. Eigener innerer Manifestentry, exakt V5-fähiger Service, READY v2, eigener restore_kind und HMAC-purpose verhindern historische V4-Umdeutung. Produktworker/Produktregistry bleiben V4. Schuljahresbackupadapter bleibt ausdrücklich V4-only und verweigert V5 vor Erzeugung eines Belegs. Historisches V4→V5-Restore benötigt separate Migration; keine Zielautorität aus dem Quellbackup.
+
+Vollständige kanonische Main-/Companion-/Key-/Dokumentpfade werden vor Operationen neu gebunden. Existing Keymetadata vor Backup sowie nach Austausch prüfen; während unterbrochenem Austausch dürfen sie zum vorhandenen Rollback verschoben sein. Recovery nutzt dort bestehenden Schlüsselkontext und authentisierten Handoff, führt bestehendes Rollback aus und prüft danach vollständig. Keine neue Recoveryplattform.
+
+Terminale Restorebelege authentisieren Geschichte, nicht ewige Bytegleichheit des laufenden Bestands. Initialer Worker/Handshake verlangt volle Snapshot-/Inventarbindung. Spätere Starts prüfen aktuellen keyed Inhalt, Schema, Schlüssel und Dokumentcrossbindings, damit reguläre Änderungen möglich bleiben. Konservative Grenze: genau eine eindeutig terminale synthetische Restoretransaktion; mehrere Historien benötigen gesonderten Vertrag. Unabhängiges finales Review P0/P1=0; zuvor gefundene Scope-/Terminal-/Recovery-P1 sind behoben.

@@ -3676,3 +3676,6 @@ Native Matrix meldet ui_visibility_checks als separat nachzuweisendes Pflichtgat
 Synthetische V5-Backupnamen: SyntheticV5EncryptedBackupManifestV1 (eigener innerer Manifestentry ...000005 / synthetic-v5-backup-manifest-v1.json), SyntheticV5EncryptedBackupService, SYNTHETIC_V5_RESTORE_READY_VERSION=2, SyntheticV5EncryptedRestoreHandoffService (restore_kind synthetic_v5_encrypted_same_installation / HMAC-purpose synthetic-v5-live-restore-handoff-v1), SyntheticV5EncryptedLiveRestoreService, recover_interrupted_synthetic_v5_restore, prepare_synthetic_v5_live_restore und confirm_synthetic_v5_restore_startup. Vorhandene Container-v1- und Recoverymechanik werden wiederverwendet; kein produktiver V5-Workerentry.
 
 Tatsächlicher Vorlagen-Speicherport: LessonTimeTemplatesSettings.save_requested (kein Signal auf SettingsScreen). LessonTimeTemplatesSettings.reload_requested verbindet die ausdrückliche Neuladeaktion mit der vorhandenen Shell und frischer Adapterprojektion.
+
+
+classify_terminal_synthetic_v5_restore_artifacts ist die enge synthetische Terminalklassifikation; sie erzeugt keine Restore-/Migrationsautorität. expected_backup_service_type bindet Handoff-Strategie an den exakten V4- beziehungsweise synthetischen V5-Service. VerifiedCipherSchoolYearTransitionBackupAdapter bleibt V4-only.

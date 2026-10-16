@@ -15,8 +15,9 @@ from src.core.runtime_root_protection import require_mutable_test_root, RuntimeR
 from src.core.restore_runtime import RuntimeInstanceLock
 from src.core.sqlite_store import SQLiteDatabase
 from src.core.upgrade_validation import verify_timetable_source_references
-from src.security.final_v4_sqlcipher_runtime import KeyedFinalV4CompatibilityReport
-from src.security.final_v3_document_runtime import FinalV3DocumentRuntime
+from src.security.database_key_runtime import DatabaseKeyRuntimePaths
+from src.security.final_v4_sqlcipher_runtime import KeyedFinalV4CompatibilityReport, FinalV4SQLCipherRuntimePaths
+from src.security.final_v3_document_runtime import FinalV3DocumentRuntime, FinalV3DocumentRuntimePaths
 from src.security.infrastructure.installation_inventory import ReadOnlyInstallationInventory
 from src.security.infrastructure.lesson_time_templates import SQLiteLessonTimeTemplateRepository
 
@@ -159,9 +160,8 @@ class SyntheticV5Runtime:
         if protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
             raise SyntheticV5RuntimeError("synthetic_v5_root_required")
         service = self.service
-        expected = self.root / "final-v4-sqlcipher-runtime-v1"
-        if (service.paths.final_v4.database != expected / "final-v4.sqlcipher"
-                or service.paths.database != expected / "documents-v1.sqlcipher"):
+        expected_main = FinalV4SQLCipherRuntimePaths.for_key_runtime(DatabaseKeyRuntimePaths.for_root(self.root))
+        if service.paths != FinalV3DocumentRuntimePaths.for_final_v4(expected_main):
             raise SyntheticV5RuntimeError("synthetic_v5_paths_invalid")
         provider = service._provider
         if (not isinstance(provider, SQLCipherConnectionProvider)
@@ -202,11 +202,15 @@ class SyntheticV5Runtime:
                            ".jkm-final-v4-sqlcipher-runtime-test-root"}
         if set(inventory.unknown) - allowed_markers:
             raise SyntheticV5RuntimeError("synthetic_v5_unknown_evidence")
+        terminal_restore = False
+        if inventory.restore_evidence:
+            from src.security.synthetic_v5_live_restore import classify_terminal_synthetic_v5_restore_artifacts
+            terminal_restore = classify_terminal_synthetic_v5_restore_artifacts(self.service)
         for artifact in inventory.artifacts:
             name = artifact.relative_path
             # Retained transactional source backup is historical only. Old
             # journal/anchor and all pending restore evidence still veto runtime.
-            if artifact.role == "restore_evidence" or name.split("/")[0] in {
+            if (artifact.role == "restore_evidence" and not terminal_restore) or name.split("/")[0] in {
                     "schema-upgrade-foundation", "schema-upgrade-replay"}:
                 raise SyntheticV5RuntimeError("synthetic_v5_recovery_required")
             if artifact.role == "upgrade_evidence" and name not in {

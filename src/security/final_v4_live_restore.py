@@ -130,6 +130,10 @@ class _CipherComponent:
 class FinalV4EncryptedRestoreHandoffService:
     """DMK-authenticated handoff using the existing one-time journal contract."""
 
+    restore_kind = FINAL_V4_LIVE_RESTORE_KIND
+    authentication_purpose = FINAL_V4_LIVE_RESTORE_AUTH_PURPOSE
+    expected_backup_service_type = FinalV4EncryptedBackupService
+
     def __init__(
         self,
         backup_service: FinalV4EncryptedBackupService | None = None,
@@ -139,6 +143,8 @@ class FinalV4EncryptedRestoreHandoffService:
         installation_id: str | None = None,
         now: Callable[[], datetime] | None = None,
     ) -> None:
+        if backup_service is not None and type(backup_service) is not self.expected_backup_service_type:
+            raise RestoreHandoffError("Der Backupvertrag passt nicht zum Restorevertrag.")
         self.backup_service = backup_service
         if backup_service is not None:
             runtime_root = backup_service.paths.final_v4.key_runtime.root
@@ -197,7 +203,7 @@ class FinalV4EncryptedRestoreHandoffService:
             "manifest_sha256": hashlib.sha256(ready.manifest.to_bytes()).hexdigest(),
             "nonce": nonce,
             "restore_id": restore_id,
-            "restore_kind": FINAL_V4_LIVE_RESTORE_KIND,
+            "restore_kind": self.restore_kind,
             "runtime_root": str(root),
             "safety_backup_relative": safety_path.relative_to(root).as_posix(),
             "safety_backup_sha256": verified_safety.container_sha256,
@@ -219,7 +225,7 @@ class FinalV4EncryptedRestoreHandoffService:
                 "rename_intent": None,
                 "restart_handshake": {"attempts": 0, "status": "not_started"},
                 "restore_id": restore_id,
-                "restore_kind": FINAL_V4_LIVE_RESTORE_KIND,
+                "restore_kind": self.restore_kind,
                 "safety_backup_sha256": verified_safety.container_sha256,
             }
         )
@@ -278,7 +284,7 @@ class FinalV4EncryptedRestoreHandoffService:
             or payload.get("handoff_version") != RESTORE_HANDOFF_VERSION
             or payload.get("live_restore_handoff_version")
             != FINAL_V4_LIVE_RESTORE_HANDOFF_VERSION
-            or payload.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
+            or payload.get("restore_kind") != self.restore_kind
             or not secrets.compare_digest(str(payload.get("nonce", "")), expected_nonce)
         ):
             raise RestoreHandoffError("Der Cipher-Handoff ist ungueltig.")
@@ -326,7 +332,7 @@ class FinalV4EncryptedRestoreHandoffService:
         loaded = self.loaded_keys
         key = derive_domain_separated_key(
             loaded.dmk,
-            purpose=FINAL_V4_LIVE_RESTORE_AUTH_PURPOSE,
+            purpose=self.authentication_purpose,
             derivation_version=1,
             context={
                 "database_context_id": loaded.database_context_id,
@@ -470,7 +476,7 @@ class FinalV4EncryptedLiveRestoreService(ProductiveRestoreService):
         expected_documents: object,
     ) -> None:
         del documents, expected_documents
-        manifest = _read_manifest(
+        manifest = self.backup_service.read_manifest(
             _resolve_relative(paths.runtime_root, str(handoff["staging_root_relative"]))
         )
         self.backup_service.verify_live_runtime(paths.runtime_root, manifest=manifest)
@@ -746,8 +752,10 @@ def launch_prepared_final_v4_restore(
     return process
 
 
-def confirm_final_v4_restore_startup(
+def _confirm_cipher_restore_startup(
     *,
+    restore_kind,
+    manifest_reader,
     backup_service: FinalV4EncryptedBackupService | None = None,
     runtime_root: Path,
     restore_id: str,
@@ -767,7 +775,7 @@ def confirm_final_v4_restore_startup(
     paths = restore_transaction_paths(root, restore_id)
     journal = RestoreJournal(paths)
     state = journal.read()
-    if state.get("phase") != "installed_verified" or state.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND:
+    if state.get("phase") != "installed_verified" or state.get("restore_kind") != restore_kind:
         raise RestoreJournalError("Der Cipher-Restore erwartet keinen Startup-Handshake.")
     payload = _read_canonical_json(paths.resume_token, RestoreHandoffError)
     if (
@@ -780,12 +788,12 @@ def confirm_final_v4_restore_startup(
         raise RestoreHandoffError("Der Cipher-Resume-Token ist ungueltig.")
     handoff = _read_canonical_json(paths.consumed_handoff, RestoreHandoffError)
     if (
-        handoff.get("restore_kind") != FINAL_V4_LIVE_RESTORE_KIND
+        handoff.get("restore_kind") != restore_kind
         or handoff.get("runtime_root") != str(root)
     ):
         raise RestoreHandoffError("Der Cipher-Restart-Handoff ist widerspruechlich.")
     staging_root = _resolve_relative(root, str(handoff["staging_root_relative"]))
-    manifest = _read_manifest(staging_root)
+    manifest = manifest_reader(staging_root)
     if backup_service is None:
         if product_paths is None:
             raise RestorePreflightError("Die Cipher-Runtime-Pfade fehlen.")
@@ -816,8 +824,11 @@ def confirm_final_v4_restore_startup(
     return RestoreRecoveryResult("completed", restore_id)
 
 
-def recover_interrupted_final_v4_restore(
+def _recover_interrupted_cipher_restore(
     *,
+    restore_kind,
+    manifest_reader,
+    live_restore_type,
     runtime_root: Path,
     backup_service: FinalV4EncryptedBackupService | None = None,
     product_paths: CipherProductPaths | None = None,
@@ -839,7 +850,7 @@ def recover_interrupted_final_v4_restore(
         paths = restore_transaction_paths(root, child.name)
         state = RestoreJournal(paths).read()
         if (
-            state.get("restore_kind") == FINAL_V4_LIVE_RESTORE_KIND
+            state.get("restore_kind") == restore_kind
             and state.get("phase")
             not in {"completed", "rolled_back", "aborted_before_replacement"}
         ):
@@ -892,7 +903,7 @@ def recover_interrupted_final_v4_restore(
             )
             verifier = backup_service
         if phase == "installed_verified" and paths.resume_token.is_file():
-            manifest = _read_manifest(
+            manifest = manifest_reader(
                 _resolve_relative(root, str(handoff["staging_root_relative"]))
             )
             verifier.verify_live_runtime(root, manifest=manifest)
@@ -930,7 +941,7 @@ def recover_interrupted_final_v4_restore(
                 product_paths=product_paths,
             )
         else:
-            FinalV4EncryptedLiveRestoreService(backup_service)._rollback(
+            live_restore_type(backup_service)._rollback(
                 paths,
                 journal,
             )
@@ -1695,3 +1706,14 @@ def _is_hash(value: object) -> bool:
 
 if __name__ == "__main__":  # pragma: no cover - subprocess entry point
     raise SystemExit(main())
+
+
+def confirm_final_v4_restore_startup(**kwargs):
+    return _confirm_cipher_restore_startup(restore_kind=FINAL_V4_LIVE_RESTORE_KIND,
+        manifest_reader=_read_manifest, **kwargs)
+
+
+def recover_interrupted_final_v4_restore(**kwargs):
+    return _recover_interrupted_cipher_restore(restore_kind=FINAL_V4_LIVE_RESTORE_KIND,
+        manifest_reader=_read_manifest, live_restore_type=FinalV4EncryptedLiveRestoreService,
+        **kwargs)
