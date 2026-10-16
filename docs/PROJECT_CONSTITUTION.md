@@ -1628,3 +1628,7 @@ Autorisiert: normalisierte Stammgruppen-/Mehrfachfachstunden samt transaktionale
 
 ## V6-App-/Workerintegration – PO-Auftrag 16.10.2026
 Bestehende Final-V4-Produktruntime bleibt unverändert. Autorisiert ist die vollständige V6-Desktop-/Adapter-/Backup-/Worker-/Restartkomposition ausschließlich unter versiegeltem internal-test-Profil und bestehendem synthetic_test-Root. Keine neue Schemaidentität, keine produktive Migration oder Registryfreigabe. Explizite Quellenprüfung und Existing-only-Keys; alle unbekannten Zustände sperren.
+
+
+## Erhaltene Operationsbelege – P1-Auftrag 16.10.2026
+Bekannte reguläre Beobachtungs-/Dokument-/PDF-Journale werden als bestehende technische Historie erfasst, nicht als Upgrade-/Restoreautorität. Nur vollständig geprüfte terminale Belege erlauben die Fortsetzung unter unveränderten Root-/Account-/Key-/Schema-/Dokumentgates. Offene Operationen bleiben konservativ mit vorhandenem Recoverybedarf gesperrt; keine automatische Reparatur/GC. Keine neue Schemaidentität oder Produktmigration.

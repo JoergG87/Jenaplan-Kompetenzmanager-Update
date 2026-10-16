@@ -1903,3 +1903,9 @@ Produktionsgrenze: produktive Anwendung weiterhin Final V4 / macOS 0.4.4 / Build
 
 ## V6-App-/Workerintegration – 16.10.2026
 PO-Folgeauftrag nach Vorprüfungs-NO-GO: normale autorisierte interne V6-Test-App mit Existing-only-Keyloader, exakter keyed Schemaauswahl, Unterrichtszeitenadapter und vorhandener AppShell; V6-Worker/Restart mit getrenntem authentisiertem Restorevertrag. Produktstart und Produktregistry bleiben Final-V4-only, produktive Migration gesperrt. Implementierungs-, Test-/Paketstatus und offene Grenzen werden im bestehenden docs/RELEASE_AUTOMATION.md fortgeschrieben. Kein Versions-/Feedwechsel oder Produktdatenzugriff.
+
+### P1-Startupkorrektur – 16.10.2026
+
+Regulär erhaltene Beobachtungs-/Dokument-/PDF-Journale sind als exakte Artefaktrollen und mit keyed Persistenzbindung in den bestehenden Startup integriert. Gefüllte V4- und synthetische V6-Neustarts, negative Inventarfälle und der native V6-Funktionsrunner werden geprüft. Produktmigration, Versionsstand und Updatefeed bleiben unverändert gesperrt; tatsächliche Paketresultate werden in docs/RELEASE_AUTOMATION.md ergänzt.
+
+Fix-Commit-Gate: vollständige Produktsuite 3457 bestanden, 104 bestehende Skips, 120 Untertests, Exit 0 (812.66 s); 294 gezielte Regressionen mit drei bestehenden Skips und 212 zusätzliche Startup-/Profil-/Dialogprüfungen bestanden. Unabhängiges Review ohne neue konkrete P0/P1. Native Paketabnahme separat aus diesem Codecommit.

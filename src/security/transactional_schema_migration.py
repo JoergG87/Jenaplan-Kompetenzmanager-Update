@@ -25,7 +25,7 @@ from src.core.schema_upgrade import UpgradeError
 from src.core.upgrade_validation import verify_timetable_source_references
 from src.security.final_v4_sqlcipher_runtime import KeyedFinalV4CompatibilityInspector
 from src.security.final_v3_document_runtime import FinalV3DocumentRuntime
-from src.security.infrastructure.installation_inventory import ReadOnlyInstallationInventory
+from src.security.upgrade_startup import ProductStartupInventory
 from src.security.final_v4_backup_runtime import _fsync_directory
 
 
@@ -170,9 +170,15 @@ class SyntheticTransactionalMigration:
         gate = self.service._gate
         owner = "synthetic-transaction-v1"
         with RuntimeInstanceLock(self.root):
-            inventory = ReadOnlyInstallationInventory().inspect(self.root)
+            inventory = ProductStartupInventory().inspect(self.root)
             if inventory.status.value in {"unsafe", "changed"}:
                 raise UpgradeError("transaction_inventory_unsafe")
+            allowed_markers = {".jkm-dmk-database-key-runtime-test-root",
+                               ".jkm-final-v4-sqlcipher-runtime-test-root"}
+            if set(inventory.unknown) - allowed_markers:
+                raise UpgradeError("transaction_inventory_unknown")
+            from src.application.retained_operation_startup import inspect_retained_operation_journals
+            inspect_retained_operation_journals(self.root)
             self._require_inventory(inventory)
             capability = gate.request_maintenance(owner_id=owner, purpose=MaintenancePurpose.SCHEMA_UPGRADE)
             try:

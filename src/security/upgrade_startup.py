@@ -63,6 +63,17 @@ No group/world write or foreign owner is accepted, even for ancillary entries.
                         raise ValueError
         except ValueError:
             return replace(result, status=Status.UNSAFE, reason="inventory_entry_unsafe")
+        if (result.status not in {Status.UNSAFE, Status.CHANGED, Status.UNKNOWN}
+                and any(a.role.startswith("operation_") for a in result.artifacts)):
+            from src.application.retained_operation_startup import (
+                inspect_retained_operation_journals, RetainedOperationStartupError,
+            )
+            try:
+                inspect_retained_operation_journals(root)
+            except RetainedOperationStartupError as error:
+                return replace(result, status=Status.UNKNOWN, reason=error.code)
+            if result != super().inspect(root):
+                return replace(result, status=Status.CHANGED, reason="inventory_changed")
         return result
 
     def before_lock(self, root):

@@ -17,6 +17,7 @@ PRODUCT_APP_NAME = "Jenaplan-Kompetenzmanager"
 SERVICES = ("data-master-key", "device-credential", "monotonic-security-anchor")
 NATIVE_TEST_MODES = frozenset({
     "v6-seed", "v6-migrate", "v6-check", "v6-crash", "v6-matrix",
+    "v6-functions", "v6-functions-reopen",
     "initialize", "restart", "restart-denied", "cleanup", "existing-keys", "matrix", "hold-lock", "acl-preflight",
     "restore-worker", "restore-ready", "restore-parent-exit",
     "restore-crash-before_swap", "restore-crash-between_main_and_companion",

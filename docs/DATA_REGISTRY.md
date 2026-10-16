@@ -2687,3 +2687,7 @@ Die vorstehend vereinbarte Parent-/Linkform wird als zusätzliche exakte synthet
 
 ## V6-Desktopintegration – 16.10.2026
 Keine neue Quelle oder Schemaidentität: exaktes registriertes synthetic_v6_normalized_timetable bleibt Testziel; produktiv ausschließlich Final V4. Startup wählt die Fähigkeit anhand vollständiger keyed Identität im versiegelten synthetischen Testkontext, nie allein anhand user_version oder Dateinamen.
+
+
+## Erhaltene Operationsjournale – 16.10.2026
+Keine neue Quelle: vorhandene .observation-staging/<32hex>/journal.json, .managed-document-staging/<32hex>/managed-document.json samt exakt gebundener leerer MED-Reservierung und .managed-document-staging/pdf-artifacts/<sha256>/managed-pdf-artifact.json sind technische Bestandsartefakte. Vollständige Inhalts-/Pfadprüfung durch bestehende Lifecycleparser; Journalstatus/Digest allein authentisiert keine Daten. Terminale Beobachtungen werden an keyed persistence_events gebunden, Dokument-/PDF-Historie an keyed Main-/Companion-/unveränderliche Artefaktbelege.

@@ -173,6 +173,10 @@ identity, document crossbindings, RESTORE_READY or journal authority.
                     role = "unknown"
             elif (path in directories and is_directory) or (path in files and not is_directory):
                 role = "product_artifact"
+            elif _operation_artifact_role(path, is_directory, main.runtime_root.relative_to(root)):
+                # Shape only: no phase, contents, key or recovery authority.
+                # Product preflight and keyed lifecycle verification are separate.
+                role = _operation_artifact_role(path, is_directory, main.runtime_root.relative_to(root))
             elif (not is_directory and Path(path).parent == documents.storage_root.relative_to(root)
                   and re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.jkmedoc", path.rsplit("/", 1)[-1])):
                 role = "document_container_unverified"
@@ -202,3 +206,24 @@ identity, document crossbindings, RESTORE_READY or journal authority.
             status = Status.PARTIAL
         return InstallationInventory(root, status, tuple(artifacts), upgrade, restore,
                                      tuple(unknown), "unauthenticated_inventory")
+
+
+def _operation_artifact_role(path, directory, runtime_relative):
+    prefix = str(runtime_relative) + "/"
+    if not path.startswith(prefix):
+        return None
+    relative = path[len(prefix):]
+    token = r"[a-f0-9]{32}"
+    if directory and (re.fullmatch(r"\.observation-staging/" + token, relative)
+            or relative in {".managed-document-staging", ".managed-document-staging/pdf-artifacts"}
+            or re.fullmatch(r"\.managed-document-staging/" + token, relative)
+            or re.fullmatch(r"\.managed-document-staging/pdf-artifacts/[a-f0-9]{64}", relative)):
+        return "operation_directory_unverified"
+    if not directory:
+        if (re.fullmatch(r"\.observation-staging/" + token + r"/journal\.json", relative)
+                or re.fullmatch(r"\.managed-document-staging/" + token + r"/managed-document\.json", relative)
+                or re.fullmatch(r"\.managed-document-staging/pdf-artifacts/[a-f0-9]{64}/managed-pdf-artifact\.json", relative)):
+            return "operation_journal_unverified"
+        if re.fullmatch(r"\.managed-document-staging/" + token + r"/MED-[0-9]{6}", relative):
+            return "operation_reservation_unverified"
+    return None

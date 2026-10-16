@@ -350,6 +350,8 @@ class CipherProductRuntimeCoordinator:
         with closing(opened.final_v4.database.connect()) as connection:
             KeyedFinalV4CompatibilityInspector().inspect_connection(connection)
         opened.documents.validate_restart()
+        from src.application.retained_operation_startup import verify_retained_operation_journals
+        verify_retained_operation_journals(opened)
         return OpenedCipherProductRuntime(
             runtime=opened,
             first_run=first_run,

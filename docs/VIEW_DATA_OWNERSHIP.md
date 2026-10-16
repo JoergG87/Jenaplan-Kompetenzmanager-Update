@@ -1645,3 +1645,7 @@ TimetableEntry/ViewModel projizieren unveränderliche subject_ids und einzelne F
 
 ## V6-Desktopintegration – 16.10.2026
 Keine neue Ansicht: Einstellungen und Stundenplan erhalten die vorhandene LessonTimeTemplatesDesktopAdapter-Fähigkeit ausschließlich von der vollständig geprüften V6-Runtime. Main und AppShell bleiben Kompositions-/Projektionsschicht ohne neue Fachlogik.
+
+
+## Operationsinventar – 16.10.2026
+Keine neue Ansicht. Startupinventar und bestehende Lifecycle-/keyed Persistenzverifier bleiben technische Startgates; AppShell projiziert erst die vollständig freigegebene Runtime.

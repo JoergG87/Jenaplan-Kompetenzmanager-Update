@@ -21,7 +21,7 @@ from src.core.upgrade_validation import verify_timetable_target_references
 from src.security.database_key_runtime import DatabaseKeyRuntimePaths
 from src.security.final_v4_sqlcipher_runtime import KeyedFinalV4CompatibilityReport, FinalV4SQLCipherRuntimePaths
 from src.security.final_v3_document_runtime import FinalV3DocumentRuntime, FinalV3DocumentRuntimePaths
-from src.security.infrastructure.installation_inventory import ReadOnlyInstallationInventory
+from src.security.upgrade_startup import ProductStartupInventory
 from src.security.infrastructure.lesson_time_templates import SQLiteLessonTimeTemplateRepository
 
 
@@ -242,13 +242,15 @@ class SyntheticV6Runtime:
 
     def _preflight(self):
         self._require_scope()
-        inventory = ReadOnlyInstallationInventory().inspect(self.root)
+        inventory = ProductStartupInventory().inspect(self.root)
         if inventory.status.value in {"unsafe", "changed", "empty", "main_missing"}:
             raise SyntheticV6RuntimeError("synthetic_v6_inventory_invalid")
         allowed_markers = {".jkm-dmk-database-key-runtime-test-root",
                            ".jkm-final-v4-sqlcipher-runtime-test-root"}
         if set(inventory.unknown) - allowed_markers:
             raise SyntheticV6RuntimeError("synthetic_v6_unknown_evidence")
+        from src.application.retained_operation_startup import inspect_retained_operation_journals
+        inspect_retained_operation_journals(self.root)
         terminal_restore = False
         if inventory.restore_evidence:
             from src.security.synthetic_v6_live_restore import classify_terminal_synthetic_v6_restore_artifacts
@@ -309,10 +311,13 @@ class SyntheticV6Runtime:
             database = SQLiteDatabase(service.paths.final_v4.database, connection_provider=self.factory,
                 create=False, initialize_schema=False, maintenance_gate=service._gate)
             try:
-                yield OpenedSyntheticV6Runtime(database,
+                opened = OpenedSyntheticV6Runtime(database,
                     LessonTimeTemplateService(SQLiteLessonTimeTemplateRepository(database.connect)),
                     report, _SessionDocuments(self, documents), service.loaded.database_context_id,
                     service.installation_id, service.loaded)
+                from src.application.retained_operation_startup import verify_retained_operation_journals
+                verify_retained_operation_journals(opened)
+                yield opened
             finally:
                 self._active = False
         finally:

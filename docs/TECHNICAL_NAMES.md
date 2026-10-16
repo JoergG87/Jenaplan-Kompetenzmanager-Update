@@ -3710,3 +3710,9 @@ D-Projektionsfähigkeit: `SQLiteTimetableRepository.supports_extended_entries` u
 V6-Prozessports: `RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED`, `DesktopSyntheticV6RestoreWorkerLauncher`, `DesktopSyntheticV6RestartLauncher`, `build_internal_test_v6_restore_worker_service`, `build_internal_test_v6_restore_verifier`, `recover_internal_test_v6_restore`, `confirm_internal_test_v6_restore`, `--synthetic-v6-restore-confirm`. `_bootstrap_handoff_context` nimmt optional exakte Restoreart und Handoffstrategietyp entgegen, Default unverändert V4. V6 nutzt diesen vorhandenen authentisierten Bootstrap nur bei fehlender Live-Keymetadatenposition; keine neue Schlüsselquelle.
 
 Native interne V6-Abnahme: `scripts/macos_native_v6_acceptance.py` und die geschlossenen Modi `v6-seed`, `v6-migrate`, `v6-check`, `v6-matrix`; ausschließlich internal-test-Paketinhalt, kein Produktentry.
+
+
+## Erhaltene Operationsbelege beim Startup – 16.10.2026
+`application/retained_operation_startup.py`, `RetainedOperationStartupError`, `inspect_retained_operation_journals(root)` und `verify_retained_operation_journals(opened_runtime)` sind read-only Lifecycle-Kompositionsports. Klassifikationsrollen `operation_directory_unverified`, `operation_journal_unverified`, `operation_reservation_unverified` sind Strukturbeobachtungen ohne Runtimeautorität. Sanitisierte Codes `retained_operation_pending`, `retained_operation_damaged`, `retained_operation_unbound` unterscheiden offene, beschädigte und zur keyed Persistenz widersprüchliche Belege.
+
+`_operation_artifact_role` klassifiziert ausschließlich enge bestehende Pfadformen. Native Ergänzungen innerhalb des vorhandenen Prüfeinstiegs: `v6-functions` und `v6-functions-reopen` prüfen echte Dialog-/Signalflüsse und frische Persistenz ohne Produktentry.
