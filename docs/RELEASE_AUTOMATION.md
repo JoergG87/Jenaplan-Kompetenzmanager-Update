@@ -695,3 +695,82 @@ Nur neue isolierte synthetische Test-App/angegebene Testdaten verwenden. Pro Sch
 - V6-Vollbackup/Restore mit kontrolliertem Worker-/Restart durchlaufen; nach Anmeldung alle vorgenannten Bestände und synthetisches Dokument wiederfinden. Technische Manifest-/READY-/Key-/Integritäts-/Vollständigkeitsbelege zusätzlich erforderlich.
 
 Keine menschliche Bedienprüfung oder Gesamtfreigabe behauptet. Keine Produktmigration, kein Push/Tag/Release/Appcastupdate. A/B-Wochen bleiben zurückgestellt.
+
+
+### V6-Codeabschluss und frische native Paketabnahme – 16.10.2026 – NO-GO
+
+**Ergebnis: getesteter Code gesichert, zwei frische isolierte Testpakete gebaut, nativer P1-Startblocker an regulären erhaltenen Operationsbelegen bestätigt. Keine native V6-Gesamtfreigabe und keine Produktfreigabe. Keine Folgeimplementierung begonnen.** Die historischen NO-GO-Nachweise bleiben erhalten.
+
+#### Baseline, Commit und Testprovenienz
+
+Ausgangs-HEAD `18a00fcb8cae1eb1786d0396786c334ff028d119`, Branch spike/python-gui. Seit e56a528 bestand zunächst ausschließlich dieser Dokumentationscommit. Sämtliche uncommitteten Änderungen überprüft, fünf fremde Dokumentänderungen abgegrenzt und vollständig erhalten. Fremde CHANGELOG-Speicherbereinigungsnotiz nicht gestagt. Eigene Ergänzungen in gemischten Dokumenten als gezielte Indexpatches gesichert, alle anderen Dateien einzeln gestagt.
+
+- `002123eb6e916535f35cbf3b0cc6c42576090a0b`: V6-Desktop-/Templateadapter-/Restore-Worker-/Restartintegration, zugehörige Tests, interne native Prüfeinstiege und eigene kanonische Vertragsänderungen.
+- `767afb1a2ce92487f5c3f37a0a96f5a081d771f6`: eng begrenzte native Harnesskorrektur: Pflichtargument environ an bestehenden V4-Backupbuilder übergeben. Kein Produktcode geändert.
+- Nachfolgender reiner Nachweiscommit dokumentiert diesen tatsächlich ausgeführten Paketlauf; genaue Identität in git log. Er ersetzt keinen Implementierungscommit.
+
+Vor erstem Commit alle 478 Einträge aus suite-source-provenance.json mit aktuellen Quell-/Test-/Skript-/Paketbytes verglichen: 478/478 identisch; gestagte Bytes ebenfalls gegen diese Hashes geprüft. Übernommener vollständiger Lauf: **3424 bestanden, 104 unveränderte bestehende Skips, 120 bestandene Untertests, 756.18 s, Exit 0**. Log und Exitbeleg unter `/private/var/folders/61/nxlq0vm9311gvx30ztnpj63r0000gn/T/jkm-v6-integration-evidence-20261016/`.
+
+Nach Harnesskorrektur unterscheidet sich ausschließlich scripts/macos_native_v6_acceptance.py von dieser Suiteprovenienz; sämtliche src-, Test- und Packagingbytes sind unverändert. Tatsächlich neu ausgeführt: `rtk proxy python3 -m pytest tests/test_macos_native_acceptance.py tests/test_macos_test_package_profile.py -q --tb=short` → **179 bestanden, keine Skips, 3.51 s**. Die Vollsuite wird für unveränderten Produktcode übernommen; sie wird nicht als neuer Gesamtlauf des korrigierten Harness ausgegeben. Dessen tatsächlicher Paketlauf erreicht danach erfolgreich das vollständige Datenseeding. Keine neue Skipregel/Sicherheitsausnahme.
+
+Unabhängige Reviews vor den Codecommits: keine neuen P0/P1 im geprüften Integrationsumfang; bekannte Restorehistoriengrenze bleibt. Nach dem nativen Befund erneutes unabhängiges read-only Review: **P1 bestätigt**, siehe unten. Die frühere Sourcebewertung ist keine Behauptung einer bestandenen nativen Gesamtprüfung.
+
+#### Frische Pakete und Identitätsbindung
+
+Erster Kandidat: Profil 8ae439ee-fcb1-4e22-a686-9f96198be9b7, Installation ef9ff306-7139-432d-bccd-3a119f719f55; Snapshotdigest `71f47a428aed95edf447b575a36b91e3d0eeb76c777eb9b6708812a8c3f49d08`; Commit 002123e. Pipelinebuild Exit 0, Paketaudit ok, First Run erfolgreich. Native Matrix stoppt danach bei v6-seed mit TypeError; fehlendes environ im Harness gefunden. Kandidat samt Fehlerbelegen unverändert erhalten.
+
+Zweiter Kandidat: Profil `4777464c-5871-4ae4-abb2-e57da1aa2f13`, Installation `357ce340-5671-4ad1-ba54-56eb0c5defbb`; App/Executable `JKM-Interner-Test-4777464c58714ae4abb2e57da1aa2f13`; Bundle/Worker/Restart `de.jenaplan.kompetenzmanager.internaltest.t4777464c58714ae4abb2e57da1aa2f13`. Snapshotdigest `8161b13ef1c8dfd2cf6642c1ed2406d874be68888554d17c74f1209859b40ba5`. Codecommit 767afb1, Buildmetadaten korrekt dirty wegen ausschließlich fünf geschützter Fremddokumentänderungen. Vollständige Quellhashes separat gebunden.
+
+Privater Container: `/private/var/folders/61/nxlq0vm9311gvx30ztnpj63r0000gn/T/jkm-internal-test-4777464c58714ae4abb2e57da1aa2f13/`. App darunter `artifacts/JKM-Interner-Test-4777464c58714ae4abb2e57da1aa2f13.app`. Runtime ausschließlich data mit bestehendem synthetic_test-Marker; eigene neue build/artifacts-Ziele. Drei Keychainservices exakt Testbundle + .data-master-key/.device-credential/.monotonic-security-anchor, Accountpräfix test-v1:4777464c-5871-4ae4-abb2-e57da1aa2f13. Updates false, Ad-hoc-only, keine Entitlements/Team-ID. Keine produktidentische Zwischenapp oder Produktfallbacks.
+
+Beide Kandidaten über bestehende internal-test-Pipeline gebaut. Profilsnapshot/Digest/Pfade vor Build validiert; nach Build profilgebundener Smoke-Preflight Exit 0. Signatur strict/deep gültig. Paketaudit ok, forbidden_artifacts=0; echtes Binding 0.6.2+jkm.sqlcipher4170.1, SQLCipher 4.17.0 community, SQLite 3.53.3, CommonCrypto. Keine Developer-ID-/Notarisierungs-/Verteilungsfreigabe.
+
+Unabhängig am echten Frozen-Executable jeweils 196 Vergleiche gegen die vorhandenen Quellcodeobjekte: PYZ-Projekt-/Nativeprüfmodule plus CArchive-main und Profilhook; nur co_filename rekursiv normalisiert, sonst vollständige Codeobjektgleichheit bei optimize=1. Kein Unterschied. Benötigte V6-Runtime-/Backup-/Restore-/Command-/Adaptermodule enthalten; historisches unsicheres Testarchiv und VFS-Probe ausgeschlossen. Zusätzlich Quellbytehashes an Commit gebunden. Abschließender vollständiger Bundlevergleich: **6030/6030 Datei-/Link-/Verzeichniseinträge inklusive Modi/Hashes/Linkziele unverändert**, beide Kandidaten. Zweiter Kandidat nach Tests erneut strict/deep codesign Exit 0.
+
+Speicher vor Build rund 17 GiB; historischer vergleichbarer Build 2.7 GiB plus fertige App 538 MiB. Zwei vollständige neue Kandidaten konnten ohne ENOSPC gebaut werden. Keine Bereinigung vorgenommen, keine alten Nachweise/Backups/Keychainobjekte gelöscht.
+
+#### Tatsächlich ausgeführte native Matrix und bestätigter P1
+
+Beim zweiten Kandidaten:
+
+1. Echte leere synthetische Installation, kontrollierter First Run, neue getrennte Testschlüssel, erfolgreich authentisierte synthetische Erstsitzung, Hauptfenster und reguläres Schließen: Exit 0. Schuljahr 2026/27, 331 Katalogkompetenzen, Main keyed Final V4. Dies ist ein automatisierter funktionaler UI-Smoke, keine menschliche Sicht-/Bedienabnahme.
+2. Eigener Frozen-Prozess v6-seed: Exit 0, tatsächliche V4-Runtime und bestehender normaler Schreibpfad. Bestand vollständig gezählt: 24 Schüler, drei Stammgruppen, drei Kurse, ein Kursverbund, 331 Kompetenzen, 71 Beobachtungen, 71 Kompetenzratings, zehn Stundenplaneinträge, fünf Dokumente, ein Schuljahr; zusätzlich Berichts-/LEG-Entwürfe, Revisionen und PDF-Artefakte. Companion-/Dokumentprüfung bestanden. Vorhandene Installations-/DMK-/Datenbankschlüsselidentitäten im synthetischen Ausgangsnachweis festgehalten.
+3. Neuer Frozen-Prozess v6-migrate: **gesperrt vor Migration**, native_existing_keys_installation_unknown. Native Matrix Exit 1. Kein V6-Commit, kein Migrationsbackup oder Teilupgrade aus diesem Lauf behauptet.
+4. Danach tatsächlicher normaler Restart am selben Paket/root mit vorhandenen synthetischen Zugangsdaten: **Exit 3**, bereits bei before_lock/inspect sicher angehalten; keine Runtime-/Anmeldefreigabe. Befund unabhängig von der Migration reproduziert.
+
+Konkreter P1: `src/security/infrastructure/installation_inventory.py:147` erkennt nur .observation-staging und .writer.lock, jedoch nicht die normalen aufbewahrten Operationsunterverzeichnisse/Journale. Außerdem ist .managed-document-staging unbekannt. Der echte Bestand enthält 154 unbekannt klassifizierte Artefaktpfade: 71 Beobachtungsoperationen samt Journalen plus zwölf Dokument-/PDF-Stagingpfade. Alle **71 Beobachtungsjournale und vier Dokument-/PDF-Journale stehen auf COMPLETE**. `src/core/observation_uow.py:433` überspringt COMPLETE absichtlich bei Recovery; die ID-Reservierung liest aufbewahrte Journale weiterhin. Auch die vorhandene ManagedDocument-Recovery behält COMPLETE-Belege bei. Der vollständige gültige Schreibbestand wird damit vom nachgelagerten Startup-/Existing-key-Inventar als UNKNOWN gesperrt.
+
+Dies ist ein Verfügbarkeits-/Integrationsblocker an der bestehenden A2-Inventargrenze, kein nachgewiesenes V6-Schema-/Cipher-Transaktionsversagen. Der Konflikt bestand bereits in der Baseline und wurde durch die realistische native Fixture sichtbar. Ein fehlender regulärer Keymetadatenabschluss des Seed-Harness ist eine zusätzliche getrennte Nachweisgrenze: vorhandene Keyset-WAL/SHM bleiben in diesem Erzeugungsprozess zurück. Ein unterstützter Metadatenabschluss kann diese behandeln, beseitigt aber den reproduzierten Konflikt mit bewusst erhaltenen COMPLETE-Journalen nicht.
+
+Keine Belege gelöscht, keine Statusfelder als Autorität akzeptiert, kein Glob-/Whitelist-Bypass eingeführt, kein Guard abgeschwächt. Weitere Implementierung hier gestoppt. Nötiger nächster eng begrenzter Auftrag: reguläre erhaltene Beobachtungs-/Dokumentbelege im bestehenden Startup-/Inventar-/Existing-key-Vertrag sicher und mit tatsächlicher Persistenzbindung behandeln; davor native Regression mit echter vollständiger Schreibinstallation. Keine neue Recoveryplattform erforderlich oder hier begonnen.
+
+#### Abschluss zu den 24 Berichtspunkten
+
+| Punkt | Tatsächliches Ergebnis |
+| --- | --- |
+| 1. HEAD vorher/nachher | Vorher 18a00fcb8cae1eb1786d0396786c334ff028d119; Implementierungs-/Paketstand 767afb1a2ce92487f5c3f37a0a96f5a081d771f6; anschließend dieser Nachweiscommit, siehe git log. |
+| 2. Neue Commits | 002123e Implementierung; 767afb1 Harnesskorrektur; abschließender Nachweiscommit. |
+| 3. Arbeitsbaum/Staging | Nach eigenen Commits ausschließlich die ursprünglichen fünf Fremddokumentänderungen ungestagt; Staging leer. |
+| 4. Implementierungen | V6-Startupkomposition, LessonTimeTemplatesDesktopAdapter bis JenaplanDesktopApp/AppShell, exakter V6-Worker/Restart und authentisierter bestehender Recoverybootstrap committed. |
+| 5. Paket/Commitbindung | Beide frischen Profile/Bundles wie oben, source hashes und jeweils 196 Codeobjektvergleiche; Paketstand ist 767afb1, kein späterer Dokumentationsstand als Build-HEAD behauptet. |
+| 6. Native Paketgates | Profil, Build, Bundle, Signatur, Provider und nachträgliche Paketintegrität bestanden; keine Gesamtfreigabe. |
+| 7. V6-Startup/Anmeldung | Nicht erreicht; reichhaltiger V4-Testbestand blockiert bereits vor Migration und beim normalen Restart. |
+| 8. Unterrichtszeiten | Source-/AppShellnachweise übernommen; frische paketierte V6-Bedienung/Persistenz nicht erreicht. |
+| 9. Stammgruppenstunden | Source-/AppShellnachweise vorhanden; native Bedienabnahme offen. |
+| 10. Kombinierte Fachstunden | Source-/AppShellnachweise vorhanden; native Bedien-/Neustartprüfung offen. |
+| 11. Beobachtungszuordnung | Sourceprüfung bewusste konkrete Fachwahl/eine Beobachtung vorhanden; native V6-Prüfung offen. Native V4-Schreibfixture legt reguläre Einzelbeobachtungen an und deckt Startblocker auf. |
+| 12. V4→V6 | Nativer neuer Versuch vor Migration blockiert; keine erfolgreiche native E2E-Migration behauptet. Synthetische Transaktions-/Crashquelltests bleiben historische Nachweise. |
+| 13. V6-Backup/Restore | Service-/Integrationstests übernommen; neuer Paketpfad nicht erreicht. |
+| 14. Worker/Restart | Code und reale Quellenprozesse getestet; paketierter V6-Handoff/Crash-/Konkurrenznachweis nicht erreicht. Normaler vorhandener-V4-Restart bestätigt Exit 3. |
+| 15. Neue Tests | 179 native/profile Quellregressionen; zwei vollständige native Builds/Audits, zwei leere Erstsitzungen, eine vollständige Native-V4-Schreibfixture, blockierte Migrations-/Restartprozesse, Frozen-Code-/Bundlevergleiche. |
+| 16. Wiederverwendet | Exakt hashgebundene Suite 3424/104/120 für Produktstand 002123e; Vorauftrags-SQLCipher-/SIGKILL-/AppShellnachweise ausdrücklich Source-/Servicebelege, keine alten Paketergebnisse als neue V6-Abnahme. |
+| 17. P0/P1/P2 | P0 nicht gefunden; P1=1 bestätigt (Inventar gegen reguläre aufbewahrte Operationsbelege). P2: bestehende enge historische/mehrfache Restorehistoriengrenze und separater Seed-Metadatenabschluss. Gesamtes P1=0-Gate verfehlt. |
+| 18. Menschlich offen | Sämtliche praktische V6-Layout-/Bedienabnahme durch Laura offen. Bestehende kompakte Prüfliste oben bleibt gültig. Keine menschliche Prüfung behauptet. |
+| 19. Produktgates offen | P1 beheben, Fixture sauber abschließen, gesamte native V6-Startup-/Fach-/Migration-/Restore-/Crash-/Konkurrenzmatrix und menschliche Prüfung; danach separate Produktmigrations-, Signing-/Notarisierungs-/Update-/PO-Freigabe. |
+| 20. Produktmigration gesperrt | Ja: Produktregistry weiterhin ausschließlich Final V4 ohne Upgradekante; kein stilles Upgrade/First-Run-Fallback. |
+| 21. Build 404 | Installation/Releaseartefakte unverändert; src/version.py bytegleich Baseline, keine Versions-/Feedmutation oder Updateverteilung. |
+| 22. Produktdaten/Schlüssel | Nicht geöffnet oder verwendet. Nur neue synthetische Profile und deren isolierte Keychainservices. Keine produktive Migration oder Schlüsseländerung. |
+| 23. Pflanzen-ZIP | Unverändert 439602 Bytes, SHA256 ef06e04c4bbc4803fb036f8dfa61151f8556a2a3f647c89b5fbe9d7dec9a31d4. |
+| 24. Empfehlung | **NO-GO für produktive Freigabeprüfung**, bis der konkrete native Startblocker und die anschließend offenen Pflichtgates geschlossen sind. |
+
+Rohbelege in beiden obigen privaten Profilcontainern: profile.json, source-provenance.json, preflight-result.json, build-run.log/build-exit.txt, smoke-preflight-result.json, bundle-before.json, bundle-code-binding.json, bundle-after-verification.json und native-v6-runner.log/native-v6-matrix.json. Zusätzlich im zweiten Kandidaten native-seed-inventory.json, native-seeded-restart-result.json, codesign-final.json und evidence-sha256.json. Temporäre Originalpfade sind keine Veröffentlichung und müssen für Nachprüfung erhalten werden. Keine Produktinstallation geöffnet, kein Push, Tag, Release, Appcastupdate oder Versionswechsel.
