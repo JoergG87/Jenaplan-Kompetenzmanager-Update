@@ -5576,3 +5576,9 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 - P1-Startupkorrektur: aufbewahrte abgeschlossene Beobachtungs-, Dokument- und PDF-Operationsbelege werden strukturell sowie gegen keyed Persistenzevidenz geprüft; offene, beschädigte, ungebundene und unbekannte Bestände bleiben gesperrt. Native V6-Nachprüfung erfolgt aus frischem isoliertem Testpaket; keine produktive Aktivierung.
 
 - Native V6-Prüffolge: vorhandenen Security-Metadatenabschluss nach Migration und vor unabhängigem Backup-Reopen ergänzen; feste Testdiagnosecodes erlauben. Produktcode und Produktregistry unverändert.
+
+- Synthetischer V6-Restore: bestehenden Parent-Metadatenabschluss nach dem Sicherheitsbackup und vor authentisierter Handoff-Erzeugung ausführen; Worker bleibt unverändert Existing-only. Native Regression und erneute Produktsuite erforderlich.
+
+- Native V6-Nachweise: historische V4-READY ausdrücklich gegen V6 prüfen; bediente V6-Stundenplanfunktionen vor Restore sichern und nach Worker-/Restart erneut laden, einschließlich vollständigem typisiertem Main-/Companionvergleich.
+
+- Keyset-Snapshots nach SQLite backup tatsächlich auf DELETE normalisieren und PRAGMA-Ergebnis prüfen; reproduzierter WAL-Headerfehler, committed WAL-Daten vollständig erhalten, Quelle und historische Backups unverändert.

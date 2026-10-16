@@ -112,7 +112,9 @@ def _migrate(profile):
 def _check(profile):
     from src.core.restore_runtime import RuntimeInstanceLock
     from src.desktop_app.runtime import runtime_paths
-    from src.security.final_v4_backup_runtime import build_final_v4_restore_verifier
+    from src.security.final_v4_backup_runtime import (
+        build_final_v4_restore_verifier, FinalV4EncryptedBackupError,
+    )
     from src.security.transactional_timetable_migration import SyntheticTimetableMigration
     from src.security.internal_test_v6_composition import (
         build_internal_test_v6_backup_service, open_internal_test_v6_runtime,
@@ -159,16 +161,31 @@ def _check(profile):
             historical = root / "schema-upgrade-source/transaction-timetable-v1/source.jkmebackup"
             try:
                 independent.verify(historical)
-            except Exception:
-                pass
+            except FinalV4EncryptedBackupError as error:
+                if error.code != "backup_manifest_entry_missing":
+                    raise
             else:
                 raise RuntimeError("native_v6_historical_v4_backup_accepted")
+            historical_backup = verifier.verify(historical)
+            historical_ready = verifier.restore_staging(historical,
+                root.parent / "native-v4-historical-ready")
+            try:
+                independent.verify_restore_ready(historical_ready.staging_root,
+                    expected_container_sha256=historical_backup.container_sha256)
+            except FinalV4EncryptedBackupError as error:
+                if error.code != "restore_ready_invalid":
+                    raise
+            else:
+                raise RuntimeError("native_v6_historical_v4_ready_accepted")
         _finalize(profile, lock)
     result = {"status": "ok", "target": asdict(identity), "counts": counts,
         "full_original_row_verification": True, "document_binding": True,
         "keys_preserved": True, "backup_sha256": target.container_sha256,
         "independent_backup_verification": True, "ready_state": stage.state,
-        "v4_backup_rejected_as_v6": True, "manual_ui_performed": False}
+        "v4_backup_rejected_as_v6": True, "v4_ready_rejected_as_v6": True,
+        "v4_backup_rejection_code": "backup_manifest_entry_missing",
+        "v4_ready_rejection_code": "restore_ready_invalid",
+        "manual_ui_performed": False}
     _record(profile, "native-v6-check.json", result)
     return result
 
@@ -344,6 +361,9 @@ def _functions(profile, *, reopen=False):
                         "explicit_observation_subject","one_observation_no_rating_duplication","existing_ratings_preserved"]}
                 _record(profile,"native-v6-functions.json",facts)
                 shell.grab().save(str(captures / "appshell.png")); shell.close(); app.processEvents()
+                feature_backup = service.create(root.parent / "native-v6-features-qualified.jkmebackup")
+                facts["feature_backup_sha256"] = feature_backup.container_sha256
+                _record(profile,"native-v6-functions.json",facts)
                 result = facts
         _finalize(profile,lock)
     return result
@@ -429,6 +449,9 @@ def _matrix(profile):
         raise RuntimeError("native_v6_normal_login_not_proven")
     result["negative_startups"] = _negative_startups(profile)
     child("restart")
+    result["native_features"] = child("v6-functions")
+    child("restart")
+    result["native_feature_persistence"] = child("v6-functions-reopen")
     # Isolate the destructive crash fixture using the existing synthetic-only
     # matrix pattern: copy the tool-owned baseline, retain the root/marker inode,
     # and restore that exact baseline before the independent successful case.
@@ -476,7 +499,7 @@ def _matrix(profile):
     # A second independent full V6 snapshot must remain verifiable after real
     # worker replacement and the actual restarted app's keyed handshake.
     service = build_internal_test_v6_backup_service(Path(profile.runtime_root))
-    baseline = service.verify(Path(profile.runtime_root).parent / "native-v6-qualified.jkmebackup")
+    baseline = service.verify(Path(profile.runtime_root).parent / "native-v6-features-qualified.jkmebackup")
     service.verify_live_runtime(Path(profile.runtime_root), manifest=baseline.manifest,
         enforce_artifact_hashes=False)
     with service.verified_snapshot(baseline.path) as snapshot:
@@ -492,9 +515,7 @@ def _matrix(profile):
     with closing(service._provider.connect_read_only(service.paths.database,
             key_material=service.loaded.database_key.key_material)) as after:
         require_same_content(expected_companion, database_content_evidence(after))
-    result["native_features"] = child("v6-functions")
-    child("restart")
-    result["native_feature_persistence"] = child("v6-functions-reopen")
+    result["native_feature_post_restore_persistence"] = child("v6-functions-reopen")
     result.update(status="native_v6_automated_gates_passed",
         full_post_restore_domain_and_documents=True, full_post_restore_typed_row_equality=True,
         open_gates=["human_ui_acceptance", "remaining_startup_matrix_cases",

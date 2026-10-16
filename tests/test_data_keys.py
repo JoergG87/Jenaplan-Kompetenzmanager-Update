@@ -180,6 +180,7 @@ def test_keyset_snapshot_includes_wal_and_never_clobbers_target(
 
         target = tmp_path / "snapshot" / "data-keysets.sqlite"
         assert repository.create_snapshot(target) == target
+        assert target.read_bytes()[18:20] == b"\x01\x01"
         snapshot = SQLiteDataKeysetRepository(
             target, PlatformFilePermissionManager()
         )
@@ -187,6 +188,12 @@ def test_keyset_snapshot_includes_wal_and_never_clobbers_target(
         assert restored is not None
         assert restored.key_id == active.key_id
         assert restored.generation == active.generation
+        assert restored == repository.active_data_keyset()
+        assert SQLiteDataKeysetRepository(target, PlatformFilePermissionManager(),
+            checkpointed_immutable_reads=True).active_data_keyset() == restored
+        assert not any(Path(str(target) + suffix).exists() for suffix in ("-wal", "-shm", "-journal"))
+        assert repository.database_path.read_bytes()[18:20] == b"\x02\x02"
+        assert Path(str(repository.database_path) + "-wal").is_file()
 
         original = target.read_bytes()
         with pytest.raises(SecurityStoreError, match="data_keyset_snapshot_target_exists"):

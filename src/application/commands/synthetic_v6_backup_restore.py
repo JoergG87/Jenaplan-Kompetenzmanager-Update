@@ -8,7 +8,9 @@ from src.security.synthetic_v6_live_restore import prepare_synthetic_v6_live_res
 class SyntheticV6EncryptedRestoreApplicationService(FinalV4EncryptedRestoreApplicationService):
     schema_version = SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity.schema_version
     schema_fingerprint = SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity.fingerprint
-    prepare_restore = staticmethod(prepare_synthetic_v6_live_restore)
+    def prepare_restore(self, **kwargs):
+        return prepare_synthetic_v6_live_restore(
+            **kwargs, before_handoff=self._before_handoff)
 
     def __init__(self, service, **kwargs):
         if type(service) is not SyntheticV6EncryptedBackupService:

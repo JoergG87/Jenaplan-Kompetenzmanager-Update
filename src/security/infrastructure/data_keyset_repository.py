@@ -158,6 +158,9 @@ class SQLiteDataKeysetRepository:
                     snapshot.execute("PRAGMA journal_mode = DELETE")
                     snapshot.execute("PRAGMA synchronous = FULL")
                     source.backup(snapshot)
+                    mode = snapshot.execute("PRAGMA journal_mode = DELETE").fetchone()
+                    if mode is None or mode[0] != "delete":
+                        raise SecurityStoreError("data_keyset_snapshot_failed")
             self._permissions.secure_sqlite_files(target)
             SQLiteDataKeysetRepository(target, self._permissions)._validate_store()
             with target.open("rb") as stream:

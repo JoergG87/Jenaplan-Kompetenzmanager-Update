@@ -77,7 +77,7 @@ class SyntheticV6EncryptedLiveRestoreService(FinalV4EncryptedLiveRestoreService)
 
 def prepare_synthetic_v6_live_restore(*, backup_service, lock, staging_root,
         expected_container_sha256, restore_id, app_version, build_commit,
-        source_tree_state=None):
+        source_tree_state=None, before_handoff=None):
     root = _require_service(backup_service)
     if lock.runtime_root != root or lock._file is None:
         raise RestorePreflightError("Der synthetische V6-Livebestand ist nicht gesperrt.")
@@ -88,6 +88,8 @@ def prepare_synthetic_v6_live_restore(*, backup_service, lock, staging_root,
     backup_root.mkdir(mode=0o700, exist_ok=True)
     safety = backup_service.create_safety_backup(backup_root / f"safety-{restore_id}.jkmebackup")
     try:
+        if before_handoff is not None:
+            before_handoff()
         handoff = SyntheticV6EncryptedRestoreHandoffService(backup_service).create(
             staging_root=staging_root, expected_container_sha256=expected_container_sha256,
             safety_backup=safety, restore_id=restore_id, app_version=app_version,
