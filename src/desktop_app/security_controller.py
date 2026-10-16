@@ -58,8 +58,8 @@ def _utc_now() -> datetime:
 class ApplicationActivityFilter(QObject):
     """Translate only real user input into the central session activity port."""
 
-    def __init__(self, callback) -> None:
-        super().__init__()
+    def __init__(self, callback, parent: QObject | None = None) -> None:
+        super().__init__(parent)
         self.callback = callback
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
@@ -265,7 +265,7 @@ class SecurityUiCoordinator(QObject):
         )
         self._hidden_windows: list[QWidget] = []
         self._lock_dialog: AuthenticationDialog | None = None
-        self.activity_filter = ApplicationActivityFilter(self._activity)
+        self.activity_filter = ApplicationActivityFilter(self._activity, self)
         app.installEventFilter(self.activity_filter)
         self.poll_timer = QTimer(self)
         self.poll_timer.setInterval(1_000)

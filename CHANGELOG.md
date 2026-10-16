@@ -5521,3 +5521,9 @@ Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse 
 - Vorhandene Einstellungen mit geordneter verschlüsselter Unterrichtszeitverwaltung, verständlicher Eingabevalidierung, atomarer Konflikterkennung und ausdrücklichem Neuladen. Keine verbindlichen Schulzeitdefaults.
 - Stundenplaneditor übernimmt Vorlagen nur auf bewussten Klick, erhält individuelle Bestandszeiten und speichert unabhängige Start-/Endwerte; spätere globale Änderungen wirken nicht zurück. Bei geringer Höhe scrollbar mit erreichbaren Aktionen.
 - Explizite geprüfte synthetische V5-Adapterfähigkeit; produktive V4-Oberflächen unverändert ohne V5-Tabellenzugriff.
+
+
+## Security-UI: Lebensdauer des Aktivitätsfilters – 16.10.2026
+
+- Ein bestehender appweiter ActivityFilter blieb nach Zerstören von Fenster/Coordinator aktiv. QObject-Parentbindung beendet den Filter nun mit seiner Sessionoberfläche; Klassifikation und Sicherheitsentscheidungen unverändert.
+- Verhaltensregression vor Korrektur rot (Aktivität nach Ownerlöschung), danach grün; unabhängige native Ereignisprobe bestätigt keine Restfilteraufrufe. Aus Gesamtsuite-SIGSEGV abgeleiteter enger Befund, exakte Crashkausalität nicht behauptet.

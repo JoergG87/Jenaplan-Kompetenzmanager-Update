@@ -517,3 +517,30 @@ def test_external_epoch_change_forces_new_authentication(tmp_path: Path) -> None
     assert coordinator.session_controller.session.security_epoch == runtime.repository.security_epoch()
     assert shell.settings_screen.restore_preview is confirmed_preview
     shell.close()
+
+
+def test_activity_filter_stops_delivering_after_owner_window_is_destroyed(tmp_path):
+    from PySide6.QtCore import QCoreApplication, QEvent
+    from shiboken6 import isValid
+    app = _app()
+    runtime = build_security_runtime(prepare_security_runtime_storage(data_root=tmp_path/'runtime'))
+    runtime.service.enroll_local_account('synthetische lange Filter-Testpassphrase')
+    state = runtime.service.security_store_state()
+    shell = _FakeShell()
+    coordinator = SecurityUiCoordinator(app=app, shell=shell, service=runtime.service,
+        repository=runtime.repository, preferences_file=runtime.preferences,
+        session=InMemorySession(state.user_id, state.installation_id, runtime.repository.security_epoch()),
+        inactivity_minutes=15, display_name=None)
+    activity = coordinator.activity_filter
+    events = []
+    activity.callback = events.append
+    shell.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    assert not isValid(shell)
+    events.clear()
+    probe = QLineEdit()
+    app.sendEvent(probe, QEvent(QEvent.Type.WindowActivate))
+    try:
+        assert events == [], 'Destroyed sessions must not keep receiving application activity'
+    finally:
+        if isValid(activity): app.removeEventFilter(activity)

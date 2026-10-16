@@ -3679,3 +3679,5 @@ Tatsächlicher Vorlagen-Speicherport: LessonTimeTemplatesSettings.save_requested
 
 
 classify_terminal_synthetic_v5_restore_artifacts ist die enge synthetische Terminalklassifikation; sie erzeugt keine Restore-/Migrationsautorität. expected_backup_service_type bindet Handoff-Strategie an den exakten V4- beziehungsweise synthetischen V5-Service. VerifiedCipherSchoolYearTransitionBackupAdapter bleibt V4-only.
+
+ApplicationActivityFilter akzeptiert optionalen QObject-parent; SecurityUiCoordinator besitzt den appweiten Aktivitätsfilter als Qt-Kind. Kein neuer Authentifizierungs- oder Sessionport.
