@@ -1805,3 +1805,8 @@ Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse 
 ## Interner nativer Smoke-Kontext – unveröffentlicht nach Build 404
 
 Smoke-Quellpfad und expliziter Runner verwenden dieselbe versiegelte internal-test-Profilidentität statt konkurrierender Rootpräfixe. Read-only --preflight-only startet keine App; historische Smoke-Modi bleiben getrennt. Produkt-/Final-V4-/Worker-/Keychainverträge unverändert. Neue Paketierung und vollständige A2-Nativabnahme weiterhin ausstehend; historische und aktuelle Nachweise in RELEASE_AUTOMATION.
+
+
+## V5-Auftrag: Paket A – 16.10.2026
+
+SyntheticV5Runtime bietet vorhandene exakte V5-Datenbanken nur innerhalb einer gehaltenen, einmaligen synthetischen Sitzung an. Full keyed Reopen mit echtem SQLCipher 4.17/CommonCrypto, Cipher-/SQLite-/FK-/Fach-/Dokumentprüfungen; kein First Run, keine Schlüsselanlage/Reparatur oder Produktfreigabe. Gezielter kombinierter Lauf Runtime/Transaktionsmigration/Vorlagen-UI: 53 bestanden, 56.24 s, keine Skips. Enthält echte Prozesse, Migrationcrashnachweise und Lifetime-/Negativregressionen; native Paketfreigabe daraus folgt nicht.

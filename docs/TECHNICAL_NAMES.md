@@ -3664,3 +3664,15 @@ Interner Nativeinstieg acl-preflight / _acl_preflight: itemlokaler echter Denial
 _delete_restricted_key: ausschließlich versiegelter Test-Fixture-Cleanupport; exakte Testservice-/Accountbindung, native Referenzsuche ohne Passwortdaten und itembezogene Löschung. Kein Produktport.
 
 Native Matrix meldet ui_visibility_checks als separat nachzuweisendes Pflichtgate und manual_ui_performed=false. Eine nicht vom PO verlangte menschliche Freigabe wird nicht als zwingendes Gate erfunden; tatsächlich menschliche und werkzeuggestützte Sichtprüfungen bleiben ausdrücklich getrennt.
+
+
+## Synthetische V5-Zielruntime und Zeitvorlagenoberfläche – 15.10.2026
+
+`SyntheticV5Runtime.open_existing`, `OpenedSyntheticV5Runtime`, `KeyedSyntheticV5CompatibilityInspector` und `SyntheticV5ConnectionFactory` bezeichnen den bestehenden-only, synthetic-test-root-gebundenen Pfad. `OpenedSyntheticV5Runtime.database`, `.lesson_time_templates`, `.identity` und `.compatibility` bilden die explizite Adapterfähigkeit. Keine neue Produktregistryzulassung.
+
+`LessonTimeTemplateOptionViewModel`, `LessonTimeTemplatesViewModel`, `LessonTimeTemplatesDesktopAdapter.view_model/save_template` und `LessonTimeTemplatesSettings` projizieren vorhandene verschlüsselte Vorlagen. `LessonTimeTemplateRepository.save_if_unchanged` und `LessonTimeTemplateService.set_times_if_unchanged` binden atomar den erwarteten Istwert (None = nur neu anlegen). `SettingsScreen.lesson_time_template_save_requested` trägt Nummer, Beginn, Ende und erwarteten Wert.
+
+
+Synthetische V5-Backupnamen: SyntheticV5EncryptedBackupManifestV1 (eigener innerer Manifestentry ...000005 / synthetic-v5-backup-manifest-v1.json), SyntheticV5EncryptedBackupService, SYNTHETIC_V5_RESTORE_READY_VERSION=2, SyntheticV5EncryptedRestoreHandoffService (restore_kind synthetic_v5_encrypted_same_installation / HMAC-purpose synthetic-v5-live-restore-handoff-v1), SyntheticV5EncryptedLiveRestoreService, recover_interrupted_synthetic_v5_restore, prepare_synthetic_v5_live_restore und confirm_synthetic_v5_restore_startup. Vorhandene Container-v1- und Recoverymechanik werden wiederverwendet; kein produktiver V5-Workerentry.
+
+Tatsächlicher Vorlagen-Speicherport: LessonTimeTemplatesSettings.save_requested (kein Signal auf SettingsScreen). LessonTimeTemplatesSettings.reload_requested verbindet die ausdrückliche Neuladeaktion mit der vorhandenen Shell und frischer Adapterprojektion.

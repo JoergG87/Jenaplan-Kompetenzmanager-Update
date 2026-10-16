@@ -1624,3 +1624,8 @@ Owner der neuen Ausgabe ist die Kompetenz-PDF-Projektion. Der Adapter liest auss
 ## Isoliertes internes macOS-Testpaketprofil – 14.10.2026
 
 Keine neue Ansicht. Core besitzt reine technische Identitätsprojektion; bestehender Builder/Spec besitzt Paketwahl und versiegelten Hook. Desktop projiziert Name/Root und Prozesskontext. Security Infrastructure projiziert ausschließlich getrennte Keychainnamespaces und Accountbindung ohne Desktop-/Qtimporte. Security-Enrollment erhält optionalen ID-Fabrikport; übrige Schlüssel und Fachlogik unverändert.
+
+
+## V5-Unterrichtszeiten in vorhandenen Einstellungen – 15.10.2026
+
+LessonTimeTemplatesSettings ist eine Seite der vorhandenen SettingsScreen, ausschließlich bei explizitem OpenedSyntheticV5Runtime-Adapter. ViewModels projizieren Nummern und Zeittexte; Adapter/Domain besitzen Validierung und atomare Konfliktbehandlung, Repository persistiert. Stundenplaneditor besitzt nur flüchtige Auswahl und kopierte unabhängige Zeiten. Shell komponiert optionale geprüfte Fähigkeit; produktives V4 erhält keinen Adapter und spricht keine V5-Tabelle an. Keine zweite Einstellungsarchitektur.

@@ -1334,3 +1334,10 @@ und 1400 × 900 nicht verschlechtern; die vorhandenen drei Bereiche bleiben.
 Die Kompetenz-PDF-Zielauswahl verwendet den nativen macOS-Speicherdialog. Erfolg nutzt den vorhandenen umbrochenen Shell-Toast mit explizitem Erfolgston, knapper Beschriftung und sieben Sekunden Lesezeit.
 
 Freigegebene Ausnahme ausschließlich im Kompetenz-PDF: vier neu erzeugte transparente PNG-Pflanzen in schwarz/weiß statt sichtbarer Ratingtokens, mit Originalerklärungen für Standardfächer. Für soziale/Sport-Profile bleiben deren kanonische Texte in der Legende erhalten. Marineblau #123F67, Petrol #087F83 und weiche neutrale Tabellenflächen folgen der App. Balken hat vier diskrete Segmente, Marker ohne Quellen-/Bestätigungsdatum; keine Prozentzahl. A4, Fach beginnt auf neuer Seite, umbrochene Texte, wiederholte Spaltenköpfe und Seitenzählung. Fehlender Stand ist kein niedrigster Wert und sperrt den Export bis zur ausdrücklichen Ergänzung. Pflanzen gelten ausschließlich für diesen freigegebenen Export, nicht als neues App-Ratingprofil. Die Exportaktion benötigt keine Fachauswahl; ihr Tooltip bezeichnet alle Fächer.
+
+
+## Bedienbare synthetische Unterrichtszeitvorlagen – 15.10.2026
+
+Bestehende macOS-Einstellungen um Unterrichtszeiten ergänzen, mit verständlicher geordneter Stundenauswahl, Beginn/Ende, Hinzufügen und Speichern. Keine technische Schemaeingabe. Validierungs-/Konflikttexte handlungsorientiert. Stundenplaneditor zeigt vorgeschlagene Zeiten vor dem Speichern, erlaubt individuelle Anpassung und übernimmt nur durch ausdrückliche Aktion. Produktives V4 zeigt die gesperrte Funktion nicht an.
+
+Synthetischer V5-Stundenplaneditor: Formular bei geringer Fensterhöhe scrollbar, Header und Aktionen erreichbar. Vorlagenkonflikte lassen sich über die ausdrückliche Aktion „Gespeicherte Zeiten neu laden“ auflösen; diese ersetzt die ungespeicherten Eingaben durch aktuellen DB-Stand.

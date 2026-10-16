@@ -1609,3 +1609,8 @@ Der PO gibt einen bewussten PDF-Export aus dem Kompetenz-Cockpit frei. Präzisie
 ## Isoliertes internes macOS-Testpaketprofil – 14.10.2026
 
 PO-Auftrag: bestehende macOS-Pipeline ausschließlich um bewusst ausgewähltes internal-test-Profil erweitern. Vor allen Buildwrites vollständige Identitätsprüfung; kein App-/DMG-Bau in diesem Auftrag. Keine Fach-/Schema-/Cipheränderung. Produktprofil bleibt Default. Native A2-Abnahme bleibt separater Auftrag.
+
+
+## V5-Zielruntime, Backup/Restore und Zeitvorlagen – PO-Auftrag 15.10.2026
+
+Autorisiert sind ausschließlich synthetische vorhandene Installationen: exakte V5-Identität, keyed Vollprüfung, verschlüsselte Zielbackups und kontrollierter Restore sowie schemafähigkeitsgebundene macOS-Zeitvorlagen. Final V4 bleibt einziges Produktschema; kein Produktupgrade, First Run, Schlüsselersatz, Release oder Reaktivieren stillgelegter Austausch-/Journal-APIs. Die frühere Sperre synthetischer Zielruntime wird nur für diesen ausdrücklich isolierten Pfad ersetzt. Paket D wird nach vollständigem Consumerreview als Zielmodell-/Migrationsvertrag spezifiziert; keine halbfertige Mehrfachfachoberfläche.

@@ -2626,3 +2626,11 @@ Keine neue Tabelle, Datenquelle oder Schemaänderung. Die flüchtige Exportproje
 ## Isoliertes internes macOS-Testpaketprofil – 14.10.2026
 
 Neue nicht geheime Buildquelle: explizite JSON-Testprofilkonfiguration mit UUID4-Test-/Installations-ID, abgeleiteter Bundle-/App-/Keychain-/Accountidentität, festen privaten synthetischen Root-/Build-/Distpfaden, deaktivierten Updates, gleichen Worker-/Restartidentitäten, Ad-hoc-Signierung ohne Entitlements. Validiertes Profil wird als Literal im PyInstaller-Runtimehook versiegelt; keine Runtime-Env-Fallbacks. DMK/Database-Key-Kontexte bleiben unabhängige bestehende Zufallsidentitäten und unverändert authentisiert.
+
+
+## V5-Auftrag: bestehende Datenquelle und exakte Fähigkeitsgrenze – 15.10.2026
+
+Die einzige zusätzliche UI-Datenquelle bleibt die bestehende verschlüsselte Tabelle lesson_time_templates im exakt registrierten synthetischen V5 (5 / 21f9af621c54a31e476161a6ee8c916bfd248acbd8d443bed979d27d67f9d1af). Keine AppPreferences-Kopie, Standard-Schulzeiten oder Eintrags-Fremdschlüssel auf Vorlagen. Produktregistry und Final-V4-Fingerprint bleiben unverändert. Runtime liest vorhandenen Schlüsselkontext, Main, Companion und Dokumentcontainer; sie erzeugt keine Schlüssel/Schemaobjekte und repariert nichts.
+
+
+Synthetisches V5-Vollbackup: unverändertes .jkmebackup-Containerformat v1, eigener innerer Manifestvertrag mit exakter V5-Mainidentität und vollständigen Schlüssel-/Dokument-/Companionbindungen. Eigenes READY v2; V4-Manifest und READY v1 bleiben ausschließlich historische V4-Belege. Eine V4-Quellsicherung nach Migration ist kein V5-Zielbackup.

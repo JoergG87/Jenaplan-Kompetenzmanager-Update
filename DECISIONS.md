@@ -4701,3 +4701,8 @@ Der aktive Frozen-internal-test-Profilkontext ist alleinige Identitätsautoritä
 A2-UI-Interop 15.10.2026: Früher bestehender Sicherheitsfehlerport nutzt explizite Qt-QMessageBox-Darstellung mit Critical/OK. Wiederholte CUA-Timeouts am frühen nativen NSAlert bei regulärem Modalstack begründen Kompatibilitätsversuch, keinen nachgewiesenen Produktdeadlock. Veto/Text/Reihenfolge/Schreibgrenzen bleiben identisch; keine Ereignispumpe, kein Betriebssystem-Sicherheitsdialog betroffen. Kandidat erst nach frischer nativer Sichtprüfung akzeptieren, andernfalls zurücknehmen.
 
 A2 FINAL 15.10.2026: Qt-Fehlerport mit frischem Paket 5d58c6e0 nativ sichtbar abgenommen. Codecommit b6e3a0e81c8b8dbe5785ffe3146ea32c91aa8e24 enthält exakt den getesteten Inhalt; separate Quell-SHA256-, Frozen-Code-, Profil-, Bundle- und Testprovenienzprüfung bestanden. P0=0/P1=0, keine neue P2-Lücke im Korrekturumfang. A2 NATIV ABGENOMMEN, UNVERÖFFENTLICHT; historische NO-GOs bleiben erhalten. Keine Produktfreigabe. Vollständiger Nachweis in docs/RELEASE_AUTOMATION.md.
+
+
+## Synthetische V5-Runtime – 16.10.2026
+
+Isolierte Existing-only-Komposition unter bestehendem RuntimeInstanceLock, keine Erweiterung der Produktregistry. Alle keyed Verbindungen sind sessiongebunden und vor Lockfreigabe geschlossen; einmalige Runtimeobjekte und Dokumentproxy verhindern spätere Writes alter Adapter. Schwache Connectionreferenzen vermeiden Wachstum bereits geschlossener Handles. Unabhängiges statisches Nachreview: P0/P1=0 nach Behebung zweier im Zwischenstand gefundener P1 (Connectionlebensdauer und fälschlich akzeptierte AssertionError-Negativtests). Keine hostile-process-Lockkontinuität behauptet.

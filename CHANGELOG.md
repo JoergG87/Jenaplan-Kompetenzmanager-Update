@@ -5501,3 +5501,9 @@ Abschlussprüfung dieses Vorbereitungsauftrags: 65 neue gezielte Tests ohne Skip
 Testnachweise sind synthetische Unit-/Integrationstests, echte Builder-Prozesse ausschließlich mit Vorabprüfung oder ungültigem Profil vor Build sowie Spec-/Hookprüfungen mit inerten Konstruktoren/Bundle-Reads. Kein nativer eingefrorener App-/SQLCipher-/Keychain-/Signingnachweis aus diesem Auftrag. Unabhängiger Architektur-/Diff-/Technical-Review einschließlich letzter Pfadhärtung: P0 = 0, P1 = 0, keine neue offene P2-Implementierungslücke; dokumentierte Sicherheitsgrenzen bleiben. Historischer NO-GO in allen vier bisherigen Dokumenten identisch und unverändert erhalten. Shellsyntax- und Diffprüfung erfolgreich. Damit Commit-Gate für die vorbereitete Testpipeline erfüllt; native A2-Paketabnahme weiterhin offen. Kein Testpaket gebaut und keine Veröffentlichung erfolgt.
 
 - Frühe A2-Sicherheitsfehlermeldung als expliziter Qt-Dialog (Critical, unveränderter Text, nur OK); Renderer-Kompatibilitätskandidat vor erneutem nativen Nachweis, keine behauptete Deadlockkorrektur.
+
+
+## Synthetische V5-Zielruntime – 16.10.2026, unveröffentlicht
+
+- Existing-only SQLCipher-4.17/CommonCrypto-Zielruntime für exaktes synthetisches V5; bestehende Schlüssel, Vollintegrität, Fachreferenzen und Dokument-/Companionbindungen. Kein produktiver V5-Start.
+- Sessionverbindungen/Cursor vor Lockfreigabe geschlossen, Dokumentmethoden sessiongebunden, keine Reaktivierung alter Adapter. Unabhängig gefundene Lebensdauer-/Negativtest-P1 behoben.

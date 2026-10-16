@@ -1138,3 +1138,8 @@ Aktion im Profilreiter `Kompetenzen`: `Kompetenzen als PDF exportieren`. Die Akt
 ## Isoliertes internes macOS-Testpaketprofil – 14.10.2026
 
 Keine neuen Fachfelder. Testprofil projiziert unterscheidbaren technischen Appnamen und deaktivierten vorhandenen Updateadapter. Bestehende Startup-/Auth-/Fehlerdarstellung bleibt; kein Authbypass und keine native Abnahmebehauptung.
+
+
+## V5-Unterrichtszeiten – 15.10.2026
+
+Einstellungen/Unterrichtszeiten: Unterrichtsstunde → lesson_number; Beginn → start_time; Ende → end_time. Bestehende Nummer beim Bearbeiten unveränderlich; neue Nummer überschreibt keine vorhandene. Geordnete Liste nach Nummer, leere Installation ohne verbindliche Beispielwerte. Speichern über erwarteten vollständigen Istwert. Stundenplaneditor: optionale Unterrichtsstundenauswahl plus ausdrückliches Übernehmen → bestehende Start-/Endfelder. Initial manuell, auch beim erneuten Öffnen; keine stille Vorlagenanwendung. Nur synthetische exakte V5-Fähigkeit stellt diese Daten bereit.
