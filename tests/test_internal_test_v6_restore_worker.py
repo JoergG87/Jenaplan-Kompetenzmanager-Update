@@ -20,6 +20,34 @@ from tests.test_macos_test_package_profile import profile
 from tests.test_synthetic_v6_backup_restore import case, _prepare, _run_restore, _hash
 
 
+@pytest.mark.parametrize("status", ["normal_start", "resume_required", "aborted_before_replacement", "rolled_back", "failed"])
+def test_only_successful_verified_rollback_exports_its_existing_context(monkeypatch, tmp_path, status):
+    from unittest.mock import Mock
+    from src.desktop_app import synthetic_v6_runtime_adapters as adapters
+    from src.security import internal_test_v6_composition as composition
+    from src.security import synthetic_v6_live_restore as recovery
+    service = object()
+    monkeypatch.setattr(composition, "require_internal_test_v6_context", lambda root: None)
+    monkeypatch.setattr(adapters, "build_internal_test_v6_restore_verifier", lambda root: service)
+    def recover(**kwargs):
+        assert kwargs == {"backup_service": service, "runtime_root": tmp_path}
+        if status == "failed":
+            raise RestoreManualRecoveryRequired("synthetic verification failure")
+        return SimpleNamespace(status=status)
+    monkeypatch.setattr(recovery, "recover_interrupted_synthetic_v6_restore", recover)
+    callback = Mock()
+    if status == "failed":
+        with pytest.raises(RestoreManualRecoveryRequired):
+            adapters.recover_internal_test_v6_restore(tmp_path, on_verified_rollback=callback)
+    else:
+        assert adapters.recover_internal_test_v6_restore(tmp_path,
+            on_verified_rollback=callback).status == status
+    if status == "rolled_back":
+        callback.assert_called_once_with(service)
+    else:
+        callback.assert_not_called()
+
+
 def test_v6_profile_worker_and_restart_are_bound_to_exact_profile(profile):
     validated = validate_test_profile(profile)
     root = Path(profile["runtime_root"])

@@ -494,6 +494,7 @@ def main() -> int:
     lock = None
     runtime_stack = ExitStack()
     new_database_initialization_candidate = False
+    v6_recovery_context = []
     try:
         lock = RuntimeInstanceLock(data_root, inherited_fd=inherited_lock_fd)
         lock.acquire()
@@ -529,7 +530,8 @@ def main() -> int:
             if synthetic_v6_restore_confirm:
                 confirm_internal_test_v6_restore(data_root, str(restore_confirm_id), str(restore_confirm_token))
             else:
-                recovery = recover_internal_test_v6_restore(data_root)
+                recovery = recover_internal_test_v6_restore(
+                    data_root, on_verified_rollback=v6_recovery_context.append)
                 if recovery.status == "resume_required":
                     confirm_internal_test_v6_restore(data_root, str(recovery.restore_id), str(recovery.resume_token))
         else:
@@ -756,7 +758,14 @@ def main() -> int:
                 open_internal_test_v6_runtime,
             )
             from src.core.timetable_schema import SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION
-            candidate = build_internal_test_v6_backup_service(data_root, authenticated_account=account)
+            if v6_recovery_context:
+                if (len(v6_recovery_context) != 1
+                        or v6_recovery_context[0].installation_id != account.installation_id):
+                    raise RuntimeError("synthetic_v6_recovery_account_mismatch")
+                candidate = build_internal_test_v6_backup_service(data_root,
+                    authenticated_account=account, loaded_keys=v6_recovery_context[0].loaded)
+            else:
+                candidate = build_internal_test_v6_backup_service(data_root, authenticated_account=account)
             if internal_test_schema_identity(candidate) == SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity:
                 v6_service = candidate
         if v6_service is not None:

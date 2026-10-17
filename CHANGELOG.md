@@ -5584,3 +5584,5 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 - Keyset-Snapshots nach SQLite backup tatsächlich auf DELETE normalisieren und PRAGMA-Ergebnis prüfen; reproduzierter WAL-Headerfehler, committed WAL-Daten vollständig erhalten, Quelle und historische Backups unverändert.
 
 - Interner restore-ready-Smoke stoppt über das vorhandene Handoff-Signal die Security-/Wake-Timer vor Qt-Abschlussereignissen; regulärer UI-Pfad und Produkt-Security bleiben unverändert.
+
+- V6-Teststart übernimmt nach vollständig geprüftem Restore-Rollback dessen vorhandenen Schlüsselkontext bis zur authentisierten Runtime-Komposition; keine nachträgliche WAL-Normalisierung oder Existing-only-Ausnahme.

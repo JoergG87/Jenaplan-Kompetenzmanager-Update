@@ -70,14 +70,22 @@ def build_internal_test_v6_restore_worker_service(root: Path, *, lock: RuntimeIn
         restart_launcher=DesktopSyntheticV6RestartLauncher())
 
 
-def recover_internal_test_v6_restore(root: Path):
+def recover_internal_test_v6_restore(root: Path, *, on_verified_rollback=None):
     """Use only authenticated V6 evidence, never a V4 or ZIP fallback."""
     from src.security.internal_test_v6_composition import require_internal_test_v6_context
     from src.security.synthetic_v6_live_restore import recover_interrupted_synthetic_v6_restore
 
     require_internal_test_v6_context(root)
     service = build_internal_test_v6_restore_verifier(root)
-    return recover_interrupted_synthetic_v6_restore(backup_service=service, runtime_root=root)
+    result = recover_interrupted_synthetic_v6_restore(backup_service=service, runtime_root=root)
+    # _rollback has authenticated the handoff and independently verified the
+    # safety backup, complete keyed live runtime, documents and excluded files.
+    # Preserve that exact context across normal authentication reads, which may
+    # legitimately reopen checkpointed WAL-mode metadata. Never retry a failed
+    # Existing-only load or grant this path to an unresolved/ordinary startup.
+    if result.status == "rolled_back" and on_verified_rollback is not None:
+        on_verified_rollback(service)
+    return result
 
 
 def confirm_internal_test_v6_restore(root: Path, restore_id: str, token: str):

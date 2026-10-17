@@ -272,7 +272,7 @@ def test_syntactically_complete_claim_needs_real_keyed_persistence_binding(regul
     assert case.store.values == keys and case.store.create_calls == creates
 
 
-@pytest.mark.parametrize("lifecycle", ["observation_and_document", "reopen", "restore"])
+@pytest.mark.parametrize("lifecycle", ["observation_and_document", "reopen", "restore", "restore_crash"])
 def test_retained_real_operations_in_synthetic_v6_runtime(regular_case, monkeypatch, lifecycle):
     from src.core import macos_test_package_profile as profile_module
     from src.desktop_app.runtime import runtime_paths
@@ -303,14 +303,18 @@ def test_retained_real_operations_in_synthetic_v6_runtime(regular_case, monkeypa
             database_create_allowed=False, managed_document_store=opened.documents)
         _observation(case, "e" * 32); _document(case, "f" * 32)
         opened.lesson_time_templates.set_times(1, "07:45", "08:30")
-    if lifecycle == "restore":
-        prep, _, _ = _prepare(service, case.tmp)
-        _run_restore(service, prep)
+    if lifecycle in {"restore", "restore_crash"}:
+        prep, _, _ = _prepare(service, case.tmp,
+            before_handoff=lambda lock: finalize_security_runtime(
+                build_security_runtime(runtime_paths(case.root)), runtime_paths(case.root), lock))
+        _run_restore(service, prep,
+            crash="between_main_and_companion" if lifecycle == "restore_crash" else None)
     # As in the real application's successful V6 shutdown, complete metadata
     # reads performed by the explicitly opened fixture session/worker verifier.
-    with RuntimeInstanceLock(case.root) as lock:
-        finalize_security_runtime(build_security_runtime(runtime_paths(case.root)),
-            runtime_paths(case.root), lock)
+    if lifecycle != "restore_crash":
+        with RuntimeInstanceLock(case.root) as lock:
+            finalize_security_runtime(build_security_runtime(runtime_paths(case.root)),
+                runtime_paths(case.root), lock)
     # Source capability substitution only: all real schema/key/document/journal
     # checks remain active. No native attestation is claimed by this test.
     profile = SimpleNamespace(runtime_root=str(case.root), installation_id=account.installation_id,
@@ -322,8 +326,10 @@ def test_retained_real_operations_in_synthetic_v6_runtime(regular_case, monkeypa
         return real_builder(root, **kwargs, key_store=case.store,
             provider=qualified_sqlcipher_test_provider())
     monkeypatch.setattr(composition, "build_internal_test_v6_backup_service", existing_test_keys)
+    from src.security import final_v4_live_restore
+    monkeypatch.setattr(final_v4_live_restore, "build_platform_data_master_key_store", lambda: case.store)
     keys, creates = dict(case.store.values), case.store.create_calls
-    for _ in range(2 if lifecycle == "reopen" else 1):
+    for _ in range(2 if lifecycle in {"reopen", "restore_crash"} else 1):
         assert desktop_main.main() == 0
     assert case.store.values == keys and case.store.create_calls == creates
     reopened = _service(old.paths, old.loaded, old.installation_id)
@@ -331,4 +337,5 @@ def test_retained_real_operations_in_synthetic_v6_runtime(regular_case, monkeypa
         with closing(opened.database.connect()) as connection:
             assert connection.execute("SELECT COUNT(*) FROM observations").fetchone()[0] == 2
             assert connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 2
-        assert opened.lesson_time_templates.suggest(1).start_time == "07:45"
+        assert opened.lesson_time_templates.suggest(1).start_time == (
+            "07:50" if lifecycle == "restore_crash" else "07:45")

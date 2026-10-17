@@ -284,7 +284,7 @@ def _restore_worker(paths, loaded, installation_id, handoff, nonce, channel, cra
         channel.close()
 
 
-def _prepare(service, tmp_path):
+def _prepare(service, tmp_path, *, before_handoff=None):
     root = service.paths.final_v4.root
     target = service.create(tmp_path / 'restore-target.jkmebackup')
     original = _content(service)
@@ -299,7 +299,8 @@ def _prepare(service, tmp_path):
     with RuntimeInstanceLock(root) as lock:
         prep = prepare_synthetic_v6_live_restore(backup_service=service, lock=lock,
             staging_root=stage.staging_root, expected_container_sha256=target.container_sha256,
-            restore_id=restore_id, app_version='0.4.4', build_commit='a'*40)
+            restore_id=restore_id, app_version='0.4.4', build_commit='a'*40,
+            before_handoff=(lambda: before_handoff(lock)) if before_handoff else None)
     prep.safety_backup.transfer_to_worker()
     return prep, original, current
 

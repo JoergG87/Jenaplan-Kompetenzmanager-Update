@@ -3718,3 +3718,5 @@ Native interne V6-Abnahme: `scripts/macos_native_v6_acceptance.py` und die gesch
 `_operation_artifact_role` klassifiziert ausschließlich enge bestehende Pfadformen. Native Ergänzungen innerhalb des vorhandenen Prüfeinstiegs: `v6-functions` und `v6-functions-reopen` prüfen echte Dialog-/Signalflüsse und frische Persistenz ohne Produktentry.
 
 Interne native Fehlerbelege geben ausschließlich explizit aufgelistete feste synthetic_v6-Diagnosecodes aus; keine beliebigen Exceptioninhalte.
+
+recover_internal_test_v6_restore.on_verified_rollback ist ein interner einmaliger Kompositionscallback ausschließlich für vollständig verifizierten terminalen Rollback im selben gelockten versiegelten Teststart. Kein öffentlicher Runtime-/Umgebungsbypass.
