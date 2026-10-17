@@ -5582,3 +5582,5 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 - Native V6-Nachweise: historische V4-READY ausdrücklich gegen V6 prüfen; bediente V6-Stundenplanfunktionen vor Restore sichern und nach Worker-/Restart erneut laden, einschließlich vollständigem typisiertem Main-/Companionvergleich.
 
 - Keyset-Snapshots nach SQLite backup tatsächlich auf DELETE normalisieren und PRAGMA-Ergebnis prüfen; reproduzierter WAL-Headerfehler, committed WAL-Daten vollständig erhalten, Quelle und historische Backups unverändert.
+
+- Interner restore-ready-Smoke stoppt über das vorhandene Handoff-Signal die Security-/Wake-Timer vor Qt-Abschlussereignissen; regulärer UI-Pfad und Produkt-Security bleiben unverändert.

@@ -1108,6 +1108,7 @@ def _run_packaged_smoke(
         if mode == "restore-ready":
             restore_application._preparations[restore.restore_id].safety_backup.transfer_to_worker()
             payload["restore"] = {"ready_state": "RESTORE_READY", "restore_id": restore.restore_id}
+            window.restore_handoff_started.emit()
             window.close()
             app.processEvents()
             print(json.dumps(payload, sort_keys=True), flush=True)

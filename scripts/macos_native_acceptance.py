@@ -148,10 +148,15 @@ _OBSERVED = {
 def _startup(mode):
     # Observe function entry only. No locals, arguments, return values or keys.
     events = []
+    observed_functions = frozenset(function for names in _OBSERVED.values() for function in names)
     def observe(frame, event, _arg):
-        name = Path(frame.f_code.co_filename).name
+        if event != "call":
+            return
         function = frame.f_code.co_name
-        if event == "call" and function in _OBSERVED.get(name, ()):
+        if function not in observed_functions:
+            return
+        name = frame.f_code.co_filename.rsplit("/", 1)[-1]
+        if function in _OBSERVED.get(name, ()):
             events.append(name + ":" + function)
     from src.desktop_app import main
     denied = mode == "restart-denied"

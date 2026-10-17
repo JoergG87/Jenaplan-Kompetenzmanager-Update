@@ -13,6 +13,54 @@ from src.core import macos_test_package_profile as identity
 from tests.test_macos_test_package_profile import profile, config, smoke_bundle
 
 
+def test_startup_observer_records_only_selected_function_entries(monkeypatch):
+    from src.desktop_app import main
+    namespace = {}
+    exec(compile('def open_cipher_product_runtime():\n    return 7\n',
+                 '/isolated/src/security/cipher_product_runtime.py', 'exec'), namespace)
+    def run():
+        assert namespace['open_cipher_product_runtime']() == 7
+        print('{"synthetic": true}')
+        return 0
+    monkeypatch.setattr(main, 'main', run)
+    monkeypatch.setattr(native.sys, 'argv', ['test'])
+    code, payload = native._startup('restart')
+    assert code == 0
+    assert payload['events'] == ['cipher_product_runtime.py:open_cipher_product_runtime']
+    assert payload['runtime'] == {'synthetic': True}
+    assert native.sys.getprofile() is None
+
+
+def test_restore_ready_quiesces_ui_before_processing_shutdown_events(monkeypatch, tmp_path):
+    from src.desktop_app import main
+    events = []
+    app, window = Mock(), Mock()
+    app.processEvents.side_effect = lambda: events.append('events')
+    window.restore_handoff_started.emit.side_effect = lambda: events.append('quiesce')
+    window.close.side_effect = lambda: events.append('close')
+    window.windowTitle.return_value = 'Synthetic test'
+    window.adapter.current_school_year.return_value = None
+    window.curriculum_adapter.list_entries.return_value = []
+    compatibility = SimpleNamespace(cipher_provider='commoncrypto', cipher_version='4.17.0',
+                                    sqlite_user_version=6, sqlite_version='3.53.3')
+    runtime = SimpleNamespace(runtime=SimpleNamespace(final_v4=SimpleNamespace(compatibility=compatibility)),
+                              database_context_id='synthetic', database_key_fingerprint_sha256='test',
+                              dmk_fingerprint_sha256='test', first_run=False)
+    paths = SimpleNamespace(root=tmp_path, final_v4_database=tmp_path/'main', backups=tmp_path/'backups')
+    backup, restore = Mock(), Mock()
+    backup.create.return_value.path = tmp_path/'synthetic.jkmebackup'
+    restore.verify.return_value.restore_id = 'synthetic-restore'
+    preparation = Mock()
+    preparation.safety_backup.transfer_to_worker.side_effect = lambda: events.append('transfer')
+    restore._preparations = {'synthetic-restore': preparation}
+    monkeypatch.setattr(main, 'load_build_info', lambda: {'git_commit': 'synthetic'})
+    assert main._run_packaged_smoke(app, window, paths, mode='restore-ready', product_runtime=runtime,
+                                   security_runtime=None, backup_application=backup,
+                                   restore_application=restore, login_authenticated=True) == 0
+    assert events == ['events', 'transfer', 'quiesce', 'close', 'events']
+    restore.launch_prepared_restore.assert_not_called()
+
+
 @pytest.mark.parametrize("mode", sorted(identity.NATIVE_TEST_MODES))
 def test_closed_native_mode_list(profile, mode):
     identity._validate_arguments(SimpleNamespace(**profile), ["--internal-native-test", mode])
