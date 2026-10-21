@@ -774,3 +774,55 @@ Keine Belege gelöscht, keine Statusfelder als Autorität akzeptiert, kein Glob-
 | 24. Empfehlung | **NO-GO für produktive Freigabeprüfung**, bis der konkrete native Startblocker und die anschließend offenen Pflichtgates geschlossen sind. |
 
 Rohbelege in beiden obigen privaten Profilcontainern: profile.json, source-provenance.json, preflight-result.json, build-run.log/build-exit.txt, smoke-preflight-result.json, bundle-before.json, bundle-code-binding.json, bundle-after-verification.json und native-v6-runner.log/native-v6-matrix.json. Zusätzlich im zweiten Kandidaten native-seed-inventory.json, native-seeded-restart-result.json, codesign-final.json und evidence-sha256.json. Temporäre Originalpfade sind keine Veröffentlichung und müssen für Nachprüfung erhalten werden. Keine Produktinstallation geöffnet, kein Push, Tag, Release, Appcastupdate oder Versionswechsel.
+
+
+### V6-Reparaturabschluss – 21.10.2026 – native Gesamtfreigabe NO-GO
+
+**Die Quellenkorrekturen sind vollständig committed und getestet. Die abschließende native Abnahme ist nicht bestanden: Der neue Paketbau wird vor dem Appbau durch den Qt-Download blockiert. Keine Produktfreigabe.** Frühere NO-GO-Nachweise bleiben unverändert erhalten.
+
+#### Stand und gesicherte Reparaturen
+
+Ausgangs-HEAD des Reparaturauftrags: `4e35e1cf8069f198857883d4d99835984e612c9b`. Aktueller Code-HEAD und Start dieses Abschlusslaufs: `61375c27ac508db9d65ee943cfc469a87eea1dec`, Branch `spike/python-gui`. Danach ausschließlich dieser Dokumentationsabschluss; genaue Nachweiscommit-SHA im Gitlog.
+
+- `c83b8dc`: retained-operation-Startupfix. Regulär aufbewahrte COMPLETE-Beobachtungs-/Dokumentjournale werden strukturell und anschließend gegen keyed Persistenzereignisse bzw. Dokument-/Companionhistorie geprüft. Passender Dateiname oder unkeyed Journalhash allein erteilt keine Autorität. Offene, beschädigte, unbekannte oder unsichere Bestände bleiben gesperrt; keine automatische Reparatur, Löschung oder First-Run-Anlage.
+- `5a8f1c4`: geordneter Metadatenabschluss zwischen nativen Prüfstufen.
+- `65dde0f`: Parentabschluss vor authentisiertem Restorehandoff; neue Keyset-Snapshotziele nach SQLite-backup tatsächlich auf DELETE normalisieren. Quelle und historische Container bleiben unverändert.
+- `e077436`: interner restore-ready-Smoke stoppt über das vorhandene Lifecycle-Signal UI-Timer; selektiver Profiler ohne bisherigen unnötigen Aufwand.
+- `61375c2`: ausschließlich nach vollständig geprüftem Restore-Rollback dessen bestehenden Schlüsselkontext innerhalb desselben gelockten Starts bis zur authentisierten V6-Komposition erhalten. Installationsabgleich und aktuelle Keyset-/Envelope-/Schema-/Dokumentprüfungen bleiben aktiv. Kein Sidecarignorieren, Checkpoint-Fallback oder Produktbypass.
+
+#### Test- und Paketprovenienz
+
+Übernommener vollständiger Lauf des exakt committed Quellstands `61375c2`: **3466 bestanden, 104 bestehende Skips, 120 bestandene Untertests, 854.51 s, Exit 0**. Zuvor 62 gezielte Startup-/Worker-/Kompositions-/Dialogtests bestanden; realer SQLCipher-/SIGKILL-Gesamtstart nach Rollback und weiterer Neustart bestanden. Die Gegenprobe ohne Kontextübergabe reproduzierte Exit 1 / synthetic_v6_existing_keys_unavailable. Unabhängiges Review fand keine neuen konkreten P0/P1 im geprüften Quellumfang.
+
+Diese Ergebnisse stammen aus dem bisherigen Chatlauf. Die damaligen temporären Rohlogs sind inzwischen nicht mehr vorhanden und werden nicht als aktuell nachprüfbare Dateien ausgegeben. Deshalb keine erneute Suite ohne Codeänderung; heutiger Abgleich bestätigt 481 unveränderte erfasste Quellen-/Test-/Paketdateien. Die neue source-provenance.json bindet sie an HEAD und Profil. Historische native Ergebnisse werden ausdrücklich nicht zu einer frischen Gesamtabnahme des letzten Commits erklärt.
+
+Frisches Profil: `72072bea-9b9d-4020-a554-a81636dcfd88`; Appname `JKM-Interner-Test-72072bea9b9d4020a554a81636dcfd88`; Bundle/Worker/Restart `de.jenaplan.kompetenzmanager.internaltest.t72072bea9b9d4020a554a81636dcfd88`; Digest `5903989c2b46dcfe26ff734384dd24e108f4d1441618652cddb2ca5c41ca8c2d`. Eigene zufällige Installationsidentität, drei eigene Keychainservices, private synthetische Datenroots, eigene neue Build-/Artefaktziele, Updates false, Ad-hoc-only, keine Entitlements. Bestehende Profilvalidierung vor Build erfolgreich; keine Produktidentität als Zwischenprodukt.
+
+**Konkreter Infrastrukturblocker:** Die unveränderte internal-test-Pipeline erreicht den Download von PySide6_Addons 6.11.1 und protokolliert Timeout/Resume bei rund 36 MB von 331.7 MB. Eigener Pipprozess nach bestätigter Profil-Elternkette beendet; Build Exit 143. Begrenzter alternativer Abruf derselben offiziellen Qt-Wheels lieferte auch nach mehr als elf Minuten keine vollständige SHA256-geprüfte Wheel und wurde beendet. Keine unvollständige Datei installiert, keine Versionsänderung, keine Signatur-/Providerprüfung umgangen. Schlechte Internetverbindung anschließend durch Nutzer bestätigt. Kein weiterer Netzwerkversuch und kein Downloadhelper im Hintergrund.
+
+Dauerhafte lokale Nachweise: `output/v6-acceptance/2026-10-21-61375c2/` mit Profil, Commit-/Quellhashes, Buildlog/Exit, Netzwerkblocker und Schutzgrenzen. Dieser ignorierte Outputordner ist kein Produktrelease. Der Profilcontainer liegt separat im privaten Systemtemp; dessen Fortbestand ist keine dauerhafte Nachweisgarantie.
+
+#### Abschlussmatrix
+
+| Auftragspunkt | Tatsächlicher Stand |
+| --- | --- |
+| 1–3. HEAD, Ursache, Commit | Obige fünf fokussierte Reparaturcommits; letzter Code-HEAD 61375c2. Dieser Nachweiscommit enthält keinen Produktcode. |
+| 4. Negative Inventartests | Im Quelllauf: offene Journale, Digest-/Schemafehler, unbekannte Felder/Fremddateien, Token-/Pfadmanipulation, Symlink/Rechte, fehlende Main/DMK, Upgrade/Replay/Restorekonflikt, ungebundene Persistenz und Read-only-Preflight geprüft. Keine neuen Skips/Ausnahmen. |
+| 5. Gefüllter V4-Neustart | In früheren isolierten nativen Kandidaten nach retained-operation-Fix erfolgreich, mit regulären Beobachtungs-/Dokumentbelegen. Kein frischer Lauf am letzten Codepaket möglich. |
+| 6. Paket/Signatur/Provider | Frühere Pakete qualifiziert; heutiges Profil validiert, aber Build vor Appbau abgebrochen. Kein frisches Bundle, keine neue Signatur-/SQLCipher-/CommonCryptoabnahme behauptet. |
+| 7–8. V6-Startup/Migration | Historisch nativ erfolgreich: bestehendes synthetisches Konto, transaktionales V4→V6, exakter Fingerprint 4d8f4e056f5897114b3af8899947bce1f7362c52a3da96525f32baec3e9d2cc2, vollständige Originalzeilen-/Dokumentbindung und erhaltene Schlüssel. Abschlussregression des letzten Pakets offen. |
+| 9. Unterrichtszeiten | Frühere native Dialog-/Persistenzprüfung erfolgreich: ungültige Zeiten abweisen, Vorlagen speichern/ändern, explizit kopieren, individuelle Zeiten und Bestandsstunden erhalten, neu laden. Menschliche Bedienabnahme offen. |
+| 10. Stammgruppenstunden | Historisch nativ CRUD, Deaktivieren/Reaktivieren und Null-Fachzuordnung geprüft; menschliche Abnahme offen. |
+| 11. Kombinierte Stunden | Historisch nativ genau ein Parent mit Deutsch/Mathematik und zwei Links, Persistenz nach Neustart geprüft. |
+| 12. Beobachtungen | Historisch nativ bewusste Mathematikwahl, gefilterter Katalog, genau eine Beobachtung, keine Ratingverdoppelung; vorhandene 71 Ratings erhalten. Automatisierte Bedienung/Screenshotprüfung, keine menschliche Freigabe. |
+| 13–14. Backup/Restore/Worker | Historisch V6-Vollbackup, unabhängige Verifikation und RESTORE_READY bestanden; V4-Container/READY gegen V6 abgewiesen. Echter paketierter SIGKILL erreicht; folgender Neustart war damals blockiert. Fix61375c2 besteht im Quell-Gesamtstart; frischer nativer Crash-/Recovery-/Worker-/Restartabschluss fehlt weiterhin. Keine vollständige Restoreabnahme. |
+| 15. Produktsuite | 3466/104/120 wie oben übernommen; keine neue Suite und keine neuen nativen Laufzeittests im heutigen Abschlusslauf. Tatsächlich heute: Git-/Hash-/Registry-/Profilprüfung, Paketbauversuch, begrenzte Downloaddiagnose, unabhängiges Review. |
+| 16. P0/P1/P2 | Quellreview: keine neuen konkreten P0/P1. Das native P1-Abnahmegate bleibt mangels korrigiertem Paketlauf offen. P2: historische WAL-Metadatencontainer/Restorehistorien nicht pauschal zugelassen; englische Cancel-Schaltfläche in historischer Fachwahl. |
+| 17. Menschliche Abnahme | Weiterhin offen. Kompakte Prüfliste oben bleibt gültig: Anmeldung/Ansichten, Unterrichtszeiten, Stammgruppe, kombinierte Stunde, bewusste Fachwahl/Abbruch, Backup/Restore und Neustart. Nur die isolierte synthetische Test-App verwenden. |
+| 18. Offene Releasegates | Frischer Build samt Codebindung/Signatur/Provider; vollständiger korrigierter Crash-/Recovery-/Worker-/Restartlauf; restliche native Startup- und Migrationsfehlerfälle; menschliche Bedienabnahme; danach separate Produktmigrations-/Releasegates. |
+| 19–21. Schutzgrenzen | Produktdaten/-schlüssel/-backups nicht geöffnet oder migriert. Build404, src/version.py, Pilotfeed und Pflanzenbilder-ZIP unverändert; ursprüngliche fünf Fremddokumentänderungen erhalten. Kein Push/Tag/Release/Appcastupdate. |
+| 22. Empfehlung | **NO-GO für native Gesamtfreigabe und produktiven Feature-Release.** Quellenreparaturen abgeschlossen; tatsächliche native Abnahme bis verfügbarer vollständiger Qt-Abhängigkeiten und bestandener Restgates offen. Keine automatische Folgeimplementierung. |
+
+Produktive Final-V4-Registry bleibt unverändert und besitzt keine V4→V6-Kante. Spätere Aktivierung verlangt einen separat freigegebenen Wartungsstart mit bestehenden Schlüsseln, exakter Quelle, unabhängig geprüftem Vollbackup, Connection-Drain, transaktionaler Migration und passenden V6-Runtime-/Restoreverträgen. Kein stiller normaler Start und kein First-Run-Fallback. Build404 weist V6 zurück; kein automatischer Downgrade. Wiederherstellung muss vollständig auf ein geprüftes V4-Backup zurückgehen; spätere V6-Änderungen wären dabei verloren.
+
+Für ein reguläres Release bleiben die bestehenden Build404-Gates maßgeblich: Developer-ID/Hardened Runtime/Entitlements, Notarisierung/Stapling/Gatekeeper, Sparkle-/Feed-/Updatesignatur und Updatekompatibilität mit tatsächlich eingesetzten Pilotständen. Kein Zugriff auf reale Pilotinstallationen in diesem Auftrag; keine neue Versions-/Buildnummer vergeben. A/B-Wochen bleiben zurückgestellt.

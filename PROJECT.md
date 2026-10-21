@@ -1909,3 +1909,6 @@ PO-Folgeauftrag nach Vorprüfungs-NO-GO: normale autorisierte interne V6-Test-Ap
 Regulär erhaltene Beobachtungs-/Dokument-/PDF-Journale sind als exakte Artefaktrollen und mit keyed Persistenzbindung in den bestehenden Startup integriert. Gefüllte V4- und synthetische V6-Neustarts, negative Inventarfälle und der native V6-Funktionsrunner werden geprüft. Produktmigration, Versionsstand und Updatefeed bleiben unverändert gesperrt; tatsächliche Paketresultate werden in docs/RELEASE_AUTOMATION.md ergänzt.
 
 Fix-Commit-Gate: vollständige Produktsuite 3457 bestanden, 104 bestehende Skips, 120 Untertests, Exit 0 (812.66 s); 294 gezielte Regressionen mit drei bestehenden Skips und 212 zusätzliche Startup-/Profil-/Dialogprüfungen bestanden. Unabhängiges Review ohne neue konkrete P0/P1. Native Paketabnahme separat aus diesem Codecommit.
+
+## V6-Abschlussstand – 21.10.2026
+Quellenreparaturen committed bis61375c2; übernommene Suite3466/104/120. Abschließender nativer Neubau scheitert vor Appbau am Qt-Download; native Crash-/Worker-/Restartabnahme und menschliche Bedienprüfung bleiben offen. NO-GO für Gesamt-/Produktfreigabe; FinalV4 bleibt produktiv, Build404/Feed unverändert. Vollständiger Abschluss und Nachweisgrenzen in docs/RELEASE_AUTOMATION.md.

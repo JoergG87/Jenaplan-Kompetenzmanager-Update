@@ -5586,3 +5586,5 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 - Interner restore-ready-Smoke stoppt über das vorhandene Handoff-Signal die Security-/Wake-Timer vor Qt-Abschlussereignissen; regulärer UI-Pfad und Produkt-Security bleiben unverändert.
 
 - V6-Teststart übernimmt nach vollständig geprüftem Restore-Rollback dessen vorhandenen Schlüsselkontext bis zur authentisierten Runtime-Komposition; keine nachträgliche WAL-Normalisierung oder Existing-only-Ausnahme.
+
+- V6-Reparaturabschluss 21.10.2026 dokumentiert: Code61375c2 unverändert; neue native Paketabnahme durch Qt-Downloadtimeouts vor Appbau blockiert. Keine Gesamt-/Produktfreigabe; geschützte Fremdänderungen erhalten.
