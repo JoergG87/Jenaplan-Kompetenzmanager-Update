@@ -542,14 +542,17 @@ def _matrix(profile):
                 report["startup"][str(case)] = result
                 _checkpoint(profile, report)
                 allowed = case in {1, 3, 20}
-                require(result, 0 if allowed else (4 if case in {13, 14, 15} else (2 if case == 17 else 3)))
-                if case == 15 and "data_master_key_access_denied" not in result["stderr"]:
+                require(result, 0 if allowed else (2 if case == 17 else 3))
+                if case == 15 and ("synthetic_v6_existing_keys_unavailable" not in result["stderr"]
+                        or "data_master_key_store.py:read" not in result["payload"].get("events", [])):
                     raise RuntimeError("native_acl_denial_not_proven")
-                if not allowed and case not in {13, 14, 15, 17, 18} and _snapshot(root) != before:
+                if not allowed and case not in {17, 18} and _snapshot(root) != before:
                     raise RuntimeError("native_guard_mutated_blocked_case:" + str(case))
                 events = result["payload"].get("events", [])
                 if not allowed and "data_master_key_store.py:create" in events:
                     raise RuntimeError("native_replacement_key_created")
+                if case in {13, 14, 15} and "startup.py:build_security_runtime" in events:
+                    raise RuntimeError("native_invalid_existing_start_reached_authentication")
                 if allowed:
                     _check_order(result)
                     if result["payload"]["runtime"]["first_run"] is not False:

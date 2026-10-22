@@ -1161,3 +1161,5 @@ Keine neuen Felder: normaler autorisierter V6-Teststart verbindet die bestehende
 
 ## Operationsinventar – 16.10.2026
 Keine neuen UI-Felder. Bekannter offener oder widersprüchlicher Operationsbestand verwendet den vorhandenen sicheren Starthalt; kein neuer Reparatur-/First-Run-Dialog.
+
+Native V6-Restabnahme 22.10.2026: beschädigter isolierter V6-Bestand hält bereits vor Anmeldung sicher an. Keine neuen Felder, Reparaturaktionen oder produktiven Freigaben.

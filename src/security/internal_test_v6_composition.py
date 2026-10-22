@@ -81,7 +81,7 @@ class InternalTestStartupGuard(ProductUpgradeStartupGuard):
 
 
 def build_internal_test_v6_backup_service(root, *, authenticated_account=None,
-        key_store=None, provider=None, loaded_keys=None):
+        key_store=None, provider=None, loaded_keys=None, checkpointed_metadata_reads=False):
     profile = require_internal_test_v6_context(root)
     root = Path(root)
     account = authenticated_account
@@ -111,6 +111,7 @@ def build_internal_test_v6_backup_service(root, *, authenticated_account=None,
         database_context_id=loaded_keys.database_context_id,
         final_v4=SimpleNamespace(compatibility=None))
     return SyntheticV6EncryptedBackupService(opened_runtime=opened, paths=paths,
+        checkpointed_metadata_reads=checkpointed_metadata_reads,
         loaded_keys=loaded_keys, main_factory=_ExistingV6MainFactory(provider, paths.final_v4.database, key),
         document_factory=document_factory, provider=provider, maintenance_gate=MaintenanceGate(),
         random_source=SystemRandomSource(), clock=SystemClock())
@@ -127,6 +128,29 @@ def internal_test_schema_identity(service):
                     and result.schema_identity.fingerprint == identity.fingerprint):
                 return identity
     raise SyntheticV6RuntimeError("synthetic_v6_unknown_schema")
+
+
+def preflight_internal_test_existing_runtime(root, *, lock):
+    """Inspect existing sealed data before authentication can write metadata.
+
+    Recovery has already completed under this lock. Load only the ordinary
+    existing-only context. Nothing from
+    this inspection is retained as post-authentication runtime admission.
+    """
+    profile = require_internal_test_v6_context(root)
+    if lock.runtime_root != Path(root):
+        raise SyntheticV6RuntimeError("synthetic_v6_lock_root_mismatch")
+    ProductUpgradeStartupGuard(lock)._require_lock()
+    service = build_internal_test_v6_backup_service(root, checkpointed_metadata_reads=True)
+    if (service.paths.final_v4.root != Path(root)
+            or service.installation_id != profile.installation_id):
+        raise SyntheticV6RuntimeError("synthetic_v6_installation_mismatch")
+    try:
+        if internal_test_schema_identity(service) == SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity:
+            with SyntheticV6Runtime(service).open_existing(lock=lock):
+                pass
+    except Exception:
+        raise SyntheticV6RuntimeError("synthetic_v6_full_inspection_failed") from None
 
 
 @contextmanager

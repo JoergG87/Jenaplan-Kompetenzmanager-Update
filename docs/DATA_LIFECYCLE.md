@@ -3998,3 +3998,8 @@ Keyset-Snapshotformat: SQLite backup übernimmt den Quellheader einschließlich 
 Der interne restore-ready-Smoke emittiert vor Fensterabschluss und Qt-Ereignisverarbeitung dasselbe restore_handoff_started-Signal wie der reguläre UI-Handoff. Damit enden Security-Poll-/Wake-Timer vor dem Workerstart; nach HMAC-Erfassung dürfen keine erneuten Epochreads Nebenjournale erzeugen. Kein Checkpoint nach der Signierung als Ersatz.
 
 V6-Recoverykontext im versiegelten Teststart: Nur nach erfolgreichem rolled_back mit authentisiertem Handoff, vollständiger Sicherheitsbackup-/Live-/Dokument-/Schlüsselprüfung darf recover_internal_test_v6_restore über on_verified_rollback den bereits geprüften Servicekontext an denselben gelockten Main-Aufruf übergeben. Nach echter Anmeldung wird die Installationsidentität erneut exakt gebunden; V6-Runtime prüft live Keyset/Envelope, Schema und Dokumente unverändert. Kein Wiederladen unklarer Metadaten durch Ausnahmen, kein Sidecarignorieren, kein Checkpoint, keine Übergabe bei normal_start/offener/fehlgeschlagener Recovery.
+
+
+## Native V6-Negativbefund – 22.10.2026
+
+PO-autorisierte kleinste Reparatur: nach abgeschlossener bestehender Recovery und erneuter Inventarprüfung, vor Security-Store-/Anmeldewrites, vorhandenen sealed V6-Bestand lesend mit bestehendem Schlüsselkontext prüfen. Beschädigte Main-/Companion-/Dokumentbindung und ungültige historische Quelle sperren ohne Anmeldung, Schlüsselneuanlage oder Reparatur. Nach authentisiertem terminalem Rollback darf ausschließlich dessen bereits geprüfter Kontext weiterverwendet werden. Keine neue Persistenz, kein Schema und keine produktive V6-Zulassung.

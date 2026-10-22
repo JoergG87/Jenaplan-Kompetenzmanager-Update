@@ -31,11 +31,12 @@ def _source_capability(monkeypatch, service):
     return profile
 
 
-def _composed(monkeypatch, old):
+def _composed(monkeypatch, old, *, checkpointed_metadata_reads=False):
     _source_capability(monkeypatch, old)
     return composition.build_internal_test_v6_backup_service(old.paths.final_v4.root,
         authenticated_account=SimpleNamespace(installation_id=old.installation_id),
-        loaded_keys=old.loaded, provider=qualified_sqlcipher_test_provider())
+        loaded_keys=old.loaded, provider=qualified_sqlcipher_test_provider(),
+        checkpointed_metadata_reads=checkpointed_metadata_reads)
 
 
 def _remove_technical_fixture_markers(service):
@@ -289,3 +290,72 @@ def test_authenticated_wrapper_injects_real_template_adapter_into_desktop_app(mo
     with RuntimeInstanceLock(service.paths.final_v4.root) as lock:
         with composition.open_internal_test_v6_runtime(service, lock=lock) as reopened:
             assert reopened.runtime.lesson_time_templates.suggest(1).start_time == "07:45"
+
+
+@pytest.mark.parametrize("damage", [None, "main", "companion", "history", "binding", "schema"])
+def test_pre_auth_existing_v6_validation_preserves_every_file_and_borrowed_lock(monkeypatch, tmp_path, damage):
+    import hashlib
+    _, old = _seed_case(tmp_path)
+    _migrate_fixture(old)
+    _remove_technical_fixture_markers(old)
+    service = _composed(monkeypatch, old, checkpointed_metadata_reads=True)
+    monkeypatch.setattr(composition, "build_internal_test_v6_backup_service", lambda *args, **kwargs: service)
+    root = service.paths.final_v4.root
+    if damage == "main":
+        service.paths.final_v4.database.write_bytes(b"corrupt encrypted main")
+    elif damage == "companion":
+        service.paths.database.write_bytes(b"corrupt encrypted companion")
+    elif damage == "history":
+        (root / "schema-upgrade-source/transaction-timetable-v1/source.jkmebackup").write_bytes(b"corrupt")
+    elif damage in {"binding", "schema"}:
+        with closing(service._provider.connect(service.paths.final_v4.database, create=False,
+                key_material=service.loaded.database_key.key_material)) as connection:
+            connection.execute("UPDATE documents SET active=0" if damage == "binding" else "PRAGMA user_version=99")
+            connection.commit()
+    def snapshot():
+        return {str(p.relative_to(root)): (p.stat().st_mode, hashlib.sha256(p.read_bytes()).hexdigest())
+            for p in root.rglob("*") if p.is_file() and p.name != "instance.lock"}
+    before = snapshot()
+    with RuntimeInstanceLock(root) as lock:
+        descriptor = lock.fileno
+        if damage is None:
+            composition.preflight_internal_test_existing_runtime(root, lock=lock)
+        else:
+            with pytest.raises(SyntheticV6RuntimeError, match="full_inspection_failed"):
+                composition.preflight_internal_test_existing_runtime(root, lock=lock)
+        assert lock.fileno == descriptor
+        with pytest.raises(RestoreLockError):
+            RuntimeInstanceLock(root).acquire()
+    assert snapshot() == before
+
+
+@pytest.mark.parametrize("sidecar", [None, "-wal", "-shm", "-journal"])
+def test_pre_auth_checkpointed_wal_metadata_never_creates_or_ignores_sidecars(monkeypatch, tmp_path, sidecar):
+    import sqlite3
+    import hashlib
+    from pathlib import Path
+    _, old = _seed_case(tmp_path)
+    _migrate_fixture(old)
+    _remove_technical_fixture_markers(old)
+    metadata = old.paths.final_v4.key_runtime.keyset_metadata
+    with closing(sqlite3.connect(metadata)) as connection:
+        assert connection.execute("PRAGMA journal_mode=WAL").fetchone()[0] == "wal"
+        assert connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()[0] == 0
+    assert metadata.read_bytes()[18:20] == bytes((2, 2))
+    assert all(not Path(str(metadata) + suffix).exists() for suffix in ("-wal", "-shm", "-journal"))
+    service = _composed(monkeypatch, old, checkpointed_metadata_reads=True)
+    monkeypatch.setattr(composition, "build_internal_test_v6_backup_service", lambda *args, **kwargs: service)
+    if sidecar:
+        Path(str(metadata) + sidecar).write_bytes(b"unresolved sidecar must never be ignored")
+    root = service.paths.final_v4.root
+    def snapshot():
+        return {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in root.rglob("*") if p.is_file() and p.name != "instance.lock"}
+    before = snapshot()
+    with RuntimeInstanceLock(root) as lock:
+        if sidecar:
+            with pytest.raises(SyntheticV6RuntimeError, match="full_inspection_failed"):
+                composition.preflight_internal_test_existing_runtime(root, lock=lock)
+        else:
+            composition.preflight_internal_test_existing_runtime(root, lock=lock)
+    assert snapshot() == before

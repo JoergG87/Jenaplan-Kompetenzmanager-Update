@@ -3720,3 +3720,17 @@ Native interne V6-Abnahme: `scripts/macos_native_v6_acceptance.py` und die gesch
 Interne native Fehlerbelege geben ausschließlich explizit aufgelistete feste synthetic_v6-Diagnosecodes aus; keine beliebigen Exceptioninhalte.
 
 recover_internal_test_v6_restore.on_verified_rollback ist ein interner einmaliger Kompositionscallback ausschließlich für vollständig verifizierten terminalen Rollback im selben gelockten versiegelten Teststart. Kein öffentlicher Runtime-/Umgebungsbypass.
+
+## Native V6-Restabnahme – 22.10.2026
+
+`preflight_internal_test_existing_runtime` bezeichnet die bestehende sealed-only Komposition zur vollständig lesenden Prüfung des vorhandenen V6-Bestands nach Recovery und vor Security-/Anmeldewrites. Verwendet ausschließlich bestehende Schema-/Runtime-/Dokumentprüfer und den gehaltenen RuntimeInstanceLock; keine neue Recovery- oder Lockautorität.
+
+`v6-negatives` erweitert ausschließlich die versiegelte geschlossene native Testmodusliste um bestehende Startup-/READY-Negativprüfungen. Keine Produktfähigkeit oder neue Persistenzquelle.
+
+`v6-migration-fault` und `v6-migration-inspect`: geschlossene sealed-only Fehlerkampagne mit bestehenden fault_hook-Grenzen und unabhängigem Restartinspektor. SQLfehler aus echtem SQLCipher, echter SIGKILL und ausdrücklich injiziertes ENOSPC; kein Nachweis eines physisch vollen Datenträgers. `native-v4-baseline` ist ausschließlich eine verschlüsselte synthetische Testfixture im privaten Profilcontainer.
+
+`checkpointed_metadata_reads` bindet ausschließlich die sealed V6-Voranmeldeprüfung an den vorhandenen immutable Metadatenleser. `_validate_key_metadata(checkpointed_immutable_reads=True)` lehnt WAL/SHM/Journal strikt vor dem Lesen ab. Normaler V4-/V6-Backupdefault bleibt unverändert.
+
+Die native Migrationsfehlerkampagne hält den vor Fehlerbeginn geprüften synthetischen Loaded-Key-Kontext ausschließlich im Testprozessspeicher. Bestehender SyntheticTimetableMigration.inspect_restart dient als unabhängige Inhaltsprüfungsoracle unter echtem RuntimeInstanceLock; der reguläre Kaltstart bleibt gesperrt. Keine neue Runtime-/Recoverycapability, kein Schlüsseltransport und keine Persistenz von Schlüsselmaterial. Alle Fixturezustände bleiben im eigenen Profilcontainer erhalten.
+
+Native private Testhelfer: `_negatives`, `_migration_fault`, `_migration_inspect`, `_migration_failures`; ausschließlich scripts.macos_native_v6_acceptance. Der bestehende V4-Matrixrunner erwartet für vorgezogene Sicherheitsstopps 13/14/15 jetzt Exit3 vor Security/Anmeldung statt des früheren nachgelagerten Exit4; vollständige Bestandsprüfung bleibt zwingend.

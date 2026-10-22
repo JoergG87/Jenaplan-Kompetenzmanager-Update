@@ -1649,3 +1649,5 @@ Keine neue Ansicht: Einstellungen und Stundenplan erhalten die vorhandene Lesson
 
 ## Operationsinventar – 16.10.2026
 Keine neue Ansicht. Startupinventar und bestehende Lifecycle-/keyed Persistenzverifier bleiben technische Startgates; AppShell projiziert erst die vollständig freigegebene Runtime.
+
+Native V6-Restabnahme 22.10.2026: Security besitzt die lesende Voranmeldeprüfung vorhandener isolierter V6-Daten; Desktop orchestriert sie nach Recovery unter bestehendem Runtime-Lock. Keine neue Ansicht.

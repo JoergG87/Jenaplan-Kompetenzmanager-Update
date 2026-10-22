@@ -563,6 +563,9 @@ def main() -> int:
                 runtime_lock_path=lock.path,
             )
         )
+        if internal_test and not new_database_initialization_candidate and not v6_recovery_context:
+            from src.security.internal_test_v6_composition import preflight_internal_test_existing_runtime
+            preflight_internal_test_existing_runtime(data_root, lock=lock)
     except UpgradeStartupBlocked:
         if lock is not None:
             runtime_stack.close()
@@ -578,6 +581,8 @@ def main() -> int:
             f"{error}",
             file=sys.stderr,
         )
+        if internal_test:
+            _show_upgrade_startup_blocked(arguments, packaged_smoke=packaged_smoke)
         return 3
 
     from PySide6.QtWidgets import QApplication, QMessageBox

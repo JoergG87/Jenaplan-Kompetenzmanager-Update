@@ -46,7 +46,8 @@ class SyntheticV6EncryptedBackupService(FinalV4EncryptedBackupService):
     main_schema_fingerprint = _TARGET.fingerprint
     restore_ready_version = SYNTHETIC_V6_RESTORE_READY_VERSION
 
-    def __init__(self, **kwargs):
+    def __init__(self, *, checkpointed_metadata_reads=False, **kwargs):
+        self._checkpointed_metadata_reads = checkpointed_metadata_reads
         super().__init__(**kwargs)
         self.require_synthetic()
         if (hashlib.sha256(self.loaded.database_key.key_material).hexdigest()
@@ -61,6 +62,10 @@ class SyntheticV6EncryptedBackupService(FinalV4EncryptedBackupService):
                 or provider.expected_binding_version != SQLCIPHER_4_17_BINDING_VERSION
                 or provider.expected_engine_version != SQLCIPHER_4_17_ENGINE_VERSION):
             raise FinalV4EncryptedBackupError("synthetic_v6_provider_invalid")
+
+    def _validate_key_metadata(self, keyset_path, registry_path, *, expected):
+        return super()._validate_key_metadata(keyset_path, registry_path,
+            expected=expected, checkpointed_immutable_reads=self._checkpointed_metadata_reads)
 
     def require_synthetic(self):
         root = Path(self.paths.final_v4.key_runtime.root)

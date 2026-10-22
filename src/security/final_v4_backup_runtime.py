@@ -1456,10 +1456,19 @@ class FinalV4EncryptedBackupService:
         registry_path: Path,
         *,
         expected: LoadedDatabaseKeyRuntime,
+        checkpointed_immutable_reads: bool = False,
     ) -> LoadedDatabaseKeyRuntime:
         try:
+            if checkpointed_immutable_reads:
+                for suffix in ("-wal", "-shm", "-journal"):
+                    try:
+                        Path(str(keyset_path) + suffix).lstat()
+                    except FileNotFoundError:
+                        continue
+                    raise FinalV4EncryptedBackupError("backup_keyset_crossbinding_invalid")
             permissions = PlatformFilePermissionManager()
-            repository = SQLiteDataKeysetRepository(keyset_path, permissions)
+            repository = SQLiteDataKeysetRepository(keyset_path, permissions,
+                checkpointed_immutable_reads=checkpointed_immutable_reads)
             active = repository.active_data_keyset()
             if (
                 active is None

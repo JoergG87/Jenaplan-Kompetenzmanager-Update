@@ -18,7 +18,7 @@ import tempfile
 from scripts.macos_native_acceptance import _active, _child, _keys, _provider, _parent_handoff, _snapshot
 
 MODES = frozenset({"v6-seed", "v6-migrate", "v6-check", "v6-crash", "v6-matrix",
-    "v6-functions", "v6-functions-reopen"})
+    "v6-functions", "v6-functions-reopen", "v6-negatives", "v6-migration-fault", "v6-migration-inspect"})
 
 
 def _record(profile, name, payload):
@@ -50,6 +50,12 @@ def _v4_service(profile, *, seed=False):
     from src.security.final_v4_backup_runtime import build_final_v4_encrypted_backup_service
     root = Path(profile.runtime_root)
     account, _loaded = _keys(root)
+    # Reject a damaged source before the mutable normal V4 runtime can read
+    # WAL-mode metadata. execute() independently repeats full source validation.
+    from src.security.final_v4_sqlcipher_runtime import KeyedFinalV4CompatibilityInspector
+    with closing(_provider().connect_read_only(runtime_paths(root).final_v4_database,
+            key_material=_loaded.database_key.key_material)) as connection:
+        KeyedFinalV4CompatibilityInspector().inspect_connection(connection)
     opened = open_cipher_product_runtime(paths=runtime_paths(root), account_loader=lambda: account,
         authentication_confirmed=True, first_run_allowed=False)
     if seed:
@@ -440,6 +446,7 @@ def _matrix(profile):
     seeded = child("restart")["payload"].get("runtime") or {}
     if seeded.get("final_v4") != 4 or seeded.get("first_run") is not False or seeded.get("student_count") != 24:
         raise RuntimeError("native_v6_seeded_v4_normal_restart_failed")
+    shutil.copytree(Path(profile.runtime_root), Path(profile.runtime_root).parent / "native-v4-baseline")
     child("v6-migrate")
     child("v6-check")
     restart = child("restart")
@@ -546,11 +553,379 @@ def _crash(profile):
     raise RuntimeError("native_v6_restore_crash_unexpected_survival")
 
 
+def _migration_fault(profile):
+    """Closed fault-injection cases in a real frozen maintenance process."""
+    import errno
+    control = json.loads((Path(profile.runtime_root).parent / "native-migration-fault.json").read_text())
+    boundary, kind = control["boundary"], control["kind"]
+    if boundary not in {"source_verified", "backup_verified", "parent_copied", "before_commit", "after_commit"} or kind not in {"sigkill", "sql_error", "enospc"}:
+        raise RuntimeError("native_migration_fault_invalid")
+    from src.security.transactional_timetable_migration import SyntheticTimetableMigration
+    root = Path(profile.runtime_root)
+    service = _v4_service(profile)
+    from src.core.restore_runtime import RuntimeInstanceLock
+    with RuntimeInstanceLock(root) as lock:
+        _finalize(profile, lock)
+    migration = SyntheticTimetableMigration(service)
+    reached = False
+    def fault(point):
+        nonlocal reached
+        if point != boundary: return
+        reached = True
+        _record(profile, "native-migration-fault-reached.json", {"boundary": point, "kind": kind, "pid": os.getpid()})
+        if kind == "sigkill": os.kill(os.getpid(), signal.SIGKILL)
+        if kind == "enospc": raise OSError(errno.ENOSPC, "injected native maintenance write failure")
+        # Inject invalid SQL into the actual active main transaction, without
+        # replacing any provider/connection/guard. No frame values are logged.
+        frame = sys._getframe(1)
+        while frame is not None:
+            if (frame.f_code.co_name == "execute"
+                    and frame.f_code.co_filename.endswith("transactional_schema_migration.py")
+                    and "connection" in frame.f_locals):
+                frame.f_locals["connection"].execute("SELECT * FROM deliberately_absent_native_fault_table")
+            frame = frame.f_back
+        raise RuntimeError("native_migration_sql_connection_not_found")
+    migration._fault_hook = fault
+    try:
+        migration.execute()
+    except Exception as error:
+        if not reached:
+            raise RuntimeError("native_migration_fault_not_reached") from None
+        return {"status": "injected_failure", "boundary": boundary, "kind": kind,
+            "error_class": type(error).__name__, "errno": getattr(error, "errno", None)}
+    raise RuntimeError("native_migration_fault_not_reached")
+
+
+def _migration_inspect(profile):
+    from src.desktop_app.runtime import runtime_paths
+    from src.security.final_v4_backup_runtime import build_final_v4_restore_verifier
+    from src.security.transactional_timetable_migration import SyntheticTimetableMigration
+    root = Path(profile.runtime_root)
+    account, loaded = _keys(root)
+    service = build_final_v4_restore_verifier(runtime_root=root, loaded_keys=loaded,
+        installation_id=account.installation_id, product_paths=runtime_paths(root))
+    identity = SyntheticTimetableMigration(service).inspect_restart()
+    return {"status": "ok", "identity": asdict(identity), "fresh_process": True}
+
+
+def _migration_failures(profile, account, loaded):
+    """Forensic test oracle retains pre-fault keys in memory, never app authority.
+
+    The ordinary cold startup must stay blocked. Only the existing explicit
+    synthetic transaction inspector may prove full old/new content, using the
+    already authenticated test context, its independently verified backup and
+    SQLite's own hot-journal recovery under the existing real instance lock.
+    """
+    import hashlib
+    from src.desktop_app.runtime import runtime_paths
+    from src.security.final_v4_backup_runtime import build_final_v4_restore_verifier
+    from src.security.transactional_timetable_migration import SyntheticTimetableMigration
+    root = Path(profile.runtime_root)
+    executable = Path(sys.executable)
+    archive = root.parent / "native-migration-campaign-states"
+    archive.mkdir(mode=0o700)
+    source = root.parent / "native-v4-baseline"
+    def preserve(name):
+        destination = archive / name; destination.mkdir(mode=0o700)
+        for path in root.iterdir():
+            if path.name != ".jkm-runtime-root-v1": path.rename(destination / path.name)
+        return destination
+    def populate():
+        for path in source.iterdir():
+            if path.name == ".jkm-runtime-root-v1": continue
+            if path.is_dir(): shutil.copytree(path, root / path.name)
+            else: shutil.copy2(path, root / path.name)
+    def protected():
+        return {str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in root.rglob("*") if path.is_file() and (
+                str(path.relative_to(root)).startswith(("security/", "security-key-runtime-v1/"))
+                and not path.name.endswith(("-wal", "-shm"))
+                or path.name == "documents-v1.sqlcipher" or path.suffix == ".jkmedoc")}
+    original = preserve("original-v6")
+    result = {"cases": {}, "enospc_is_injected": True, "diagnostic_grants_no_app_admission": True}
+    try:
+        for boundary, kind, version in (("parent_copied", "sql_error", 4),
+                ("before_commit", "enospc", 4), ("before_commit", "sigkill", 4),
+                ("after_commit", "sigkill", 6)):
+            populate(); name = kind + "-" + boundary
+            before = protected()
+            control = root.parent / "native-migration-fault.json"
+            control.write_text(json.dumps({"kind": kind, "boundary": boundary}))
+            failed = _child(profile, executable, "v6-migration-fault")
+            point = json.loads((root.parent / "native-migration-fault-reached.json").read_text())
+            snapshot = _snapshot(root)
+            stopped = _child(profile, executable, "restart")
+            held = stopped["returncode"] == 3 and snapshot == _snapshot(root)
+            service = build_final_v4_restore_verifier(runtime_root=root, loaded_keys=loaded,
+                installation_id=account.installation_id, product_paths=runtime_paths(root))
+            identity = SyntheticTimetableMigration(service).inspect_restart()
+            injected = (failed["returncode"] == -signal.SIGKILL if kind == "sigkill" else
+                failed["payload"].get("status") == "injected_failure")
+            if kind == "sql_error": injected &= failed["payload"].get("error_class") == "OperationalError"
+            if kind == "enospc": injected &= failed["payload"].get("errno") == 28
+            metadata_wals = [path for path in root.rglob("*-wal") if path.parent.name in {"security", "security-key-runtime-v1"}]
+            wal_empty = all(path.stat().st_size == 0 for path in metadata_wals)
+            passed = (injected and held and point["kind"] == kind and point["boundary"] == boundary
+                and identity.schema_version == version and before == protected() and wal_empty)
+            result["cases"][name] = {"passed": bool(passed), "fault": failed,
+                "reached": point, "cold_start": stopped, "cold_start_unchanged": held,
+                "full_independent_typed_content_inspection": asdict(identity),
+                "protected_bytes_equal": before == protected(), "metadata_wals_empty": wal_empty,
+                "metadata_wal_sizes": {str(path.relative_to(root)): path.stat().st_size for path in metadata_wals}}
+            if version == 6:
+                backup = root / "schema-upgrade-source/transaction-timetable-v1/source.jkmebackup"
+                saved = archive / "missing-source.jkmebackup"; backup.rename(saved)
+                snapshot = _snapshot(root)
+                try:
+                    SyntheticTimetableMigration(service).inspect_restart()
+                except Exception as error:
+                    result["cases"]["missing_backup"] = {"passed": snapshot == _snapshot(root),
+                        "error_class": type(error).__name__, "unchanged": snapshot == _snapshot(root)}
+                else: result["cases"]["missing_backup"] = {"passed": False}
+                saved.rename(backup)
+                main = service.paths.final_v4.database; raw = main.read_bytes()
+                main.write_bytes(b"corrupt!" + raw[8:]); snapshot = _snapshot(root)
+                try:
+                    SyntheticTimetableMigration(service).inspect_restart()
+                except Exception as error:
+                    result["cases"]["target_integrity"] = {"passed": snapshot == _snapshot(root),
+                        "error_class": type(error).__name__, "unchanged": snapshot == _snapshot(root)}
+                else: result["cases"]["target_integrity"] = {"passed": False}
+                main.write_bytes(raw)
+            preserve(name)
+            _record(profile, "native-migration-negatives.json", result)
+        populate()
+        main = root / "final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher"
+        main.write_bytes(b"corrupt!" + main.read_bytes()[8:])
+        before = _snapshot(root)
+        rejected = _child(profile, executable, "v6-migrate")
+        result["cases"]["corrupt_v4_source"] = {"result": rejected,
+            "passed": rejected["returncode"] != 0 and before == _snapshot(root),
+            "unchanged": before == _snapshot(root)}
+        preserve("corrupt-v4-source")
+    finally:
+        if any(path.name != ".jkm-runtime-root-v1" for path in root.iterdir()):
+            preserve("preserved-on-exception")
+        for path in original.iterdir(): path.rename(root / path.name)
+    result["status"] = "passed" if all(case["passed"] for case in result["cases"].values()) else "failed"
+    _record(profile, "native-migration-negatives.json", result)
+    return result
+
+
+def _negatives(profile):
+    """Real frozen app starts; only this sealed synthetic installation is a fixture."""
+    import hashlib
+    import sqlite3
+    from uuid import uuid4
+    from scripts.macos_native_acceptance import _restricted_key, _delete_restricted_key
+    from src.security.infrastructure.data_master_key_store import build_platform_data_master_key_store
+    from src.security.internal_test_v6_composition import build_internal_test_v6_backup_service
+    from src.core.restore_runtime import RuntimeInstanceLock
+    root = Path(profile.runtime_root)
+    executable = Path(sys.executable)
+    account, loaded = _keys(root)
+    service = build_internal_test_v6_backup_service(root)
+    store = build_platform_data_master_key_store()
+    result = {"status": "running", "cases": {}, "manual_ui_performed": False}
+    key_changed = False
+    with tempfile.TemporaryDirectory(prefix="native-v6-negative-", dir=root.parent) as temporary:
+        baseline = Path(temporary) / "baseline"
+        shutil.copytree(root, baseline)
+        known = set(_snapshot(root))
+        generated = {"schema-upgrade-foundation", "schema-upgrade-foundation/journal.json",
+            "security/security.sqlite-wal", "security/security.sqlite-shm"}
+        def reset():
+            if set(_snapshot(root)) - known - generated:
+                raise RuntimeError("native_negative_unknown_artifacts_preserved")
+            for entry in root.iterdir():
+                if entry.name == ".jkm-runtime-root-v1": continue
+                if entry.is_dir(): shutil.rmtree(entry)
+                else: entry.unlink()
+            for entry in baseline.iterdir():
+                if entry.name == ".jkm-runtime-root-v1": continue
+                if entry.is_dir(): shutil.copytree(entry, root / entry.name)
+                else: shutil.copy2(entry, root / entry.name)
+        def evidence(): return _snapshot(root)
+        def startup(name, mutate, *, denied=False):
+            reset()
+            nonlocal key_changed
+            key_changed = False
+            held = None
+            try:
+                _, held = mutate()
+                before = evidence()
+                value = _child(profile, executable, "restart-denied" if denied else "restart")
+                after = evidence()
+                events = value["payload"].get("events", [])
+                passed = (value["returncode"] == 3 and value["payload"].get("status") == "blocked"
+                    and value["payload"].get("exit_code") == 3 and isinstance(value["payload"].get("pid"), int)
+                    and "upgrade_startup.py:before_lock" in events and before == after
+                    and not any(e in events for e in ("startup.py:build_security_runtime",
+                        "data_master_key_store.py:create", "data_master_key_store.py:delete")))
+                result["cases"][name] = dict(value, passed=passed, installation_unchanged=before == after,
+                    stopped_before_authentication="startup.py:build_security_runtime" not in events)
+                _record(profile, "native-v6-negatives.json", result)
+            finally:
+                if held is not None:
+                    held.terminate(); held.wait(timeout=15)
+                if key_changed:
+                    if denied: _delete_restricted_key(profile, loaded.dmk_key_id)
+                    else: store.delete(installation_id=account.installation_id, key_id=loaded.dmk_key_id)
+                    store.create(installation_id=account.installation_id, key_id=loaded.dmk_key_id,
+                        key_material=loaded.dmk.key_material)
+                    restored = store.read(installation_id=account.installation_id, key_id=loaded.dmk_key_id)
+                    if restored.key_material != loaded.dmk.key_material:
+                        raise RuntimeError("native_negative_key_restore_failed")
+                reset()
+        def damage(path):
+            def apply():
+                path.write_bytes(b"corrupt encrypted fixture")
+                return False, None
+            return apply
+        startup("corrupt_main", damage(service.paths.final_v4.database))
+        startup("corrupt_companion", damage(service.paths.database))
+        startup("corrupt_document", damage(next((root / "final-v4-sqlcipher-runtime-v1/document-containers-v1/storage").glob("*.jkmedoc"))))
+        startup("corrupt_historical_source", damage(root / "schema-upgrade-source/transaction-timetable-v1/source.jkmebackup"))
+        def schema():
+            with closing(_provider().connect(service.paths.final_v4.database, create=False,
+                    key_material=loaded.database_key.key_material)) as connection:
+                connection.execute("PRAGMA user_version=99"); connection.commit()
+            return False, None
+        startup("unknown_schema_identity", schema)
+        def key(kind):
+            def apply():
+                nonlocal key_changed
+                key_changed = True
+                store.delete(installation_id=account.installation_id, key_id=loaded.dmk_key_id)
+                if kind == "wrong":
+                    store.create(installation_id=account.installation_id, key_id=loaded.dmk_key_id, key_material=os.urandom(32))
+                elif kind == "denied":
+                    import ctypes
+                    from src.security.data_keys import DataMasterKeyStoreStatus
+                    _restricted_key(profile, loaded)
+                    security = ctypes.CDLL("/System/Library/Frameworks/Security.framework/Security")
+                    security.SecKeychainSetUserInteractionAllowed.argtypes = [ctypes.c_ubyte]
+                    if security.SecKeychainSetUserInteractionAllowed(False) != 0:
+                        raise RuntimeError("native_negative_interaction_gate_failed")
+                    try:
+                        denied_read = store.read(installation_id=account.installation_id, key_id=loaded.dmk_key_id)
+                        if denied_read.status is not DataMasterKeyStoreStatus.ACCESS_DENIED:
+                            raise RuntimeError("native_negative_denial_not_proven")
+                        result["active_item_denial"] = denied_read.status.value
+                    finally:
+                        security.SecKeychainSetUserInteractionAllowed(True)
+                return True, None
+            return apply
+        startup("missing_active_dmk", key("missing"))
+        startup("wrong_active_dmk", key("wrong"))
+        startup("denied_active_dmk", key("denied"), denied=True)
+        def partial_upgrade():
+            path = root / "schema-upgrade-foundation"; path.mkdir(mode=0o700)
+            (path / "journal.json").write_text("{}"); (path / "journal.json").chmod(0o600)
+            return False, None
+        startup("incomplete_upgrade", partial_upgrade)
+        state = next(root.glob("restore-transactions/*/current-state.json"))
+        startup("incomplete_restore", damage(state))
+        def hold():
+            process = subprocess.Popen([str(executable), "--internal-native-test", "hold-lock"], stdout=subprocess.PIPE, text=True)
+            if not select.select([process.stdout], [], [], 20)[0] or process.stdout.readline().strip() != "locked":
+                process.terminate(); process.wait(timeout=15)
+                raise RuntimeError("native_negative_lock_not_ready")
+            return False, process
+        startup("concurrent_app", hold)
+        reset()
+        _, held = hold()
+        try:
+            before = evidence()
+            worker = subprocess.run([str(executable), "--restore-worker", "--handoff",
+                str(next(root.glob("restore-handoffs/*.consumed.json"))),
+                "--nonce=" + str(uuid4()), "--restore-mode", "synthetic_v6_encrypted"],
+                capture_output=True, text=True, timeout=30)
+            result["cases"]["concurrent_worker"] = {"returncode": worker.returncode,
+                "stderr": worker.stderr, "installation_unchanged": before == evidence(),
+                "passed": worker.returncode == 20 and before == evidence()}
+        finally:
+            held.terminate(); held.wait(timeout=15)
+            reset()
+        def installation():
+            database = root / "security/security.sqlite"
+            with closing(sqlite3.connect(database)) as connection:
+                connection.execute("PRAGMA foreign_keys=OFF")
+                foreign = str(uuid4())
+                for (table,) in connection.execute("SELECT name FROM sqlite_schema WHERE type='table'").fetchall():
+                    if any(row[1] == "installation_id" for row in connection.execute('PRAGMA table_info("'+table+'")')):
+                        connection.execute('UPDATE "'+table+'" SET installation_id=?', (foreign,))
+                connection.commit(); connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            # Close the fixture connection before startup; empty SQLite sidecars
+            # belong only to this explicit fixture, never to runtime repair.
+            for suffix in ("-wal", "-shm"):
+                path = Path(str(database) + suffix)
+                if path.exists(): path.unlink()
+            return False, None
+        startup("foreign_installation", installation)
+        reset()
+        from src.desktop_app.runtime import runtime_paths
+        from src.security.cipher_product_runtime import CipherProductRuntimeScope
+        from src.security.final_v4_sqlcipher_runtime import FinalV4SQLCipherRuntimeCoordinator, FinalV4SQLCipherRuntimeError
+        before = evidence()
+        with RuntimeInstanceLock(root):
+            try:
+                FinalV4SQLCipherRuntimeCoordinator(paths=service.paths.final_v4,
+                    account_loader=lambda: account, authentication_confirmed=True,
+                    technical_first_run_confirmed=False, loaded_keys=loaded,
+                    sqlcipher_provider=_provider(), scope=CipherProductRuntimeScope(runtime_paths(root))).open()
+            except FinalV4SQLCipherRuntimeError as error:
+                result["cases"]["v4_runtime_against_v6"] = {"passed": before == evidence()
+                    and error.operation.value == "inspect_database", "error_code": error.code,
+                    "operation": error.operation.value, "installation_unchanged": before == evidence()}
+            else:
+                result["cases"]["v4_runtime_against_v6"] = {"passed": False}
+        reset()
+        backup = root.parent / "native-v6-features-qualified.jkmebackup"
+        verified = service.verify(backup)
+        stage = service.restore_staging(backup, Path(temporary) / "fresh-ready").staging_root
+        expected_hash = verified.container_sha256
+        service.verify_restore_ready(stage, expected_container_sha256=expected_hash)
+        result["ready_positive_control"] = True
+        ready = stage / "RESTORE_READY"
+        original_ready = ready.read_bytes()
+        from src.security.final_v4_backup_runtime import canonical_json
+        foreign = json.loads(original_ready); foreign["installation_id"] = str(uuid4())
+        historical = json.loads(original_ready); historical["ready_version"] = 1
+        manifest = stage / "synthetic-v6-backup-manifest-v1.json"
+        for name, path, payload in (
+                ("tampered_ready", ready, b"{}"),
+                ("foreign_ready", ready, canonical_json(foreign)),
+                ("historical_ready", ready, canonical_json(historical)),
+                ("tampered_manifest", manifest, b"{}")):
+            original = path.read_bytes(); path.write_bytes(payload); before = evidence()
+            try:
+                service.verify_restore_ready(stage, expected_container_sha256=expected_hash)
+            except Exception as error:
+                from src.security.final_v4_backup_runtime import FinalV4EncryptedBackupError
+                result["cases"][name] = {"passed": before == evidence() and isinstance(error, FinalV4EncryptedBackupError),
+                    "error_code": getattr(error, "code", None), "installation_unchanged": before == evidence(), "frozen_verifier": True}
+            else:
+                result["cases"][name] = {"passed": False, "unexpected_acceptance": True}
+            finally:
+                path.write_bytes(original)
+        reset()
+        result["migration_failures"] = _migration_failures(profile, account, loaded)
+        control = _child(profile, executable, "restart")
+        result["positive_control"] = control
+        result["status"] = ("passed" if all(v["passed"] for v in result["cases"].values())
+            and result["migration_failures"]["status"] == "passed"
+            and control["returncode"] == 0 and control["payload"].get("runtime", {}).get("first_run") is False else "failed")
+        _record(profile, "native-v6-negatives.json", result)
+    return result
+
+
 def run_frozen(mode):
     profile = _active(mode)
     if mode not in MODES:
         raise RuntimeError("native_v6_mode_invalid")
     return {"v6-seed": _seed, "v6-migrate": _migrate,
         "v6-check": _check, "v6-crash": _crash, "v6-matrix": _matrix,
-        "v6-functions": _functions,
+        "v6-migration-fault": _migration_fault, "v6-migration-inspect": _migration_inspect,
+        "v6-negatives": _negatives, "v6-functions": _functions,
         "v6-functions-reopen": lambda value: _functions(value,reopen=True)}[mode](profile)
