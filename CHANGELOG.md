@@ -5600,3 +5600,8 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## Fachpflanzen – 22.10.2026
 
 - Kleine vorhandene Pflanzen rechts oben in Fachchips; aktuelle Bestätigung vor berechnetem Vorschlag, Kompetenz-IDs einmal, ohne Werte neutral. Navigation und alle bestehenden Fächer erhalten; Refresh nach Bewertungsänderung. Gezielte UI-/Adapterregression: 353 Tests und 74 Unterprüfungen bestanden; unabhängig geprüft. Keine Schemaänderung.
+
+
+## Fachchip-Höhenkorrektur – 22.10.2026
+
+- Native Sichtprüfung fand überlagerte untere Fachzeilen nach Alle anzeigen. Bestehende Berichtsektion erhält dynamische Layout-Mindestgröße; Regression prüft auch den Abstand zur Historienkarte. Aktualisiertes isoliertes Paket wird neu gebaut.

@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QLayout,
     QMenu,
     QPushButton,
     QProgressBar,
@@ -1110,6 +1111,7 @@ class StudentProfileScreen(QWidget):
     def _report_preview_card(self) -> QWidget:
         section = QWidget()
         layout = QVBoxLayout(section)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(16)
         layout.addWidget(SectionHeader(
@@ -3075,12 +3077,19 @@ class StudentProfileScreen(QWidget):
         if not hasattr(self, "subjects_card"):
             return
         card_layout = self.subjects_card.layout()
+        card_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         self.report_subjects_layout.activate()
         card_layout.activate()
         self.subjects_card.setMinimumHeight(
             max(235, card_layout.sizeHint().height())
         )
         self.subjects_card.updateGeometry()
+        self.report_overview_grid.invalidate()
+        self.report_overview_grid.activate()
+        section = self.report_overview_grid.parentWidget()
+        if section is not None:
+            section.layout().invalidate()
+            section.layout().activate()
 
     def _report_subject_tile_grid(
         self,
@@ -3090,6 +3099,7 @@ class StudentProfileScreen(QWidget):
         tile_container = QWidget()
         tile_container.setObjectName("ReportOverviewSubjectGrid")
         tile_layout = QGridLayout(tile_container)
+        tile_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         tile_layout.setContentsMargins(0, 0, 0, 0)
         tile_layout.setHorizontalSpacing(10)
         tile_layout.setVerticalSpacing(10)

@@ -929,6 +929,12 @@ class ReportWorkspaceOverviewTest(unittest.TestCase):
             )
 
             self.assertEqual(len(tiles), len(subjects), (width, height))
+            if screen._report_overview_columns == 3:
+                self.assertLess(
+                    screen.subjects_card.geometry().bottom(),
+                    screen.history_card.geometry().top(),
+                    (width, height),
+                )
             self.assertTrue(all(tile.height() >= tile.minimumHeight() for tile in tiles))
             self.assertTrue(all(card.rect().contains(rect) for rect in tile_rects))
             for first in tile_rects:

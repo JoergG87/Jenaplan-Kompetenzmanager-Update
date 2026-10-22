@@ -1166,3 +1166,5 @@ Native V6-Restabnahme 22.10.2026: beschädigter isolierter V6-Bestand hält bere
 
 
 Fachpflanze (22.10.2026): aktuelle aktive Katalogkompetenzen genau einmal je ID; sichere Bestätigung bevorzugt, sonst vorhandener berechneter Vorschlag. Ungültige/historische/inaktive/fehlende Stände entfallen. Gleichgewichteter Mittelwert über vorhandene Token-Scores, bestehende Schwellen/Pflanzenzuordnung; ohne Werte neutraler Strich mit Hinweis Keine bewerteten Kompetenzen. Tooltip erklärt Zusammenfassung, keine Schulnote.
+
+Native Sichtkorrektur 22.10.2026: Beim Aufklappen aller Fachchips wächst die bestehende Berichtsektion mit ihrer Layout-Mindestgröße. Die Historienkarte folgt unterhalb sämtlicher Fachzeilen; keine Überlagerung. Keine Änderung der Navigation oder Quellen.
