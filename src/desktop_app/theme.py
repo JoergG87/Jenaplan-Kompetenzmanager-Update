@@ -1488,6 +1488,7 @@ QDateEdit::down-arrow, QDateTimeEdit::down-arrow, QTimeEdit::down-arrow {{
     height: 12px;
 }}
 QCalendarWidget {{
+    min-width: 300px;
     background-color: {COLOR_SURFACE};
     color: {COLOR_TEXT};
     border: 1px solid {COLOR_BORDER};
