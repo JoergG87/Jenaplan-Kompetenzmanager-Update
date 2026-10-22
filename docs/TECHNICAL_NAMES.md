@@ -3742,3 +3742,6 @@ Native private Testhelfer: `_negatives`, `_migration_fault`, `_migration_inspect
 
 
 `chevron-up` ergänzt als vertikales Gegenstück von `chevron-down` das vorhandene Outline-SVG-Set. Zentrale QAbstractSpinBox-Subcontrols in APP_STYLESHEET gestalten bestehende Zeit-, Datums- und Zahleneingaben; keine neue Widget-/Domain-API.
+
+
+chevron-left und chevron-right ergänzen das vorhandene Outline-SVG-Set. QCalendarWidget-Regeln im zentralen APP_STYLESHEET gestalten die vorhandenen Qt-Datumspopups, ohne neue Widget-API.

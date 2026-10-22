@@ -1487,6 +1487,61 @@ QDateEdit::down-arrow, QDateTimeEdit::down-arrow, QTimeEdit::down-arrow {{
     width: 12px;
     height: 12px;
 }}
+QCalendarWidget {{
+    background-color: {COLOR_SURFACE};
+    color: {COLOR_TEXT};
+    border: 1px solid {COLOR_BORDER};
+    border-radius: 8px;
+}}
+QCalendarWidget QWidget#qt_calendar_navigationbar {{
+    background-color: {LIGHT_NEUTRAL};
+    border-bottom: 1px solid {COLOR_BORDER};
+    padding: 4px;
+}}
+QCalendarWidget QToolButton {{
+    background-color: transparent;
+    color: {COLOR_NAVY};
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 5px 8px;
+    min-height: 22px;
+    font-weight: 600;
+}}
+QCalendarWidget QToolButton:hover, QCalendarWidget QToolButton:pressed {{
+    background-color: {LIGHT_TEAL};
+}}
+QCalendarWidget QToolButton:focus {{
+    border-color: {COLOR_FOCUS};
+}}
+QCalendarWidget QToolButton:disabled {{
+    color: {COLOR_TEXT_SUBTLE};
+}}
+QCalendarWidget QToolButton#qt_calendar_prevmonth {{
+    qproperty-icon: url("{icon_path("chevron-left").as_posix()}");
+}}
+QCalendarWidget QToolButton#qt_calendar_nextmonth {{
+    qproperty-icon: url("{icon_path("chevron-right").as_posix()}");
+}}
+QCalendarWidget QToolButton::menu-indicator {{
+    image: url("{icon_path("chevron-down").as_posix()}");
+    width: 12px;
+    height: 12px;
+    subcontrol-position: right center;
+}}
+QCalendarWidget QAbstractItemView {{
+    background-color: {COLOR_SURFACE};
+    alternate-background-color: {LIGHT_NEUTRAL};
+    color: {COLOR_TEXT};
+    selection-background-color: {LIGHT_TEAL};
+    selection-color: {COLOR_TEXT};
+    border: none;
+    outline: none;
+    font-size: 13px;
+}}
+QCalendarWidget QAbstractItemView::item:selected {{
+    background-color: {LIGHT_TEAL};
+    color: {COLOR_TEXT};
+}}
 QLineEdit#ObservationFilterInput {{
     background-color: rgba(255, 255, 255, 232);
     border: 1px solid #D7E3EC;

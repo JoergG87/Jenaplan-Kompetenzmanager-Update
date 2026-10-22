@@ -5633,3 +5633,6 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 
 
 PO-Auswahlkorrektur 22.10.2026: Textmarkierungen und Listen-/Tabellen-/Baumauswahl verwenden zentral LIGHT_TEAL mit COLOR_TEXT wie die Zeitfelder, auch bei inaktivem Fenster. Die Anwendungspalette deckt native Auswahlpfade ab; bestehende Navigation und Aktionsfarben bleiben erhalten. Keine Datenänderung.
+
+
+Kalendergestaltung 22.10.2026: Bestehende Datumspopups zentral an das App-Design angepasst: heller Kopf, flache Navigationspfeile, klare Monats-/Jahreswahl und dezente Auswahl. Keine Änderung an Datumswerten oder Speicherung.

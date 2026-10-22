@@ -1364,3 +1364,6 @@ PO-UX-Präzisierung 22.10.2026: bestehende Zeit-, Datums- und Zahlenfelder erhal
 
 
 PO-Auswahlkorrektur 22.10.2026: Textmarkierungen und Listen-/Tabellen-/Baumauswahl verwenden zentral LIGHT_TEAL mit COLOR_TEXT wie die Zeitfelder, auch bei inaktivem Fenster. Die Anwendungspalette deckt native Auswahlpfade ab; bestehende Navigation und Aktionsfarben bleiben erhalten. Keine Datenänderung.
+
+
+PO-Kalenderauftrag 22.10.2026: Datumspopups erhalten weiße Kartenfläche, hellen Navigationskopf, dunkle Monats-/Jahresschrift, flache Outline-Pfeile und LIGHT_TEAL-Auswahl mit COLOR_TEXT. Hover und Tastaturfokus bleiben sichtbar. Bestehende Datumsgrenzen, Monats-/Jahresnavigation und Auswahl bleiben unverändert; keine neuen Felder oder Datenquellen.

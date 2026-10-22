@@ -5,8 +5,10 @@ from __future__ import annotations
 import unittest
 from types import SimpleNamespace
 
+from PySide6.QtCore import QDate, Qt
+from PySide6.QtTest import QTest
 from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import QApplication, QPushButton, QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QListWidget, QTreeWidget, QTableWidget
+from PySide6.QtWidgets import QApplication, QPushButton, QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QListWidget, QTreeWidget, QTableWidget, QDateEdit, QToolButton
 
 from src.desktop_app import theme
 from src.desktop_app.components import CourseBadge, DialogHeader, StatusBadge, configure_button
@@ -57,13 +59,36 @@ class BrandThemeTests(unittest.TestCase):
 
     def test_selection_is_soft_and_readable_across_controls(self) -> None:
         self.assertGreaterEqual(_contrast(theme.COLOR_TEXT, theme.LIGHT_TEAL), 7.0)
-        for factory in (QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QListWidget, QTreeWidget, QTableWidget):
+        for factory in (QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QListWidget, QTreeWidget, QTableWidget, QDateEdit, QToolButton):
             widget = factory()
             widget.ensurePolished()
             for group in (QPalette.ColorGroup.Active, QPalette.ColorGroup.Inactive):
                 self.assertEqual(widget.palette().color(group, QPalette.ColorRole.Highlight).name(), theme.LIGHT_TEAL.lower())
                 self.assertEqual(widget.palette().color(group, QPalette.ColorRole.HighlightedText).name(), theme.COLOR_TEXT.lower())
             widget.deleteLater()
+
+    def test_calendar_navigation_selection_and_date_limits_remain_usable(self) -> None:
+        edit = QDateEdit(QDate(2026, 10, 22))
+        edit.setCalendarPopup(True)
+        edit.setDateRange(QDate(2026, 1, 1), QDate(2027, 12, 31))
+        calendar = edit.calendarWidget()
+        calendar.show()
+        self.app.processEvents()
+        previous = calendar.findChild(QToolButton, "qt_calendar_prevmonth")
+        following = calendar.findChild(QToolButton, "qt_calendar_nextmonth")
+        self.assertFalse(previous.icon().isNull())
+        self.assertFalse(following.icon().isNull())
+        QTest.mouseClick(following, Qt.MouseButton.LeftButton)
+        self.assertEqual(calendar.monthShown(), 11)
+        QTest.mouseClick(previous, Qt.MouseButton.LeftButton)
+        self.assertEqual(calendar.monthShown(), 10)
+        self.assertEqual(edit.date(), QDate(2026, 10, 22))
+        calendar.setSelectedDate(QDate(2026, 10, 24))
+        self.assertEqual(edit.date(), QDate(2026, 10, 24))
+        calendar.setSelectedDate(QDate(2028, 1, 1))
+        self.assertEqual(edit.date(), QDate(2027, 12, 31))
+        calendar.close()
+        edit.close()
 
     def test_subject_accent_matrix_uses_only_approved_design_tokens(self) -> None:
         self.assertEqual(
