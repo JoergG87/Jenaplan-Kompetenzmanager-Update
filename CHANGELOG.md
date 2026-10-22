@@ -5636,3 +5636,6 @@ PO-Auswahlkorrektur 22.10.2026: Textmarkierungen und Listen-/Tabellen-/Baumauswa
 
 
 Kalendergestaltung 22.10.2026: Bestehende Datumspopups zentral an das App-Design angepasst: heller Kopf, flache Navigationspfeile, klare Monats-/Jahreswahl und dezente Auswahl. Keine Änderung an Datumswerten oder Speicherung.
+
+
+Kalender-Testabnahme 22.10.2026: Mindestbreite 300 Pixel verhindert enge zweistellige Tageszellen. 28 gezielte Tests grün; native Vorschau des Beobachtungsdatumspopups und Jahreswechsel geprüft. Frische isolierte V6-Test-App: /private/var/folders/61/nxlq0vm9311gvx30ztnpj63r0000gn/T/jkm-internal-test-8651b4f88c8d46819666b7ae2ab4df4a/artifacts/JKM-Interner-Test-8651b4f88c8d46819666b7ae2ab4df4a.app. Paket-/Codebindung 200/200, 6033 Einträge vor/nach Smokes unverändert, ad-hoc ohne Entitlements. Start/Seed/synthetische Fixturevorbereitung/Neustart erfolgreich. Nachweise: output/v6-acceptance/2026-10-22-calendar-final. Keine A-/B-Wochen ergänzt.
