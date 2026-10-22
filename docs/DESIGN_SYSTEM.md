@@ -1361,3 +1361,6 @@ Native Sichtkorrektur 22.10.2026: Beim Aufklappen aller Fachchips wächst die be
 
 
 PO-UX-Präzisierung 22.10.2026: bestehende Zeit-, Datums- und Zahlenfelder erhalten klar gezeichnete kleine Outline-Chevrons in flachen, ausreichend breiten Pfeilflächen ohne native schwarze Trennrahmen. Hover neutral, gedrückt helles Petrol. Ausgewählte Ziffern verwenden LIGHT_TEAL mit COLOR_TEXT; Fokus bleibt als bestehender Petrolrahmen sichtbar. Direkte Eingabe, Tab und Pfeiltasten bleiben erhalten. Aktionsbuttonfarben unverändert.
+
+
+PO-Auswahlkorrektur 22.10.2026: Textmarkierungen und Listen-/Tabellen-/Baumauswahl verwenden zentral LIGHT_TEAL mit COLOR_TEXT wie die Zeitfelder, auch bei inaktivem Fenster. Die Anwendungspalette deckt native Auswahlpfade ab; bestehende Navigation und Aktionsfarben bleiben erhalten. Keine Datenänderung.

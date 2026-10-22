@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from types import MappingProxyType
 
-from PySide6.QtGui import QColor, QIcon, QImage, QPixmap
+from PySide6.QtGui import QColor, QIcon, QImage, QPalette, QPixmap
 from PySide6.QtWidgets import QApplication, QFrame, QLabel
 
 from src.desktop_app.icons import icon_path
@@ -1287,7 +1287,8 @@ QTimeEdit, QSpinBox, QDoubleSpinBox {{
     border: 1px solid #C5D3DE;
     border-radius: 8px;
     padding: 7px 9px;
-    selection-background-color: {BRAND_BLUE};
+    selection-background-color: {LIGHT_TEAL};
+    selection-color: {COLOR_TEXT};
 }}
 QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover, QComboBox:hover,
 QDateEdit:hover, QDateTimeEdit:hover, QTimeEdit:hover,
@@ -1424,11 +1425,19 @@ QComboBox::down-arrow {{
     width: 12px;
     height: 12px;
 }}
+QAbstractItemView {{
+    selection-background-color: {LIGHT_TEAL};
+    selection-color: {COLOR_TEXT};
+}}
+QAbstractItemView::item:selected {{
+    background-color: {LIGHT_TEAL};
+    color: {COLOR_TEXT};
+}}
 QComboBox QAbstractItemView {{
     background-color: {COLOR_SURFACE};
     color: {COLOR_TEXT};
     border: 1px solid #C9D8E4;
-    selection-background-color: {COLOR_BLUE_SOFT};
+    selection-background-color: {LIGHT_TEAL};
     selection-color: {COLOR_TEXT};
     padding: 5px;
     outline: none;
@@ -1521,7 +1530,7 @@ QTableWidget, QListWidget, QTreeWidget {{
     border: 1px solid {COLOR_BORDER};
     border-radius: 8px;
     gridline-color: #E5EDF3;
-    selection-background-color: {COLOR_BLUE_SOFT};
+    selection-background-color: {LIGHT_TEAL};
     selection-color: {COLOR_TEXT};
 }}
 QTableWidget#PremiumTable {{
@@ -1537,7 +1546,7 @@ QTableWidget#PremiumTable::item {{
     padding: 9px 10px;
 }}
 QTableWidget#PremiumTable::item:hover {{ background-color: #F4F8FB; }}
-QTableWidget#PremiumTable::item:selected {{ background-color: #E2EEF9; color: {COLOR_TEXT}; }}
+QTableWidget#PremiumTable::item:selected {{ background-color: {LIGHT_TEAL}; color: {COLOR_TEXT}; }}
 QTableWidget#PremiumTable::item:focus {{
     border: 1px solid {COLOR_FOCUS};
     background-color: #EDF5FF;
@@ -1549,7 +1558,7 @@ QListWidget::item {{
     border-radius: 6px;
 }}
 QListWidget::item:hover {{ background-color: #F2F7FB; }}
-QListWidget::item:selected {{ background-color: #E6F0FB; color: {COLOR_TEXT}; }}
+QListWidget::item:selected {{ background-color: {LIGHT_TEAL}; color: {COLOR_TEXT}; }}
 QTreeWidget {{
     background-color: #FFFFFF;
     border: 1px solid #DCE6ED;
@@ -1563,7 +1572,7 @@ QTreeWidget::item {{
     border-radius: 6px;
 }}
 QTreeWidget::item:hover {{ background-color: #F2F7FB; }}
-QTreeWidget::item:selected {{ background-color: #E6F0FB; color: {COLOR_TEXT}; }}
+QTreeWidget::item:selected {{ background-color: {LIGHT_TEAL}; color: {COLOR_TEXT}; }}
 QTreeWidget::item:focus {{ border: 1px solid {COLOR_FOCUS}; }}
 QHeaderView::section {{
     background-color: #EAF1F5;
@@ -1680,6 +1689,11 @@ QPushButton:disabled {{
 
 def apply_app_theme(app: QApplication) -> None:
     """Apply the app-wide stylesheet while retaining the native system font."""
+    palette = app.palette()
+    for group in (QPalette.ColorGroup.Active, QPalette.ColorGroup.Inactive, QPalette.ColorGroup.Disabled):
+        palette.setColor(group, QPalette.ColorRole.Highlight, QColor(LIGHT_TEAL))
+        palette.setColor(group, QPalette.ColorRole.HighlightedText, QColor(COLOR_TEXT))
+    app.setPalette(palette)
     app.setStyleSheet(APP_STYLESHEET)
 
 

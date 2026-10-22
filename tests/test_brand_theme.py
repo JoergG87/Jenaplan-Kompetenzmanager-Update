@@ -5,7 +5,8 @@ from __future__ import annotations
 import unittest
 from types import SimpleNamespace
 
-from PySide6.QtWidgets import QApplication, QPushButton
+from PySide6.QtGui import QPalette
+from PySide6.QtWidgets import QApplication, QPushButton, QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QListWidget, QTreeWidget, QTableWidget
 
 from src.desktop_app import theme
 from src.desktop_app.components import CourseBadge, DialogHeader, StatusBadge, configure_button
@@ -35,12 +36,14 @@ class BrandThemeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
+        cls.previous_palette = cls.app.palette()
         cls.previous_stylesheet = cls.app.styleSheet()
         theme.apply_app_theme(cls.app)
 
     @classmethod
     def tearDownClass(cls) -> None:
         cls.app.setStyleSheet(cls.previous_stylesheet)
+        cls.app.setPalette(cls.previous_palette)
 
     def test_brand_palette_has_named_roles_and_accessible_action_contrast(self) -> None:
         self.assertGreaterEqual(_contrast(theme.BRAND_NAVY, "#FFFFFF"), 7.0)
@@ -51,6 +54,16 @@ class BrandThemeTests(unittest.TestCase):
         self.assertEqual(theme.COLOR_FOCUS, theme.BRAND_TEAL)
         self.assertEqual(theme.COLOR_BLUE, theme.BRAND_BLUE)
         self.assertEqual(theme.COLOR_TURQUOISE, theme.BRAND_TEAL)
+
+    def test_selection_is_soft_and_readable_across_controls(self) -> None:
+        self.assertGreaterEqual(_contrast(theme.COLOR_TEXT, theme.LIGHT_TEAL), 7.0)
+        for factory in (QLineEdit, QTextEdit, QPlainTextEdit, QComboBox, QListWidget, QTreeWidget, QTableWidget):
+            widget = factory()
+            widget.ensurePolished()
+            for group in (QPalette.ColorGroup.Active, QPalette.ColorGroup.Inactive):
+                self.assertEqual(widget.palette().color(group, QPalette.ColorRole.Highlight).name(), theme.LIGHT_TEAL.lower())
+                self.assertEqual(widget.palette().color(group, QPalette.ColorRole.HighlightedText).name(), theme.COLOR_TEXT.lower())
+            widget.deleteLater()
 
     def test_subject_accent_matrix_uses_only_approved_design_tokens(self) -> None:
         self.assertEqual(

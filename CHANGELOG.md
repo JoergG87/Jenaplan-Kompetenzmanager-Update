@@ -5630,3 +5630,6 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## Zeitfeld-Test-App – 22.10.2026
 
 - Zentral modernisierte Zeit-/Zahlenfelder als neue isolierte V6-Test-App aus c881cf2 bereitgestellt. 26 gezielte Prüfungen grün, zwei Cocoa-Quellvorschauen geprüft; Bundle/Startup/Neustart erfolgreich und nach Smokes unverändert. Aktionsbuttons und bestehende Testinstallation unverändert. Nachweise unter output/v6-acceptance/2026-10-22-time-controls/.
+
+
+PO-Auswahlkorrektur 22.10.2026: Textmarkierungen und Listen-/Tabellen-/Baumauswahl verwenden zentral LIGHT_TEAL mit COLOR_TEXT wie die Zeitfelder, auch bei inaktivem Fenster. Die Anwendungspalette deckt native Auswahlpfade ab; bestehende Navigation und Aktionsfarben bleiben erhalten. Keine Datenänderung.
