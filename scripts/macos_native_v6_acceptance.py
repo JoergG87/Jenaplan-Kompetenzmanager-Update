@@ -954,9 +954,12 @@ def _subject_plants(profile):
                 screen.profile_tabs.setCurrentIndex(3)
                 screen.resize(1680,1050); screen.show(); app.processEvents()
                 screen._report_subjects_expanded = True
-                screen._render_report_subjects(overview); app.processEvents()
-                if screen.subjects_card.geometry().intersects(screen.history_card.geometry()):
-                    raise RuntimeError("native_subject_plant_history_overlap")
+                screen._render_report_subjects(overview)
+                # Cocoa posts nested layout requests after polish/resize.
+                # Real seeded profiles settle by the second event pass.
+                for _ in range(4):
+                    app.processEvents()
+                overlap = screen.subjects_card.geometry().intersects(screen.history_card.geometry())
                 plants = screen.findChildren(QLabel, "ReportOverviewSubjectPlant")
                 expected = {item.subject_id: subject_development_stage(item)
                             for item in bundle.competency_cockpit.subjects}
@@ -972,6 +975,7 @@ def _subject_plants(profile):
                 if not screen.subjects_card.grab().save(str(screenshot)):
                     raise RuntimeError("native_subject_plant_screenshot_failed")
                 result["students"].append({"student_id": student.student_id,
+                    "overlap": overlap,
                     "screen_width": screen.width(), "columns": screen._report_overview_columns,
                     "subjects_rect": screen.subjects_card.geometry().getRect(),
                     "history_rect": screen.history_card.geometry().getRect(),
@@ -979,7 +983,10 @@ def _subject_plants(profile):
                     "screenshot": str(screenshot)})
                 screen.close(); app.processEvents()
         _finalize(profile, lock)
+    result["status"] = "failed" if any(item["overlap"] for item in result["students"]) else "ok"
     _record(profile, "native-subject-plants.json", result)
+    if result["status"] != "ok":
+        raise RuntimeError("native_subject_plant_history_overlap")
     return result
 
 

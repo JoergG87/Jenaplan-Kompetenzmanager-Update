@@ -5610,3 +5610,8 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## Responsiver Pflanzen-Smoke – 22.10.2026
 
 - Native Geometrieprüfung auf tatsächliche Kartenüberschneidung korrigiert: Im bestehenden zweispaltigen Layout steht die Historie regulär oberhalb der Fachübersicht. Breite, Spaltenzahl und Rechtecke werden im Prüfnachweis erfasst. Keine weitere Produktcodeänderung.
+
+
+## Cocoa-Layoutabschluss im Funktionssmoke – 22.10.2026
+
+- Unabhängige Reproduktion mit echten synthetischen Seed-Daten belegt stabile Geometrie ab dem zweiten Qt-Ereignisdurchlauf. Pflanzen-Smoke verarbeitet begrenzt vier Durchläufe vor der unveränderten Überschneidungsprüfung; vollständige Kartenbilder und Geometrie werden vor einer Fehlerausgabe gesichert und die normale Metadatenfinalisierung erfolgt davor. Keine weitere Produktcodeänderung.
