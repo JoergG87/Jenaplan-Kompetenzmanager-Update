@@ -1920,3 +1920,8 @@ Netzwerkblocker behoben; frisches isoliertes Paketf966414 und vorhandene native 
 ## Fachpflanzen – 22.10.2026
 
 PO-freigegebene kleine Fachchip-Erweiterung: vorhandene Pflanzen zeigen read-only den Mittelwert gültiger aktueller bewerteter Kompetenzen. Bestätigung vor bestehendem Vorschlag, jede Kompetenz einmal; unbewertete Kompetenzen entfallen. Vorhandene Scores und Schwellen, kein neues Rating und keine Speicherung. 353 gezielte UI-/Adaptertests mit 74 Unterprüfungen bestanden; unabhängiges Review ohne blockierenden Befund. Neues isoliertes V6-Paket folgt über die bestehende Pipeline; kein Produktrelease.
+
+
+## Fachpflanzen-Test-App bereitgestellt – 22.10.2026
+
+- Neues isoliertes V6-Paket aus `985ea84` erfolgreich gebaut und gezielt nativ geprüft; drei Profile mit 2/5/12 vollständigen Chips, alle Pflanzenstufen und neutrale Zustände, keine Überlagerung, Neustart erfolgreich. 200 Frozen-Codevergleiche und 6030 unveränderte Bundleeinträge bestätigt. Details und private Testanleitung unter `output/v6-acceptance/2026-10-22-subject-plants-delivery/`; keine Gesamt-/Produktfreigabe.

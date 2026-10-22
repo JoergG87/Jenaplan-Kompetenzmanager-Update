@@ -5615,3 +5615,8 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## Cocoa-Layoutabschluss im Funktionssmoke – 22.10.2026
 
 - Unabhängige Reproduktion mit echten synthetischen Seed-Daten belegt stabile Geometrie ab dem zweiten Qt-Ereignisdurchlauf. Pflanzen-Smoke verarbeitet begrenzt vier Durchläufe vor der unveränderten Überschneidungsprüfung; vollständige Kartenbilder und Geometrie werden vor einer Fehlerausgabe gesichert und die normale Metadatenfinalisierung erfolgt davor. Keine weitere Produktcodeänderung.
+
+
+## Fachpflanzen-Test-App bereitgestellt – 22.10.2026
+
+- Neues isoliertes V6-Paket aus `985ea84` erfolgreich gebaut und gezielt nativ geprüft; drei Profile mit 2/5/12 vollständigen Chips, alle Pflanzenstufen und neutrale Zustände, keine Überlagerung, Neustart erfolgreich. 200 Frozen-Codevergleiche und 6030 unveränderte Bundleeinträge bestätigt. Details und private Testanleitung unter `output/v6-acceptance/2026-10-22-subject-plants-delivery/`; keine Gesamt-/Produktfreigabe.
