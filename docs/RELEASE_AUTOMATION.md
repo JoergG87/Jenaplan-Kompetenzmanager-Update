@@ -826,3 +826,58 @@ Dauerhafte lokale Nachweise: `output/v6-acceptance/2026-10-21-61375c2/` mit Prof
 Produktive Final-V4-Registry bleibt unverändert und besitzt keine V4→V6-Kante. Spätere Aktivierung verlangt einen separat freigegebenen Wartungsstart mit bestehenden Schlüsseln, exakter Quelle, unabhängig geprüftem Vollbackup, Connection-Drain, transaktionaler Migration und passenden V6-Runtime-/Restoreverträgen. Kein stiller normaler Start und kein First-Run-Fallback. Build404 weist V6 zurück; kein automatischer Downgrade. Wiederherstellung muss vollständig auf ein geprüftes V4-Backup zurückgehen; spätere V6-Änderungen wären dabei verloren.
 
 Für ein reguläres Release bleiben die bestehenden Build404-Gates maßgeblich: Developer-ID/Hardened Runtime/Entitlements, Notarisierung/Stapling/Gatekeeper, Sparkle-/Feed-/Updatesignatur und Updatekompatibilität mit tatsächlich eingesetzten Pilotständen. Kein Zugriff auf reale Pilotinstallationen in diesem Auftrag; keine neue Versions-/Buildnummer vergeben. A/B-Wochen bleiben zurückgestellt.
+
+
+### Frische native V6-Abnahme – 22.10.2026 – automatisierte V6-Matrix bestanden
+
+**Der Netzwerkblocker ist behoben. Das frische isolierte Paket besteht die vorhandene automatisierte V6-Matrix einschließlich des zuvor fehlgeschlagenen echten Crash-/Recovery- und Worker-/Restartpfads. Der P1-Reparaturnachweis ist damit nativ geschlossen. Dies ist keine vollständige Produkt-/Releasefreigabe; weitere negative Paketgates und menschliche Bedienabnahme bleiben ausdrücklich offen.** Historische NO-GO-Berichte werden nicht entfernt oder umgedeutet.
+
+#### Herkunft und Paketidentität
+
+Start-HEAD `f966414123bdd34927a93393a52e8e74cda567fc`, Branch spike/python-gui; ausführbarer Produktcode unverändert zum vollständig getesteten Reparaturcommit61375c2. Heute kein Produktcode geändert. Profil `58d28d02-6cba-49e7-91c8-a8af96420980`, Installation `02c0d617-d17c-4d3e-8c2d-b1f62c7d446a`, Bundle/Worker/Restart `de.jenaplan.kompetenzmanager.internaltest.t58d28d026cba49e791c8a8af96420980`, App `JKM-Interner-Test-58d28d026cba49e791c8a8af96420980.app`. Profildigest `c50a5cdfc08dd135fe011556bad6b3c513d13eeabb7656bf1bd61281eb451952`.
+
+Die gestern gesicherten235929600 Bytes von QtAddons wurden fortgesetzt. Vollständige331714589 Bytes mit offiziellem SHA256 `54733c77f789bef5f03c6aff4ad3bec8b2eff021f0cfcbc53d5e6c250ded24f9` verifiziert. Alle gepinnten Buildabhängigkeiten erfolgreich geladen und lokal gehasht; bestehende Paketpipeline danach mit lokalem Wheelcache und ohne Indexzugriff ausgeführt. Keine Abhängigkeits-/Versionsänderung.
+
+Vor Build bestehende Profilvalidierung: eigene private synthetische Roots und neue Build-/Artefaktpfade, getrennte drei Keychainservices, eigene Installationsidentität, identische isolierte Worker-/Restartidentität, Updates false, ausschließlich Ad-hoc, keine Entitlements. Build Exit0. Paketprüfung: SQLCipher4.17.0 community/CommonCrypto, SQLite3.53.3, Binding0.6.2+jkm.sqlcipher4170.1, forbidden_artifacts=0. Sealed-Profil/Plist/Digest stimmen; kein Produktbundle als Zwischenprodukt.
+
+Unabhängiger Frozenvergleich: **200/200 Codeobjektvergleiche gleich**, einschließlich tatsächlichem CArchive-main und Profilhook, benötigte retained-operation-/V6-/Workerkomponenten enthalten. Nur co_filename normalisiert. Nach allen nativen Läufen **6030/6030 Bundleeinträge einschließlich Dateihashes, Modi und Linkziele unverändert**; strict/deep Ad-hoc-Signatur gültig, TeamIdentifier not set, keine Entitlements. Produktquellen stimmen weiterhin mit allen481 erfassten Byteshashes überein.
+
+#### Tatsächlich ausgeführte native Nachweise
+
+Die bestehende `v6-matrix` läuft im tatsächlichen neuen Frozen-Executable: **Exit0, native_v6_automated_gates_passed**. Keine Crypto-/Keychainmocks, keine neuen Skipregeln oder Sicherheitsausnahmen.
+
+| Bereich | Ergebnis und Grenze |
+| --- | --- |
+| Startup/P1 | Leere synthetische Installation und kontrollierter First Run erfolgreich. Regulär befüllte Final-V4-Installation mit erhaltenen Beobachtungs-/Dokumentjournalen startet mit vorhandenem Konto erneut, kein First Run. V6-Anmeldung und Hauptfenster erfolgreich. |
+| Negativer Startup | Unbekannte Datei, beschädigtes Journal, fehlende Main und realer konkurrierender Prozess gesperrt; Bestands-/Schlüsselersatz und unzulässige Mutation werden vom Runner geprüft. Bestehende paketierte Keychain-/SQLCipherbindung bestanden. |
+| Zusätzliche Keychainprüfung | Sealed acl-preflight Exit0: tatsächliche item-lokale Zugriffssperre nachgewiesen, eigener temporärer Testeintrag gelöscht/wiederhergestellt/abschließend vollständig entfernt. Keine Produktkeys oder aktive DMK verändert. Dies ersetzt nicht den vollständigen Appstartfall mit verweigertem aktiven DMK. |
+| V4→V6 | Synthetisch24 Schüler,3 Stammgruppen,3 Kurse,331 Kompetenzen,71 Beobachtungen/71 Ratings,10 Stundenplaneinträge,5 Dokumente sowie Schuljahr, Berichts-/LEG-Entwürfe/Revisionen/PDFs. Quelle keyed geprüft, verschlüsseltes Vollbackup unabhängig geprüft, Connection-Drain und transaktionale Migration bisCommit; exakter V6-Fingerprint unverändert. Vollständiger Originalzeilenvergleich, Dokument-/Companionbindung und vorhandene Schlüssel erhalten; neuer Prozess mit bestehendem Konto angemeldet. |
+| Unterrichtszeiten | Echte Qt-Dialog-/Signalflüsse: ungültige Zeiten abweisen; Vorlage speichern/ändern; Zeiten explizit kopieren; individuell07:05–07:50 ändern; spätere Vorlage ändert Bestandsstunden nicht. Persistenz nach Neustart und Restore geprüft. |
+| Stammgruppenstunden | Organisatorische Stunde ohne Fach, bearbeiten, deaktivieren/reaktivieren und temporären Eintrag löschen; keine künstlichen Fachlinks/Ratings. Endbestand TTE-000012 ohne Subjectlinks. |
+| Kombinierte Stunden | Deutsch+Mathematik als genau ein Parent TTE-000011 mit zwei Links; beide Zuordnungen nach Neustart und Restore erhalten. |
+| Beobachtung | Bewusste Mathematikwahl und gefilterter Kompetenzkatalog; genau eine synthetische Schnellbeobachtung, keine doppelte Bewertung, bestehende71 Ratings unverändert. Keine künstliche Fachzuordnung zur Stammgruppenstunde. |
+| V6-Backup/READY | Vollbackup und unabhängige Verifikation bestanden, V6-RESTORE_READY gültig. Historischer V4-Backupcontainer und V4-READY gegen V6 gezielt abgewiesen; kein direkter Schemaersatz und keine DMK-Rotation. |
+| Echter Crash/Wiederanlauf | SIGKILL Exit-9 zwischen Main- und Companionersatz. Anschließender regulärer Startup/Recovery erfolgreich; vollständige typisierte Main-/Companioninhalte gleich. Der in früheren Kandidaten bestätigte Restartblocker tritt im korrigierten Paket nicht mehr auf. |
+| Regulärer Restore/Worker/Restart | Reales Parentende, paketierter Worker und echte Restart-App beendet; Transaktionsphase completed, Restart-Handschlag confirmed. Erneute Anmeldung erfolgreich. Vollständige typisierte Zeilengleichheit, fachlicher Bestand und Dokumentbindung mit unabhängigem Featurebackup verglichen; Unterrichtszeiten, Stammgruppen-/Mehrfachfachstunden und Beobachtung danach erneut geladen. |
+| UI-Nachweis | Fünf aktuelle Cocoa-/Qt-Screenshots geprüft: Stundeneditor, Stammgruppenstunde, explizite Fachwahl, Mathematikbeobachtung und Hauptfenster. Automatisierte funktionale Bedienung plus toolgestützte Sichtprüfung; keine menschliche Bedienabnahme behauptet. |
+
+#### Suite, Bewertung und verbleibende Freigabegrenzen
+
+Vorhandene Suite **3466 bestanden,104 bestehende Skips,120 Untertests,854.51s** für denselben Produkt-/Testquellstand übernommen; kein neuer Gesamtlauf ohne Codeänderung. Die frühere Rohlogverlustgrenze bleibt wie oben dokumentiert. Heute tatsächlich neu: vollständiger frischer Build/Audit, Sealed-Preflight, native V6-Matrix, reale ACL-Verweigerungsprüfung, Frozen-/Bundlevergleich, Screenshotprüfung und unabhängiges Abschlussreview.
+
+Im geprüften Reparatur-/V6-Matrixumfang keine offenen P0/P1. Das ist keine Aussage über noch nicht ausgeführte Paketfälle. P2 bleibt die englische Cancel-Schaltfläche in der expliziten Fachwahl; historische WAL-Metadatencontainer und Mehrfach-Restorehistorien erhalten keine pauschale zusätzliche Zulassung.
+
+Noch offene Gates, ausdrücklich auch vom Runner ausgewiesen:
+
+1. Restliche vollständige native Startupmatrix: insbesondere fehlender aktiver DMK bzw. dessen Zugriffssperre im ganzen Appstart, unbekannte Schemaidentität, beschädigte Cipherdatenbank und weitere unsichere/partielle Zustände am finalen Paket. Bestehende Quellregressionen gelten weiter; nicht als heute ausgeführte Frozenfälle ausgegeben.
+2. Vollständige paketierte Migrationsfehlerkampagne (SQLfehler, Prozessabbruch vor/nachCommit, ENOSPC, beschädigte Quelle, fehlendes Backup und fehlerhafte Zielintegrität). Bestehende echte SQLCipher-/Crashquelltests bleiben zugeordnete Quellnachweise, keine pauschale neue Paketabnahme sämtlicher Fehlergrenzen.
+3. Menschliche Bedienabnahme durch Laura: synthetisch anmelden, Dashboard/Übersichten/Bewertungen/Berichte ansehen; Zeitvorlagen samt individuellen Zeiten ändern; Stammgruppen-CRUD; kombinierte Stunde ändern; Fachwahl abbrechen und bewusst wählen; Restore/Neustart und Dokument öffnen. Lokale private Testanleitung mit ausschließlich synthetischem Anmeldepasswort liegt im Nachweisordner.
+4. Separat autorisierte produktive V4→V6-Integration und die bestehenden Build404-Releasegates: bewusster Wartungsstart, registrierte exakte Produktkante, unabhängiges Vollbackup, Wiederherstellungs-/Rollbackgrenzen, Developer-ID/Hardened Runtime/Notarisierung, Sparkle-/Updateprüfung und Pilotkompatibilität. Keine neue Versions-/Buildnummer oder Produktaktivierung in diesem Auftrag.
+
+**Empfehlung: P1-Reparatur und vorhandene native V6-Matrix erfolgreich abgenommen; NO-GO für vollständige native Gesamt-/Produktreleasefreigabe bis die ausdrücklich offenen Gates geschlossen sind.** Der Netzwerk- und bisherige Crash-/Restartblocker sind behoben. Keine neue Architekturphase oder automatische Folgeimplementierung.
+
+#### Dauerhafte Nachweise und Schutzgrenzen
+
+Nachweisordner `output/v6-acceptance/2026-10-22-f966414/`: source-provenance.json, profile.json, dependency-wheel-sha256.json, build-run.log/build-exit.txt, smoke-preflight.json, bundle-code-binding.json/bundle-after-verification.json, native-v6-matrix.json und alle Teilberichte, native-keychain-denial.json, native-v6-ui/, verifiziertes isolated-test-app.zip sowie privater manual-test-instructions.txt. App-ZIP dient der Nachweissicherung; das versiegelte Testprofil bleibt an seinen privaten Runtimepfad gebunden. Kein portabler Produktinstaller oder Releaseartefakt. Die App selbst liegt im Profilcontainer unter artifacts; keine Produktinstallation geändert.
+
+Vorher HEADf966414, nachher ausschließlich nachfolgender fokussierter Nachweiscommit (siehe Gitlog); alle fünf vorbestehenden Fremddokumentänderungen erhalten, Staging nach Commit leer. Produktregistry weiterhin ausschließlich FinalV4 ohne Upgradekante, produktive Migration gesperrt. src/version.py, Build404/Pilotfeed und Pflanzenbilder-ZIP bytegleich; keine Produktdaten/-schlüssel/-backups geöffnet oder verändert. Kein Push, Tag, Release, Appcastupdate, Versionswechsel oder A/B-Wochen.

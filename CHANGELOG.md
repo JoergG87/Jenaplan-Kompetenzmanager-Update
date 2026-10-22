@@ -5588,3 +5588,5 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 - V6-Teststart übernimmt nach vollständig geprüftem Restore-Rollback dessen vorhandenen Schlüsselkontext bis zur authentisierten Runtime-Komposition; keine nachträgliche WAL-Normalisierung oder Existing-only-Ausnahme.
 
 - V6-Reparaturabschluss 21.10.2026 dokumentiert: Code61375c2 unverändert; neue native Paketabnahme durch Qt-Downloadtimeouts vor Appbau blockiert. Keine Gesamt-/Produktfreigabe; geschützte Fremdänderungen erhalten.
+
+- Frische isolierte native V6-Matrix22.10.2026 aus unverändertem Codef966414 bestanden: V4-Neustart/Migration, Stundenplan-/Beobachtungspersistenz, echter Restore-SIGKILL mit Recovery, Worker/Restart und vollständiger Postrestorevergleich. Keine Produkt-/Gesamtfreigabe; übrige negative Paketgates und menschliche Abnahme explizit offen.
