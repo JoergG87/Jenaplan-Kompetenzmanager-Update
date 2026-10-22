@@ -955,7 +955,7 @@ def _subject_plants(profile):
                 screen.resize(1680,1050); screen.show(); app.processEvents()
                 screen._report_subjects_expanded = True
                 screen._render_report_subjects(overview); app.processEvents()
-                if screen.subjects_card.geometry().bottom() >= screen.history_card.geometry().top():
+                if screen.subjects_card.geometry().intersects(screen.history_card.geometry()):
                     raise RuntimeError("native_subject_plant_history_overlap")
                 plants = screen.findChildren(QLabel, "ReportOverviewSubjectPlant")
                 expected = {item.subject_id: subject_development_stage(item)
@@ -972,6 +972,9 @@ def _subject_plants(profile):
                 if not screen.subjects_card.grab().save(str(screenshot)):
                     raise RuntimeError("native_subject_plant_screenshot_failed")
                 result["students"].append({"student_id": student.student_id,
+                    "screen_width": screen.width(), "columns": screen._report_overview_columns,
+                    "subjects_rect": screen.subjects_card.geometry().getRect(),
+                    "history_rect": screen.history_card.geometry().getRect(),
                     "chips": len(plants), "stages": {p.property("subject_id"): p.property("development_stage") for p in plants},
                     "screenshot": str(screenshot)})
                 screen.close(); app.processEvents()

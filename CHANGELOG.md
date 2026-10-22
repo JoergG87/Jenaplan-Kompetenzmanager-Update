@@ -5605,3 +5605,8 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## Fachchip-Höhenkorrektur – 22.10.2026
 
 - Native Sichtprüfung fand überlagerte untere Fachzeilen nach Alle anzeigen. Bestehende Berichtsektion erhält dynamische Layout-Mindestgröße; Regression prüft auch den Abstand zur Historienkarte. Aktualisiertes isoliertes Paket wird neu gebaut.
+
+
+## Responsiver Pflanzen-Smoke – 22.10.2026
+
+- Native Geometrieprüfung auf tatsächliche Kartenüberschneidung korrigiert: Im bestehenden zweispaltigen Layout steht die Historie regulär oberhalb der Fachübersicht. Breite, Spaltenzahl und Rechtecke werden im Prüfnachweis erfasst. Keine weitere Produktcodeänderung.
