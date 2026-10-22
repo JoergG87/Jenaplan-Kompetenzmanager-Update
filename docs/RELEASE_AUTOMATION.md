@@ -898,3 +898,14 @@ Finales Paket: Build/Sealed-Preflight erfolgreich; vorhandene synthetische Fixtu
 Zwischenbefunde erhalten: Sandbox-Iconfehler, ein korrigierter responsiver Smoke-Vergleich, vorzeitig geprüfte Cocoa-Geometrie und ein ENOSPC-Build. Ausschließlich fünf eigene regenerierbare Buildroots dieses Auftrags nach Profil-/Prozessprüfung entfernt; App-Bundles, Profile, synthetische Daten und Nachweise erhalten, kleine Buildinputs gesichert. Keine allgemeine Speicherbereinigung.
 
 Offen bleiben die vollständige frühere native V6-Restabnahme und menschliche Bedienabnahme durch Laura. Deren alte erweiterte Runner-/Migrationskampagnennachweise werden nicht durch diese UI-Smokes ersetzt. Keine Produktfreigabe, Produktmigration, Änderung an Build 404/Pilotfeed/Pflanzen-ZIP oder Zugriff auf Produktdaten/-schlüssel; kein Push, Tag oder Release. Alle fünf vorbestehenden Fremddokumentänderungen bleiben unverändert außerhalb der Commits.
+
+
+## Modernisierte Zeitfelder: isolierte Test-App – 22.10.2026
+
+PO-Präzisierung betrifft die kräftige Markierung der Zeitziffern, nicht blaue Aktionsbuttons. Zentrale QAbstractSpinBox-Stile für Zeit-/Datums-/Zahlenfelder: kleine klare Outline-Pfeile, flache Hoverflächen, LIGHT_TEAL/COLOR_TEXT für ausgewählte Ziffern. Keine Fach-, Validierungs-, Schrittweiten- oder Speicheränderung.
+
+Quellcommit `c881cf218863d6c853d98523caa3e80dfeef3215`. 15 gezielte Feld-/Vorlagenprüfungen und 11 Theme-/Dialogprüfungen grün; bestehende Adapterfälle im breiteren Lauf bestanden, ein neuer DateTime-Fokustest anschließend korrekt auf die zu bearbeitende Sektion gesetzt und im grünen 15-Fälle-Lauf erneut geprüft. Native Cocoa-Quellvorschauen Unterrichtszeiten und kompakter Stundenplan-Dialog visuell kontrolliert: klare Pfeile, dezente Ziffernauswahl, keine abgeschnittenen Felder oder Aktionen. Vorschauen unter output/ui-previews/2026-10-22-spin-controls/.
+
+Frisches isoliertes V6-Paket über bestehende Pipeline: Build 0, Sealed-Preflight 0, bestehende synthetische Fixturevorbereitung und regulärer V6-Neustart 0. 200/200 Frozen-Codevergleiche gleich; beide Pfeil-SVGs bytegleich im Bundle. Nach den Smokes 6031/6031 Bundleeinträge unverändert, strict/deep Ad-hoc-Signatur gültig, keine Entitlements. Keine neue Sicherheitsmatrix oder Produktfreigabe.
+
+App: `/private/var/folders/61/nxlq0vm9311gvx30ztnpj63r0000gn/T/jkm-internal-test-c798eaa6651247e588056c34b3a47588/artifacts/JKM-Interner-Test-c798eaa6651247e588056c34b3a47588.app`. Private Testanleitung/-passwort und genaue Nachweise: `output/v6-acceptance/2026-10-22-time-controls/Anleitung-fuer-Laura.txt`. Die bisherige geöffnete Test-App samt Testeingaben bleibt unverändert erhalten; neue App besitzt eigenen synthetischen Bestand und isolierte Identitäten/Schlüsselservices. Produktdaten, Build 404, Pilotfeed und Pflanzen-ZIP unberührt; kein Push, Tag oder Release. Fünf fremde Dokumentänderungen weiterhin vollständig außerhalb des Commits.

@@ -5625,3 +5625,8 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## Zeit- und Zahlenfelder im App-Stil – 22.10.2026
 
 - PO-UX-Korrektur: zentrale klare Outline-Pfeile statt ungestalteter nativer Stepper; ausgewählte Zeit-/Zahlziffern helles Petrol mit dunkler Schrift statt kräftigem Blau. Aktionsbuttonfarben unverändert. Maus-, Tastatur- und direkte Eingabe bleiben erhalten; keine Werte-/Speicheränderung. 15 gezielte Feld-/Vorlagentests und 11 bestehende Theme-/Dialogprüfungen bestanden. Zwei Cocoa-Vorschauen (Unterrichtszeiten, kompakter Stundenplan-Dialog) visuell geprüft.
+
+
+## Zeitfeld-Test-App – 22.10.2026
+
+- Zentral modernisierte Zeit-/Zahlenfelder als neue isolierte V6-Test-App aus c881cf2 bereitgestellt. 26 gezielte Prüfungen grün, zwei Cocoa-Quellvorschauen geprüft; Bundle/Startup/Neustart erfolgreich und nach Smokes unverändert. Aktionsbuttons und bestehende Testinstallation unverändert. Nachweise unter output/v6-acceptance/2026-10-22-time-controls/.
