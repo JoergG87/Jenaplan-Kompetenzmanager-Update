@@ -242,3 +242,69 @@ def test_qualified_existing_runtime_widgets_and_saved_timetable_in_real_process(
         if process.is_alive():
             process.kill(); process.join(10)
         parent.close()
+
+
+@pytest.mark.parametrize("kind", ["integer", "decimal", "time", "date", "datetime"])
+def test_shared_spin_controls_keep_readable_selection_and_mouse_steps(app, kind):
+    from PySide6.QtCore import QDate, QDateTime, Qt
+    from PySide6.QtGui import QColor, QPalette
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import (QSpinBox, QDoubleSpinBox, QTimeEdit, QDateEdit,
+                                  QDateTimeEdit, QStyle, QStyleOptionSpinBox)
+    from src.desktop_app.theme import apply_app_theme, LIGHT_TEAL, COLOR_TEXT
+    apply_app_theme(app)
+    field = {"integer": QSpinBox, "decimal": QDoubleSpinBox, "time": QTimeEdit,
+             "date": QDateEdit, "datetime": QDateTimeEdit}[kind]()
+    if kind in {"integer", "decimal"}:
+        field.setValue(40); value = field.value
+    elif kind == "time":
+        field.setTime(QTime(8,45)); field.setCurrentSection(field.Section.HourSection)
+        value = lambda: field.time().hour()
+    elif kind == "date":
+        field.setDate(QDate(2026,10,22)); field.setCurrentSection(field.Section.DaySection)
+        value = lambda: field.date().day()
+    else:
+        field.setDateTime(QDateTime(QDate(2026,10,22),QTime(8,45)))
+        field.setCurrentSection(field.Section.HourSection)
+        value = lambda: field.dateTime().time().hour()
+    field.resize(200,42); field.show(); field.setFocus(); app.processEvents()
+    if kind in {"time", "datetime"}:
+        field.setSelectedSection(field.Section.HourSection)
+    elif kind == "date":
+        field.setSelectedSection(field.Section.DaySection)
+    palette = field.lineEdit().palette()
+    assert palette.color(QPalette.ColorRole.Highlight) == QColor(LIGHT_TEAL)
+    assert palette.color(QPalette.ColorRole.HighlightedText) == QColor(COLOR_TEXT)
+    option = QStyleOptionSpinBox(); field.initStyleOption(option)
+    up = field.style().subControlRect(QStyle.ComplexControl.CC_SpinBox, option,
+                                     QStyle.SubControl.SC_SpinBoxUp, field)
+    down = field.style().subControlRect(QStyle.ComplexControl.CC_SpinBox, option,
+                                       QStyle.SubControl.SC_SpinBoxDown, field)
+    assert up.width() >= 28 and up.height() >= 18
+    assert down.width() >= 28 and down.height() >= 18
+    assert field.rect().contains(up) and field.rect().contains(down)
+    before = value()
+    QTest.mouseClick(field, Qt.MouseButton.LeftButton, pos=up.center())
+    assert value() == before + 1
+    QTest.mouseClick(field, Qt.MouseButton.LeftButton, pos=down.center())
+    assert value() == before
+    field.setEnabled(False)
+    QTest.mouseClick(field, Qt.MouseButton.LeftButton, pos=up.center())
+    assert value() == before
+    field.close()
+
+
+def test_shared_time_field_preserves_typing_and_arrow_key_editing(app):
+    from PySide6.QtCore import Qt
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QTimeEdit
+    from src.desktop_app.theme import apply_app_theme
+    apply_app_theme(app)
+    field = QTimeEdit(QTime(8,45)); field.setDisplayFormat("HH:mm")
+    field.show(); field.setFocus(); field.setSelectedSection(field.Section.HourSection)
+    QTest.keyClicks(field, "10")
+    assert field.time() == QTime(10,45)
+    field.setSelectedSection(field.Section.MinuteSection)
+    QTest.keyClick(field, Qt.Key.Key_Up)
+    assert field.time() == QTime(10,46)
+    field.close()

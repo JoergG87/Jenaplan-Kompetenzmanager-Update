@@ -4007,3 +4007,6 @@ PO-autorisierte kleinste Reparatur: nach abgeschlossener bestehender Recovery un
 Fachpflanze (22.10.2026): reine Anzeige aus aktuellem Profilbundle; Profil-/Cockpitrefresh berechnet die Zusammenfassung erneut. Keine Schreiboperation und keine neue Bewertung.
 
 `v6-subject-plants` ist ein geschlossener sealed-only nativer Funktionssmoke im bestehenden Runner: liest drei synthetische Profilbundles, prüft alle Fachchips und vorhandene Pflanzenressourcen, speichert Screenshots ausschließlich im privaten Profilcontainer. Keine Bewertungs-/Schemamutation.
+
+
+Zeit-/Zahlenfeld-UX 22.10.2026: Darstellung der Auswahl und Stepper unverändert an vorhandene Qt-Eingabe gebunden. Keine Änderung von Schrittweite, Validierung, Übernahme oder Speicherung.

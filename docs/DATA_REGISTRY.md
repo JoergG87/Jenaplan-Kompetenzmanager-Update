@@ -2694,3 +2694,6 @@ Keine neue Quelle: vorhandene .observation-staging/<32hex>/journal.json, .manage
 
 
 Fachpflanze (22.10.2026): ausschließlich bestehendes StudentCompetencyCockpitViewModel aus dem Profilbundle und assets/competency_plants/stage_1.png bis stage_4.png. Keine neue Quelle oder Persistenz.
+
+
+Zeit-/Zahlenfeld-UX 22.10.2026: nur vorhandene Qt-Eingabewerte und zentrale Design-Tokens; keine neue Datenquelle oder Persistenz.

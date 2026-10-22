@@ -1654,3 +1654,6 @@ Native V6-Restabnahme 22.10.2026: Security besitzt die lesende Voranmeldeprüfun
 
 
 Fachpflanze (22.10.2026): observation_view_model besitzt die read-only Aggregation; StudentProfileScreen rendert klein rechts oben im bestehenden Fachchip. Navigation, Reihenfolge und vorhandene Alle-anzeigen-Aktion bleiben erhalten.
+
+
+Zeit-/Zahlenfeld-UX 22.10.2026: Das zentrale Desktop-Theme besitzt Auswahlmarkierung und Pfeil-Subcontrols bestehender QAbstractSpinBox-Felder. Dialoge und ihre Adapter behalten Werte/Commands; keine neue Ansicht.

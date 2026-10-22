@@ -1372,6 +1372,44 @@ QComboBox, QDateEdit, QDateTimeEdit, QTimeEdit, QSpinBox, QDoubleSpinBox {{
     padding-right: 26px;
     min-height: 25px;
 }}
+QAbstractSpinBox, QAbstractSpinBox QLineEdit {{
+    selection-background-color: {LIGHT_TEAL};
+    selection-color: {COLOR_TEXT};
+}}
+QAbstractSpinBox::up-button, QAbstractSpinBox::down-button {{
+    subcontrol-origin: border;
+    width: 28px;
+    height: 18px;
+    border: none;
+    background-color: transparent;
+    margin-right: 3px;
+}}
+QAbstractSpinBox::up-button {{
+    subcontrol-position: top right;
+    margin-top: 3px;
+    border-top-right-radius: 6px;
+}}
+QAbstractSpinBox::down-button {{
+    subcontrol-position: bottom right;
+    margin-bottom: 3px;
+    border-bottom-right-radius: 6px;
+}}
+QAbstractSpinBox::up-button:hover, QAbstractSpinBox::down-button:hover {{
+    background-color: {LIGHT_NEUTRAL};
+}}
+QAbstractSpinBox::up-button:pressed, QAbstractSpinBox::down-button:pressed {{
+    background-color: {LIGHT_TEAL};
+}}
+QAbstractSpinBox::up-arrow {{
+    image: url("{icon_path('chevron-up').as_posix()}");
+    width: 12px;
+    height: 12px;
+}}
+QAbstractSpinBox::down-arrow {{
+    image: url("{icon_path('chevron-down').as_posix()}");
+    width: 12px;
+    height: 12px;
+}}
 QComboBox::drop-down {{
     subcontrol-origin: padding;
     subcontrol-position: top right;

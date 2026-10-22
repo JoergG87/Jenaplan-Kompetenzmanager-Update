@@ -3739,3 +3739,6 @@ Native private Testhelfer: `_negatives`, `_migration_fault`, `_migration_inspect
 `subject_development_stage` in observation_view_model aggregiert die bereits kanonischen aktuellen Kompetenzstände eines Cockpitfachs einmal je Kompetenz-ID mit OBSERVATION_RATING_SCORES und rating_from_weighted_score. Rückgabe Pflanzenstufe 1–4 oder None. `ReportOverviewSubjectPlant` ist das nicht-interaktive 32×32-Pixel-Anzeigelabel im Fachchip.
 
 `v6-subject-plants` ist ein geschlossener sealed-only nativer Funktionssmoke im bestehenden Runner: liest drei synthetische Profilbundles, prüft alle Fachchips und vorhandene Pflanzenressourcen, speichert Screenshots ausschließlich im privaten Profilcontainer. Keine Bewertungs-/Schemamutation.
+
+
+`chevron-up` ergänzt als vertikales Gegenstück von `chevron-down` das vorhandene Outline-SVG-Set. Zentrale QAbstractSpinBox-Subcontrols in APP_STYLESHEET gestalten bestehende Zeit-, Datums- und Zahleneingaben; keine neue Widget-/Domain-API.

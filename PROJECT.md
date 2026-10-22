@@ -1925,3 +1925,8 @@ PO-freigegebene kleine Fachchip-Erweiterung: vorhandene Pflanzen zeigen read-onl
 ## Fachpflanzen-Test-App bereitgestellt – 22.10.2026
 
 - Neues isoliertes V6-Paket aus `985ea84` erfolgreich gebaut und gezielt nativ geprüft; drei Profile mit 2/5/12 vollständigen Chips, alle Pflanzenstufen und neutrale Zustände, keine Überlagerung, Neustart erfolgreich. 200 Frozen-Codevergleiche und 6030 unveränderte Bundleeinträge bestätigt. Details und private Testanleitung unter `output/v6-acceptance/2026-10-22-subject-plants-delivery/`; keine Gesamt-/Produktfreigabe.
+
+
+## Zeit- und Zahlenfelder im App-Stil – 22.10.2026
+
+- PO-UX-Korrektur: zentrale klare Outline-Pfeile statt ungestalteter nativer Stepper; ausgewählte Zeit-/Zahlziffern helles Petrol mit dunkler Schrift statt kräftigem Blau. Aktionsbuttonfarben unverändert. Maus-, Tastatur- und direkte Eingabe bleiben erhalten; keine Werte-/Speicheränderung. 15 gezielte Feld-/Vorlagentests und 11 bestehende Theme-/Dialogprüfungen bestanden. Zwei Cocoa-Vorschauen (Unterrichtszeiten, kompakter Stundenplan-Dialog) visuell geprüft.

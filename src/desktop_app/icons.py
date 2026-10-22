@@ -19,6 +19,7 @@ ICON_NAMES = frozenset(
         "search",
         "close",
         "chevron-down",
+        "chevron-up",
         "conference",
         "observation",
         "report",

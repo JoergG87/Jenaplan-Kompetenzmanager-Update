@@ -1635,3 +1635,6 @@ Bekannte reguläre Beobachtungs-/Dokument-/PDF-Journale werden als bestehende te
 
 
 PO-Auftrag 22.10.2026: bestehende Fachchips erhalten eine kleine Pflanze aus vorhandenen Illustrationen. Read-only Mittelwert aktueller gültiger Kompetenzstände, bestätigter Stand vor bestehendem Beobachtungsvorschlag; keine gespeicherte Bewertung, Note oder Modelländerung.
+
+
+PO-UX-Auftrag 22.10.2026: Zeit-/Zahleneingaben appweit im vorhandenen Design modernisieren. Kleine klare Pfeile statt ungestalteter nativer Stepper; ruhige Markierung der ausgewählten Zeitziffern. Blaue Aktionsbuttons ausdrücklich unverändert. Reine Präsentation, keine Fach-/Speicheränderung.

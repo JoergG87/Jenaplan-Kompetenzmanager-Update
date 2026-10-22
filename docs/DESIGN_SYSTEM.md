@@ -1358,3 +1358,6 @@ Native D-Sichtprüfung: Die Fachliste verwendet lokal einen separaten Qt-Listens
 PO-Erweiterung 22.10.2026: vorhandene transparente Kompetenzpflanzen auch klein (32×32 Pixel, Seitenverhältnis erhalten) rechts oben im bestehenden Fachchip. Eigener Layoutplatz, neutraler Strich bei fehlenden Bewertungen; vorhandene Texte und Aktionen bleiben erhalten.
 
 Native Sichtkorrektur 22.10.2026: Beim Aufklappen aller Fachchips wächst die bestehende Berichtsektion mit ihrer Layout-Mindestgröße. Die Historienkarte folgt unterhalb sämtlicher Fachzeilen; keine Überlagerung. Keine Änderung der Navigation oder Quellen.
+
+
+PO-UX-Präzisierung 22.10.2026: bestehende Zeit-, Datums- und Zahlenfelder erhalten klar gezeichnete kleine Outline-Chevrons in flachen, ausreichend breiten Pfeilflächen ohne native schwarze Trennrahmen. Hover neutral, gedrückt helles Petrol. Ausgewählte Ziffern verwenden LIGHT_TEAL mit COLOR_TEXT; Fokus bleibt als bestehender Petrolrahmen sichtbar. Direkte Eingabe, Tab und Pfeiltasten bleiben erhalten. Aktionsbuttonfarben unverändert.
