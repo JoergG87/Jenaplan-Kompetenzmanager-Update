@@ -4003,3 +4003,8 @@ V6-Recoverykontext im versiegelten Teststart: Nur nach erfolgreichem rolled_back
 ## Native V6-Negativbefund – 22.10.2026
 
 PO-autorisierte kleinste Reparatur: nach abgeschlossener bestehender Recovery und erneuter Inventarprüfung, vor Security-Store-/Anmeldewrites, vorhandenen sealed V6-Bestand lesend mit bestehendem Schlüsselkontext prüfen. Beschädigte Main-/Companion-/Dokumentbindung und ungültige historische Quelle sperren ohne Anmeldung, Schlüsselneuanlage oder Reparatur. Nach authentisiertem terminalem Rollback darf ausschließlich dessen bereits geprüfter Kontext weiterverwendet werden. Keine neue Persistenz, kein Schema und keine produktive V6-Zulassung.
+
+
+Fachpflanze (22.10.2026): reine Anzeige aus aktuellem Profilbundle; Profil-/Cockpitrefresh berechnet die Zusammenfassung erneut. Keine Schreiboperation und keine neue Bewertung.
+
+`v6-subject-plants` ist ein geschlossener sealed-only nativer Funktionssmoke im bestehenden Runner: liest drei synthetische Profilbundles, prüft alle Fachchips und vorhandene Pflanzenressourcen, speichert Screenshots ausschließlich im privaten Profilcontainer. Keine Bewertungs-/Schemamutation.

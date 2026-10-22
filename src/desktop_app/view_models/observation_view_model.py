@@ -668,3 +668,30 @@ def rating_from_weighted_score(score: float) -> str:
 def observation_rating_keys() -> tuple[str, ...]:
     """Return the stable rating tokens shown in the prototype labels."""
     return OBSERVATION_RATING_TOKENS
+
+
+def subject_development_stage(
+    subject: StudentCompetencyCockpitSubjectViewModel | None,
+) -> int | None:
+    """Summarize existing current states once per identity; never rate history again."""
+    if subject is None:
+        return None
+    scores: dict[str, float] = {}
+    for area in subject.learning_areas:
+        for status in area.competencies:
+            if (status.historical or not status.is_active
+                    or status.catalog_status != "current"
+                    or status.missing_catalog_reference
+                    or status.documentation_state not in {
+                        "confirmed", "newer_observations", "observed_unconfirmed"}):
+                continue
+            rating = (status.confirmed_rating
+                      if status.documentation_state in {"confirmed", "newer_observations"}
+                      and status.confirmed_rating in OBSERVATION_RATING_SCORES
+                      else status.observed_proposal)
+            if rating in OBSERVATION_RATING_SCORES:
+                scores.setdefault(status.competency_id, OBSERVATION_RATING_SCORES[rating])
+    if not scores:
+        return None
+    token = rating_from_weighted_score(sum(scores.values()) / len(scores))
+    return ("--", "-", "+", "++").index(token) + 1

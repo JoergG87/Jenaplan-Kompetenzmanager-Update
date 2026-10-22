@@ -3734,3 +3734,8 @@ recover_internal_test_v6_restore.on_verified_rollback ist ein interner einmalige
 Die native Migrationsfehlerkampagne hält den vor Fehlerbeginn geprüften synthetischen Loaded-Key-Kontext ausschließlich im Testprozessspeicher. Bestehender SyntheticTimetableMigration.inspect_restart dient als unabhängige Inhaltsprüfungsoracle unter echtem RuntimeInstanceLock; der reguläre Kaltstart bleibt gesperrt. Keine neue Runtime-/Recoverycapability, kein Schlüsseltransport und keine Persistenz von Schlüsselmaterial. Alle Fixturezustände bleiben im eigenen Profilcontainer erhalten.
 
 Native private Testhelfer: `_negatives`, `_migration_fault`, `_migration_inspect`, `_migration_failures`; ausschließlich scripts.macos_native_v6_acceptance. Der bestehende V4-Matrixrunner erwartet für vorgezogene Sicherheitsstopps 13/14/15 jetzt Exit3 vor Security/Anmeldung statt des früheren nachgelagerten Exit4; vollständige Bestandsprüfung bleibt zwingend.
+
+
+`subject_development_stage` in observation_view_model aggregiert die bereits kanonischen aktuellen Kompetenzstände eines Cockpitfachs einmal je Kompetenz-ID mit OBSERVATION_RATING_SCORES und rating_from_weighted_score. Rückgabe Pflanzenstufe 1–4 oder None. `ReportOverviewSubjectPlant` ist das nicht-interaktive 32×32-Pixel-Anzeigelabel im Fachchip.
+
+`v6-subject-plants` ist ein geschlossener sealed-only nativer Funktionssmoke im bestehenden Runner: liest drei synthetische Profilbundles, prüft alle Fachchips und vorhandene Pflanzenressourcen, speichert Screenshots ausschließlich im privaten Profilcontainer. Keine Bewertungs-/Schemamutation.

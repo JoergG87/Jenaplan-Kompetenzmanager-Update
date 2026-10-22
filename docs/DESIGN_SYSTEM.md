@@ -1353,3 +1353,6 @@ Noch unimplementiert: verständliche Wahl zwischen Fachunterricht und organisato
 Bestehender Editor erhält einfache Eintragsartwahl und sichtbare Mehrfachfachauswahl. Fachnamen werden umbrochen angezeigt, Stammgruppenstunde klar benannt. Kombinierte Beobachtungsaktionen verlangen eine bewusste Fachwahl mit anfänglich leerer Auswahl. Bestehende Formularscrollbarkeit und Zeitvorlagenaktionen bleiben erhalten.
 
 Native D-Sichtprüfung: Die Fachliste verwendet lokal einen separaten Qt-Listenstil, damit Cocoa ausgewählte Checkboxindikatoren nicht übereinander zeichnet. Beide gewählten Fächer bleiben einzeln sichtbar; das übrige App-Theme bleibt unverändert. Header und Speichern/Abbrechen bleiben bei 540 × 680 erreichbar; die Fachliste und Zielwahl liegen im scrollbar gehaltenen Formular.
+
+
+PO-Erweiterung 22.10.2026: vorhandene transparente Kompetenzpflanzen auch klein (32×32 Pixel, Seitenverhältnis erhalten) rechts oben im bestehenden Fachchip. Eigener Layoutplatz, neutraler Strich bei fehlenden Bewertungen; vorhandene Texte und Aktionen bleiben erhalten.

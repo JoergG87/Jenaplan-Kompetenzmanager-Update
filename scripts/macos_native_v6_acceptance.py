@@ -18,7 +18,7 @@ import tempfile
 from scripts.macos_native_acceptance import _active, _child, _keys, _provider, _parent_handoff, _snapshot
 
 MODES = frozenset({"v6-seed", "v6-migrate", "v6-check", "v6-crash", "v6-matrix",
-    "v6-functions", "v6-functions-reopen", "v6-negatives", "v6-migration-fault", "v6-migration-inspect"})
+    "v6-subject-plants", "v6-functions", "v6-functions-reopen", "v6-negatives", "v6-migration-fault", "v6-migration-inspect"})
 
 
 def _record(profile, name, payload):
@@ -920,11 +920,69 @@ def _negatives(profile):
     return result
 
 
+def _subject_plants(profile):
+    """Read the actual synthetic V6 profile and render only the requested chips."""
+    from datetime import date
+    from PySide6.QtWidgets import QApplication, QLabel
+    from src.core.restore_runtime import RuntimeInstanceLock
+    from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+    from src.desktop_app.screens.student_profile_screen import StudentProfileScreen
+    from src.desktop_app.theme import apply_app_theme
+    from src.desktop_app.view_models.observation_view_model import subject_development_stage
+    from src.security.internal_test_v6_composition import (
+        build_internal_test_v6_backup_service, open_internal_test_v6_runtime,
+    )
+    app = QApplication.instance() or QApplication([])
+    apply_app_theme(app)
+    root = Path(profile.runtime_root)
+    result = {"status": "ok", "students": [], "manual_ui_performed": False}
+    with RuntimeInstanceLock(root) as lock:
+        service = build_internal_test_v6_backup_service(root)
+        with open_internal_test_v6_runtime(service, lock=lock) as product:
+            adapter = StudentDesktopAdapter(database=product.runtime.database,
+                database_create_allowed=False, today_provider=lambda: date(2026,10,22),
+                managed_document_store=product.runtime.documents)
+            students = adapter.list_students()[:3]
+            if len(students) != 3:
+                raise RuntimeError("native_subject_plant_fixture_missing")
+            for student in students:
+                bundle = adapter.student_profile_projection_bundle(student.student_id)
+                overview = adapter.report_overview_for_student(student.student_id)
+                screen = StudentProfileScreen()
+                screen.set_student(bundle.student, observations=bundle.observations,
+                    competency_cockpit=bundle.competency_cockpit, report_overview=overview)
+                screen._report_subjects_expanded = True
+                screen._render_report_subjects(overview)
+                screen.profile_tabs.setCurrentIndex(3)
+                screen.resize(1280,900); screen.show(); app.processEvents()
+                plants = screen.findChildren(QLabel, "ReportOverviewSubjectPlant")
+                expected = {item.subject_id: subject_development_stage(item)
+                            for item in bundle.competency_cockpit.subjects}
+                if len(plants) != len(overview.subject_documentation):
+                    raise RuntimeError("native_subject_plant_missing_chip")
+                for plant in plants:
+                    stage = expected.get(plant.property("subject_id"))
+                    if plant.property("development_stage") != stage:
+                        raise RuntimeError("native_subject_plant_wrong_stage")
+                    if stage is not None and plant.pixmap().isNull():
+                        raise RuntimeError("native_subject_plant_missing_asset")
+                screenshot = root.parent / ("subject-plants-" + student.student_id + ".png")
+                if not screen.grab().save(str(screenshot)):
+                    raise RuntimeError("native_subject_plant_screenshot_failed")
+                result["students"].append({"student_id": student.student_id,
+                    "chips": len(plants), "stages": {p.property("subject_id"): p.property("development_stage") for p in plants},
+                    "screenshot": str(screenshot)})
+                screen.close(); app.processEvents()
+        _finalize(profile, lock)
+    _record(profile, "native-subject-plants.json", result)
+    return result
+
+
 def run_frozen(mode):
     profile = _active(mode)
     if mode not in MODES:
         raise RuntimeError("native_v6_mode_invalid")
-    return {"v6-seed": _seed, "v6-migrate": _migrate,
+    return {"v6-subject-plants": _subject_plants, "v6-seed": _seed, "v6-migrate": _migrate,
         "v6-check": _check, "v6-crash": _crash, "v6-matrix": _matrix,
         "v6-migration-fault": _migration_fault, "v6-migration-inspect": _migration_inspect,
         "v6-negatives": _negatives, "v6-functions": _functions,

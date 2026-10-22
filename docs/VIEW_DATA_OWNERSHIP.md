@@ -1651,3 +1651,6 @@ Keine neue Ansicht: Einstellungen und Stundenplan erhalten die vorhandene Lesson
 Keine neue Ansicht. Startupinventar und bestehende Lifecycle-/keyed Persistenzverifier bleiben technische Startgates; AppShell projiziert erst die vollständig freigegebene Runtime.
 
 Native V6-Restabnahme 22.10.2026: Security besitzt die lesende Voranmeldeprüfung vorhandener isolierter V6-Daten; Desktop orchestriert sie nach Recovery unter bestehendem Runtime-Lock. Keine neue Ansicht.
+
+
+Fachpflanze (22.10.2026): observation_view_model besitzt die read-only Aggregation; StudentProfileScreen rendert klein rechts oben im bestehenden Fachchip. Navigation, Reihenfolge und vorhandene Alle-anzeigen-Aktion bleiben erhalten.

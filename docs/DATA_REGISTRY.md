@@ -2691,3 +2691,6 @@ Keine neue Quelle oder Schemaidentität: exaktes registriertes synthetic_v6_norm
 
 ## Erhaltene Operationsjournale – 16.10.2026
 Keine neue Quelle: vorhandene .observation-staging/<32hex>/journal.json, .managed-document-staging/<32hex>/managed-document.json samt exakt gebundener leerer MED-Reservierung und .managed-document-staging/pdf-artifacts/<sha256>/managed-pdf-artifact.json sind technische Bestandsartefakte. Vollständige Inhalts-/Pfadprüfung durch bestehende Lifecycleparser; Journalstatus/Digest allein authentisiert keine Daten. Terminale Beobachtungen werden an keyed persistence_events gebunden, Dokument-/PDF-Historie an keyed Main-/Companion-/unveränderliche Artefaktbelege.
+
+
+Fachpflanze (22.10.2026): ausschließlich bestehendes StudentCompetencyCockpitViewModel aus dem Profilbundle und assets/competency_plants/stage_1.png bis stage_4.png. Keine neue Quelle oder Persistenz.

@@ -15,7 +15,7 @@ from PySide6.QtCore import (
     QUrl,
     Signal,
 )
-from PySide6.QtGui import QColor, QDesktopServices, QPainter, QPen
+from PySide6.QtGui import QColor, QDesktopServices, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -35,6 +35,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from src.desktop_app.runtime import resource_path
+from src.desktop_app.view_models.observation_view_model import subject_development_stage
 
 from src.desktop_app.components import (
     AppCard,
@@ -2196,6 +2199,8 @@ class StudentProfileScreen(QWidget):
         self.competency_pdf_button.setEnabled(bool(cockpit and cockpit.subjects))
         self._populate_competency_subject_filter(cockpit)
         self.apply_competency_cockpit_filters()
+        if self.current_report_overview is not None:
+            self._render_report_subjects(self.current_report_overview)
 
     def _request_competency_pdf(self) -> None:
         if self.current_student is not None:
@@ -3118,6 +3123,30 @@ class StudentProfileScreen(QWidget):
             set_label_style(label, "card_title")
             subject_header.addWidget(subject_symbol)
             subject_header.addWidget(label, 1)
+            plant = QLabel()
+            plant.setObjectName("ReportOverviewSubjectPlant")
+            plant.setFixedSize(32, 32)
+            plant.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            cockpit = self.current_competency_cockpit
+            source = next((item for item in cockpit.subjects
+                           if item.subject_id == subject.subject_id), None) if cockpit else None
+            stage = subject_development_stage(source)
+            plant.setProperty("development_stage", stage)
+            plant.setProperty("subject_id", subject.subject_id)
+            if stage is None:
+                plant.setText("–")
+                set_label_style(plant, "subtle")
+                description = "Keine bewerteten Kompetenzen"
+            else:
+                plant.setPixmap(QPixmap(str(resource_path(
+                    "assets", "competency_plants", f"stage_{stage}.png"
+                ))).scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio,
+                           Qt.TransformationMode.SmoothTransformation))
+                description = ("Durchschnitt der aktuellen bewerteten Kompetenzen · "
+                               f"Pflanzenstufe {stage} von 4 · keine Schulnote")
+            plant.setToolTip(description)
+            plant.setAccessibleName(f"{subject.subject_name}: {description}")
+            subject_header.addWidget(plant, 0, Qt.AlignmentFlag.AlignTop)
             competency_count = QLabel(subject.competency_count_text)
             competency_count.setObjectName("ReportOverviewCompetencyCount")
             competency_count.setWordWrap(True)

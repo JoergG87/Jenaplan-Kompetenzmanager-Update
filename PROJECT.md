@@ -1915,3 +1915,8 @@ Quellenreparaturen committed bis61375c2; übernommene Suite3466/104/120. Abschli
 
 ## V6-Nativstand – 22.10.2026
 Netzwerkblocker behoben; frisches isoliertes Paketf966414 und vorhandene native V6-Matrix einschließlich zuvor blockiertem Crash-/Recovery-/Worker-/Restart bestanden.6030 unveränderte Bundleeinträge,200 Codevergleiche, SQLCipher4.17/CommonCrypto. Quellen unverändert zur Suite3466/104/120; keine unnötige Wiederholung. Produktmigration bleibt gesperrt; vollständige negative Paketkampagnen und Lauras Bedienabnahme bleiben Freigabegates. Nachweise und Grenzen: docs/RELEASE_AUTOMATION.md.
+
+
+## Fachpflanzen – 22.10.2026
+
+PO-freigegebene kleine Fachchip-Erweiterung: vorhandene Pflanzen zeigen read-only den Mittelwert gültiger aktueller bewerteter Kompetenzen. Bestätigung vor bestehendem Vorschlag, jede Kompetenz einmal; unbewertete Kompetenzen entfallen. Vorhandene Scores und Schwellen, kein neues Rating und keine Speicherung. 353 gezielte UI-/Adaptertests mit 74 Unterprüfungen bestanden; unabhängiges Review ohne blockierenden Befund. Neues isoliertes V6-Paket folgt über die bestehende Pipeline; kein Produktrelease.

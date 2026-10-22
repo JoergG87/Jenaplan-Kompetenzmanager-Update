@@ -5595,3 +5595,8 @@ Finale Produktsuite nach enger Lifecyclekorrektur: 3292 bestanden, 104 bestehend
 ## V6-Restkorrektur - 22.10.2026
 
 - Isolierte lesende V6-Voranmeldepruefung mit strikt sidecarfreien Metadaten; 60 aktuelle Startup-/Compositiontests und 112 Paketprofiltests bestanden. Native Runtimebelege vorhanden; erweiterte Runner nicht vollstaendig paketqualifiziert, keine Gesamt-/Produktfreigabe.
+
+
+## Fachpflanzen – 22.10.2026
+
+- Kleine vorhandene Pflanzen rechts oben in Fachchips; aktuelle Bestätigung vor berechnetem Vorschlag, Kompetenz-IDs einmal, ohne Werte neutral. Navigation und alle bestehenden Fächer erhalten; Refresh nach Bewertungsänderung. Gezielte UI-/Adapterregression: 353 Tests und 74 Unterprüfungen bestanden; unabhängig geprüft. Keine Schemaänderung.
