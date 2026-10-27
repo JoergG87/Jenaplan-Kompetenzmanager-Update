@@ -5650,3 +5650,8 @@ V6-Regressionskorrektur: Restore-Worker/-Recovery verwenden ihre bekannte V6-Ide
 Abschließende Produktsuite: 3515 bestanden, 104 unveränderte bestehende Skips, 120 bestandene Untertests, Exit 0 (915,31 s). Gezielter Nachlauf: 59 bestanden, Exit 0. Keine neuen Skips oder Testausnahmen. Reale SQLCipherpfade für V4/V6→V7, Bestandserhaltung, Neustart sowie verschlüsseltes Backup/Restore; UI zusätzlich gerendert und visuell geprüft. Keine Behauptung nativer Paket- oder menschlicher Bedienabnahme.
 
 V7-Testpaket: vorhandenen sealed-only Paketprüfeinstieg um drei notwendige V7-Vorbereitungs-/Bedien-/Neustartmodi ergänzt. Keine Fach-, Schema- oder Sicherheitsarchitekturänderung. Ein einziges frisches internal-test-Paket und die tatsächlich ausgeführten Paketgates werden separat nachgewiesen.
+
+
+## Isoliertes V7-Testpaket für Laura – 27.10.2026
+
+Ein einziges frisches isoliertes V7-Testpaket gebaut und an seinem tatsächlichen Bundle geprüft: Profil/Signatur, SQLCipher, Start/Anmeldung, A/B-Bedienpfade, Einzelkorrektur/Rücknahme sowie Neustartpersistenz bestanden. Reguläre Anmeldung und sichtbare Bedienung zusätzlich werkzeuggestützt geprüft; kein Ersatz für Lauras praktische Abnahme. Kurzanleitung und synthetischer Testzugang liegen beim Paket. Keine Produktfehlerkorrektur oder Fachänderung nötig; kein Push, Tag oder Release.
