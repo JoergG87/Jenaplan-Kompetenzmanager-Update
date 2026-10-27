@@ -1367,3 +1367,12 @@ PO-Auswahlkorrektur 22.10.2026: Textmarkierungen und Listen-/Tabellen-/Baumauswa
 
 
 PO-Kalenderauftrag 22.10.2026: Datumspopups erhalten weiße Kartenfläche, hellen Navigationskopf, dunkle Monats-/Jahresschrift, flache Outline-Pfeile und LIGHT_TEAL-Auswahl mit COLOR_TEXT. Hover und Tastaturfokus bleiben sichtbar. Bestehende Datumsgrenzen, Monats-/Jahresnavigation und Auswahl bleiben unverändert; keine neuen Felder oder Datenquellen.
+
+
+## A-/B-Wochen – 27.10.2026
+
+A-/B-Auftrag 27.10.2026: bestehende Stundenplanseite und scrollbar gehaltener Editor bleiben bestehen. Kleine Datumsnavigation mit vorhandenem Kalenderfeld, A/B-Vorschau, klare Statuszeile automatisch/manuell. Referenz speichern und Einzelwoche korrigieren/zurücksetzen sind ausdrücklich beschriftete sekundäre Aktionen. Reine Vorschau schreibt nicht. Keine neue Kalenderansicht; vorhandene zentrale Farben, Feld- und Buttonrollen.
+
+PO-UX-Korrektur 27.10.2026: Wochensteuerung kompakt mit bestehenden IconButton-Pfeilen, Datum, Heute, Vorschau und sekundärer Aktion Wochenregeln. Grundrhythmus und Einzelkorrekturen liegen in einem standardmäßig eingeklappten Bereich. Der Status nennt tatsächliche Wochenzuordnung; eine abweichende Vorschau wird ausdrücklich als ungespeichert erkennbar. Keine dauerhafte Doppelstatuszeile oder Reihe von Korrekturbuttons im normalen Stundenplan.
+
+PO-Präzisierung: ausschließlich die beiden Wochenpfeile erhalten neutrale helle Fläche, graue Kontur, sanftes Petrol bei Hover/Drücken und bestehenden sichtbaren Fokus. Andere Icon- und Aktionsbuttons behalten ihre Farben.

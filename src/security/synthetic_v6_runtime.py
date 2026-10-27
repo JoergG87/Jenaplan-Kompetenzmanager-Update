@@ -31,6 +31,8 @@ class SyntheticV6RuntimeError(RuntimeError):
 
 class KeyedSyntheticV6CompatibilityInspector:
     """Validate an already keyed connection, including domain content."""
+    target_identity = SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity
+
     def inspect_connection(self, connection):
         try:
             before = connection.total_changes
@@ -52,7 +54,7 @@ class KeyedSyntheticV6CompatibilityInspector:
             if connection.execute("PRAGMA foreign_key_check").fetchall():
                 raise ValueError
             result = DatabaseCompatibilityInspector().inspect_connection(connection)
-            target = SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity
+            target = self.target_identity
             if (result.version.sqlite_user_version != target.schema_version
                     or result.schema_identity.fingerprint != target.fingerprint):
                 raise ValueError
@@ -145,6 +147,11 @@ class SyntheticV6Runtime:
     creation port, repair, source restore, or product admission is available.
     SQLite hot-journal recovery must finish separately before this entry.
     """
+    inspector_type = KeyedSyntheticV6CompatibilityInspector
+    opened_type = OpenedSyntheticV6Runtime
+    extra_historical_sources = ()
+    extra_historical_paths = frozenset()
+
     def __init__(self, backup_service):
         self.service = backup_service
         self.root = Path(backup_service.paths.final_v4.root)
@@ -190,7 +197,7 @@ class SyntheticV6Runtime:
         self._connections.add(connection)
         try:
             if inspect_main:
-                KeyedSyntheticV6CompatibilityInspector().inspect_connection(connection)
+                self.inspector_type().inspect_connection(connection)
             return connection
         except BaseException:
             connection.close()
@@ -214,6 +221,7 @@ class SyntheticV6Runtime:
             (self.root / "schema-upgrade-source/transaction-timetable-v1/source.jkmebackup",
                 (FinalV4EncryptedBackupService, SyntheticV5EncryptedBackupService)),
         )
+        sources += tuple((self.root / path, services) for path, services in self.extra_historical_sources)
         for path, allowed_services in sources:
             if not path.exists():
                 if path.parent.exists():
@@ -240,6 +248,10 @@ class SyntheticV6Runtime:
             else:
                 raise SyntheticV6RuntimeError("synthetic_v6_historical_source_invalid")
 
+    def _classify_terminal_restore(self):
+        from src.security.synthetic_v6_live_restore import classify_terminal_synthetic_v6_restore_artifacts
+        return classify_terminal_synthetic_v6_restore_artifacts(self.service)
+
     def _preflight(self):
         self._require_scope()
         inventory = ProductStartupInventory().inspect(self.root)
@@ -253,8 +265,7 @@ class SyntheticV6Runtime:
         inspect_retained_operation_journals(self.root)
         terminal_restore = False
         if inventory.restore_evidence:
-            from src.security.synthetic_v6_live_restore import classify_terminal_synthetic_v6_restore_artifacts
-            terminal_restore = classify_terminal_synthetic_v6_restore_artifacts(self.service)
+            terminal_restore = self._classify_terminal_restore()
         for artifact in inventory.artifacts:
             name = artifact.relative_path
             # Retained transactional source backup is historical only. Old
@@ -266,7 +277,7 @@ class SyntheticV6Runtime:
                     "schema-upgrade-source", "schema-upgrade-source/transaction-timetable-v1",
                     "schema-upgrade-source/transaction-timetable-v1/source.jkmebackup",
                     "schema-upgrade-source/transaction-v1",
-                    "schema-upgrade-source/transaction-v1/source.jkmebackup"}:
+                    "schema-upgrade-source/transaction-v1/source.jkmebackup"} | self.extra_historical_paths:
                 raise SyntheticV6RuntimeError("synthetic_v6_unknown_upgrade_evidence")
         self._verify_historical_sources()
         for path in (self.service.paths.final_v4.database, self.service.paths.database):
@@ -298,7 +309,7 @@ class SyntheticV6Runtime:
             service = self.service
             with closing(service._provider.connect_read_only(service.paths.final_v4.database,
                     key_material=service.loaded.database_key.key_material)) as connection:
-                report = KeyedSyntheticV6CompatibilityInspector().inspect_connection(connection)
+                report = self.inspector_type().inspect_connection(connection)
             service._inspect_companion(service.paths.database, service.loaded.database_key.key_material)
             documents = FinalV3DocumentRuntime(paths=service.paths, factory=self.document_factory,
                 loaded_keys=service.loaded, installation_id=service.installation_id,
@@ -311,7 +322,7 @@ class SyntheticV6Runtime:
             database = SQLiteDatabase(service.paths.final_v4.database, connection_provider=self.factory,
                 create=False, initialize_schema=False, maintenance_gate=service._gate)
             try:
-                opened = OpenedSyntheticV6Runtime(database,
+                opened = self.opened_type(database,
                     LessonTimeTemplateService(SQLiteLessonTimeTemplateRepository(database.connect)),
                     report, _SessionDocuments(self, documents), service.loaded.database_context_id,
                     service.installation_id, service.loaded)

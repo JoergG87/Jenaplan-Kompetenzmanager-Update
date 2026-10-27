@@ -48,12 +48,13 @@ def test_only_successful_verified_rollback_exports_its_existing_context(monkeypa
         callback.assert_not_called()
 
 
-def test_v6_profile_worker_and_restart_are_bound_to_exact_profile(profile):
+@pytest.mark.parametrize("version", [6,7])
+def test_v6_profile_worker_and_restart_are_bound_to_exact_profile(profile, version):
     validated = validate_test_profile(profile)
     root = Path(profile["runtime_root"])
-    worker = ["--restore-worker", "--restore-mode", RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED,
+    worker = ["--restore-worker", "--restore-mode", f"synthetic_v{version}_encrypted",
         "--handoff", str(root / "restore-handoffs" / "test.json"), "--nonce", "nonce"]
-    restart = ["--synthetic-v6-restore-confirm", "--runtime-root", str(root),
+    restart = [f"--synthetic-v{version}-restore-confirm", "--runtime-root", str(root),
         "--restore-id", "id", "--restore-token", "token", "--restore-lock-fd", "5"]
     _validate_arguments(validated, worker)
     _validate_arguments(validated, restart)
@@ -66,7 +67,8 @@ def test_v6_profile_worker_and_restart_are_bound_to_exact_profile(profile):
             _validate_arguments(validated, arguments)
 
 
-def test_real_source_worker_cannot_activate_v6_from_environment(tmp_path):
+@pytest.mark.parametrize("version", [6,7])
+def test_real_source_worker_cannot_activate_v6_from_environment(tmp_path, version):
     root = tmp_path.resolve() / "synthetic"
     handoffs = root / "restore-handoffs"
     handoffs.mkdir(parents=True)
@@ -74,7 +76,7 @@ def test_real_source_worker_cannot_activate_v6_from_environment(tmp_path):
     handoff.write_text("{}")
     before = {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()}
     result = subprocess.run([sys.executable, "-m", "src.desktop_app.restore_worker",
-        "--restore-mode", RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED,
+        "--restore-mode", f"synthetic_v{version}_encrypted",
         "--handoff", str(handoff), "--nonce", "unused"],
         cwd=Path(__file__).resolve().parents[1], capture_output=True,
         env=dict(os.environ, JENAPLAN_APP_DATA_DIR=str(root),

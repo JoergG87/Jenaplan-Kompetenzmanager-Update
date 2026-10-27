@@ -1368,7 +1368,9 @@ class SQLiteTimetableRepository:
         identity = SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity
         version = connection.execute("PRAGMA user_version").fetchone()[0]
         fingerprint = DatabaseCompatibilityInspector.schema_identity_for_connection(connection).fingerprint
-        if version == identity.schema_version and fingerprint == identity.fingerprint:
+        from src.core.timetable_weeks_schema import SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION
+        if any(version == target.schema_version and fingerprint == target.fingerprint
+                for target in (identity, SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity)):
             return True
         from src.core.schema_registry import FINAL_V4_SCHEMA_REGISTRATION
         from src.core.lesson_times_schema import SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION
@@ -1425,12 +1427,29 @@ class SQLiteTimetableRepository:
                 extended = self._extended(connection)
                 if not extended and (entry.entry_kind != "subject_lesson" or len(entry.subject_ids) != 1):
                     raise TimetableValidationError("Diese Stundenart benötigt die freigegebene Testinstallation.")
+                from src.security.infrastructure.timetable_weeks import SQLiteTimetableWeekRepository
+                weeks = SQLiteTimetableWeekRepository.supports_connection(connection)
+                if entry.week_pattern != "all" and (not weeks or not connection.execute("SELECT 1 FROM timetable_week_cycle").fetchone()):
+                    raise TimetableValidationError("Bitte zuerst den A-/B-Rhythmus einrichten.")
+                # Recheck under the write transaction; competing editors must
+                # not bypass the overlap rule with stale prevalidation.
+                entries = tuple(self._read_entry(connection, row, extended) for row in
+                    connection.execute("SELECT * FROM timetable_entries WHERE deleted_at=''"))
+                from src.core.timetable import TimetableValidator
+                from src.core.upgrade_validation import timetable_instructional_subject_ids
+                targets = {kind: tuple(r[0] for r in connection.execute(f"SELECT {column} FROM {table}"))
+                    for kind, table, column in (("group","groups","group_id"),("course","courses","course_id"),("course_group","course_groups","course_group_id"))}
+                TimetableValidator().validate(entry, valid_subject_ids=timetable_instructional_subject_ids(connection),
+                    valid_target_ids=targets, existing_entries=entries)
                 columns = ("timetable_entry_id", "weekday", "start_time", "end_time",
                     "entry_kind" if extended else "subject_id", "target_type", "target_id",
                     "room", "active", "sort_order", "created_at", "updated_at", "deleted_at")
                 values = list(_timetable_entry_values(entry))
                 if extended:
                     values[4] = entry.entry_kind
+                if weeks:
+                    columns += ("week_pattern",)
+                    values.append(entry.week_pattern)
                 if create:
                     connection.execute(f"INSERT INTO timetable_entries ({', '.join(columns)}) VALUES ({', '.join('?' for _ in columns)})", values)
                 else:

@@ -14,7 +14,8 @@ class SQLiteLessonTimeTemplateRepository:
     @staticmethod
     def _require_target(connection):
         result = DatabaseCompatibilityInspector().inspect_connection(connection)
-        targets = (SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION.identity,
+        from src.core.timetable_weeks_schema import SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION
+        targets = (SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity,SYNTHETIC_LESSON_TIMES_SCHEMA_REGISTRATION.identity,
             SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity)
         if (str(connection.execute("PRAGMA cipher_status").fetchone()[0]) != "1"
                 or not any(result.version.sqlite_user_version == target.schema_version

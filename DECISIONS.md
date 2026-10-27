@@ -4742,3 +4742,10 @@ Die vorhandenen V6-Services werden über einen begrenzten versiegelten internal-
 ### Erhaltene Operationsbelege beim Startup – 16.10.2026
 
 Das Inventar erkennt ausschließlich die exakten vorhandenen Journalrollen. A1 vergibt keine Inhaltsautorität. Der bestehende Produktpreflight prüft Layout und Lifecyclezustand read-only; nach exaktem keyed Runtimeopen bindet der Application-Verifier COMPLETE-Belege an unveränderliche Persistenzereignisse und historische Companiongenerationen. Ein Pfad oder COMPLETE allein genügt nicht. Offene Operationen halten vor normaler Runtime sicher an; keine automatische Reparatur oder neue Recoveryplattform. Historische Operationen werden nicht mit später legitim geänderten aktuellen Beobachtungsdaten gleichgesetzt. V6 verwendet ausschließlich die bestehende synthetische Testautorität; Final V4 bleibt alleinige Produktregistry.
+
+
+## A-/B-Wochen – 27.10.2026
+
+A-/B-Produktentscheidung 27.10.2026: kleinste additive verschlüsselte Wochenregeln als eigene synthetische V7-Identität. Wochenabstand zum Referenzmontag statt KW-Parität. Einzelkorrekturen verändern keine Rhythmusphase. Bestehende Domain-/Repository-/Desktopkomposition und transaktionale SQLCiphermigration weiterverwenden. V4 direkt erreichbar; V6 bleibt exakte historische und testbare Identität. Keine Produktmigration/Releasefreigabe.
+
+UX-Korrektur im selben Auftrag: nur Wochennavigation, Vorschau und Status dauerhaft anzeigen. Referenz und Einzelkorrektur in einem ausdrücklich aufklappbaren Bereich Wochenregeln; vorhandene Felder/Commands bleiben unverändert.

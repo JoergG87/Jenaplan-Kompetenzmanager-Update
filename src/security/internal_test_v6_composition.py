@@ -13,6 +13,7 @@ from src.core.database_compatibility import DatabaseCompatibilityInspector
 from src.core.maintenance_gate import MaintenanceGate
 from src.core.schema_registry import FINAL_V4_SCHEMA_REGISTRATION
 from src.core.timetable_schema import SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION
+from src.core.timetable_weeks_schema import SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION
 from src.core.runtime_root_protection import require_mutable_test_root
 from src.security.database_key_runtime import DatabaseKeyRuntimePaths
 from src.security.existing_installation_keys import ExistingInstallationKeys, ExistingInstallationKeyStatus
@@ -28,7 +29,9 @@ from src.security.upgrade_startup import ProductStartupInventory, ProductUpgrade
 _HISTORICAL = frozenset({"schema-upgrade-source",
     "schema-upgrade-source/transaction-v1", "schema-upgrade-source/transaction-v1/source.jkmebackup",
     "schema-upgrade-source/transaction-timetable-v1",
-    "schema-upgrade-source/transaction-timetable-v1/source.jkmebackup"})
+    "schema-upgrade-source/transaction-timetable-v1/source.jkmebackup",
+    "schema-upgrade-source/transaction-timetable-weeks-v1",
+    "schema-upgrade-source/transaction-timetable-weeks-v1/source.jkmebackup"})
 
 
 def require_internal_test_v6_context(root):
@@ -74,14 +77,14 @@ class InternalTestStartupGuard(ProductUpgradeStartupGuard):
         current = self.inventory.inspect(self.lock.runtime_root)
         if not current.restore_evidence and any(a.role == "upgrade_evidence" for a in current.artifacts):
             service = build_internal_test_v6_backup_service(self.lock.runtime_root)
-            SyntheticV6Runtime(service)._verify_historical_sources()
+            internal_test_runtime_type(service)(service)._verify_historical_sources()
             if current != self.inventory.inspect(self.lock.runtime_root):
                 raise SyntheticV6RuntimeError("synthetic_v6_inventory_changed")
         return result
 
 
 def build_internal_test_v6_backup_service(root, *, authenticated_account=None,
-        key_store=None, provider=None, loaded_keys=None, checkpointed_metadata_reads=False):
+        key_store=None, provider=None, loaded_keys=None, checkpointed_metadata_reads=False, schema_identity=None):
     profile = require_internal_test_v6_context(root)
     root = Path(root)
     account = authenticated_account
@@ -110,9 +113,19 @@ def build_internal_test_v6_backup_service(root, *, authenticated_account=None,
     opened = SimpleNamespace(documents=documents, installation_id=account.installation_id,
         database_context_id=loaded_keys.database_context_id,
         final_v4=SimpleNamespace(compatibility=None))
-    return SyntheticV6EncryptedBackupService(opened_runtime=opened, paths=paths,
+    identity = schema_identity
+    if identity is None:
+        probe = SimpleNamespace(_provider=provider, paths=paths, loaded=loaded_keys)
+        identity = internal_test_schema_identity(probe)
+    from src.security.synthetic_v7_backup_runtime import SyntheticV7EncryptedBackupService
+    from src.security.synthetic_v7_runtime import KeyedSyntheticV7CompatibilityInspector
+    from src.security.synthetic_v6_runtime import KeyedSyntheticV6CompatibilityInspector
+    is_v7 = identity == SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity
+    service_type = SyntheticV7EncryptedBackupService if is_v7 else SyntheticV6EncryptedBackupService
+    inspector_type = KeyedSyntheticV7CompatibilityInspector if is_v7 else KeyedSyntheticV6CompatibilityInspector
+    return service_type(opened_runtime=opened, paths=paths,
         checkpointed_metadata_reads=checkpointed_metadata_reads,
-        loaded_keys=loaded_keys, main_factory=_ExistingV6MainFactory(provider, paths.final_v4.database, key),
+        loaded_keys=loaded_keys, main_factory=_ExistingV6MainFactory(provider, paths.final_v4.database, key, inspector_type),
         document_factory=document_factory, provider=provider, maintenance_gate=MaintenanceGate(),
         random_source=SystemRandomSource(), clock=SystemClock())
 
@@ -123,7 +136,7 @@ def internal_test_schema_identity(service):
             key_material=service.loaded.database_key.key_material)) as connection:
         result = DatabaseCompatibilityInspector().inspect_connection(connection)
         for identity in (FINAL_V4_SCHEMA_REGISTRATION.identity,
-                SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity):
+                SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity, SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity):
             if (result.version.sqlite_user_version == identity.schema_version
                     and result.schema_identity.fingerprint == identity.fingerprint):
                 return identity
@@ -146,8 +159,8 @@ def preflight_internal_test_existing_runtime(root, *, lock):
             or service.installation_id != profile.installation_id):
         raise SyntheticV6RuntimeError("synthetic_v6_installation_mismatch")
     try:
-        if internal_test_schema_identity(service) == SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity:
-            with SyntheticV6Runtime(service).open_existing(lock=lock):
+        if internal_test_schema_identity(service) in (SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity, SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity):
+            with internal_test_runtime_type(service)(service).open_existing(lock=lock):
                 pass
     except Exception:
         raise SyntheticV6RuntimeError("synthetic_v6_full_inspection_failed") from None
@@ -157,7 +170,7 @@ def preflight_internal_test_existing_runtime(root, *, lock):
 def open_internal_test_v6_runtime(service, *, lock):
     from src.security.cipher_product_runtime import OpenedCipherProductRuntime, _require_completed_fachlicher_first_run
     require_internal_test_v6_context(lock.runtime_root)
-    with SyntheticV6Runtime(service).open_existing(lock=lock) as opened:
+    with internal_test_runtime_type(service)(service).open_existing(lock=lock) as opened:
         _require_completed_fachlicher_first_run(opened)
         loaded = service.loaded
         yield OpenedCipherProductRuntime(runtime=opened, first_run=False,
@@ -169,8 +182,9 @@ def open_internal_test_v6_runtime(service, *, lock):
 
 
 class _ExistingV6MainFactory:
-    def __init__(self, provider, path, key):
+    def __init__(self, provider, path, key, inspector_type=None):
         self.provider, self.path, self.key = provider, path, key
+        self.inspector_type = inspector_type
 
     def connect(self, path, *, create=False):
         from src.security.synthetic_v6_runtime import KeyedSyntheticV6CompatibilityInspector
@@ -178,14 +192,14 @@ class _ExistingV6MainFactory:
             raise SyntheticV6RuntimeError("synthetic_v6_existing_path_required")
         connection = self.provider.connect(self.path, create=False, key_material=self.key)
         try:
-            KeyedSyntheticV6CompatibilityInspector().inspect_connection(connection)
+            (self.inspector_type or KeyedSyntheticV6CompatibilityInspector)().inspect_connection(connection)
             return connection
         except BaseException:
             connection.close()
             raise
 
 
-def internal_test_restore_is_v6(root):
+def internal_test_restore_kind(root):
     """Unauthenticated routing only; the selected exact verifier grants admission.
 
     A foreign/mixed contract blocks, never falls back to the V4 verifier.
@@ -207,10 +221,19 @@ def internal_test_restore_is_v6(root):
             else:
                 state = json.loads(child.read_text())
             kinds.add(state.get("restore_kind"))
+    from src.security.synthetic_v7_live_restore import SYNTHETIC_V7_LIVE_RESTORE_KIND
     if not kinds:
-        return False
-    if kinds == {SYNTHETIC_V6_LIVE_RESTORE_KIND}:
-        return True
-    if kinds == {FINAL_V4_LIVE_RESTORE_KIND}:
-        return False
+        return None
+    if len(kinds) == 1 and kinds <= {SYNTHETIC_V6_LIVE_RESTORE_KIND, SYNTHETIC_V7_LIVE_RESTORE_KIND, FINAL_V4_LIVE_RESTORE_KIND}:
+        return next(iter(kinds))
     raise SyntheticV6RuntimeError("synthetic_v6_restore_contract_conflict")
+
+
+def internal_test_restore_is_v6(root):
+    from src.security.synthetic_v6_live_restore import SYNTHETIC_V6_LIVE_RESTORE_KIND
+    return internal_test_restore_kind(root) == SYNTHETIC_V6_LIVE_RESTORE_KIND
+
+
+def internal_test_runtime_type(service):
+    from src.security.synthetic_v7_runtime import SyntheticV7Runtime
+    return SyntheticV7Runtime if internal_test_schema_identity(service) == SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity else SyntheticV6Runtime

@@ -4010,3 +4010,10 @@ Fachpflanze (22.10.2026): reine Anzeige aus aktuellem Profilbundle; Profil-/Cock
 
 
 Zeit-/Zahlenfeld-UX 22.10.2026: Darstellung der Auswahl und Stepper unverändert an vorhandene Qt-Eingabe gebunden. Keine Änderung von Schrittweite, Validierung, Übernahme oder Speicherung.
+
+
+## A-/B-Wochen – 27.10.2026
+
+Referenzdatum wird im Domainmodell auf ISO-Montag normalisiert. Wochenabstand in ganzen Wochen bestimmt A/B, auch negativ/Jahreswechsel/KW53; Ferien zählen normal. Einzelkorrektur ersetzt atomar genau einen PK oder wird gelöscht, ohne Referenz/Nachfolger zu schreiben. Alle Writes via product_writer → Domain/Repository → verschlüsselte Main unter BEGIN IMMEDIATE. A/B-Einträge erst nach Referenzkonfiguration. All kollidiert mit A und B, A nur mit A und all. Bestehende Einträge werden mit all übernommen; keine Duplikation/Beobachtungsänderung. Migration: bestehendes verschlüsseltes Quellvollbackup, unabhängige Prüfung, Drain, BEGIN EXCLUSIVE, additive V7-DDL (V4 zusätzlich bestehender normalisierter Rebuild innerhalb derselben Transaktion), typgetreuer Inhaltsvergleich und keyed Reopen. V6-Fachlinks/Vorlagen/historische Bewertungen vollständig erhalten. Eigener Quellcontainer transaction-timetable-weeks-v1; frühere Quellen nur nach eigener Authentisierung. V7 eigener exakter Manifestentry, READY 4 und Handoffzweck; alter V4/V6-Vertrag erteilt keine V7-Restoreautorität.
+
+V6-Restorebootstrap bleibt ausdrücklich V6-gebunden: während einer unterbrochenen Main-/Companion-Ersetzung darf die Strategieauswahl keine vorhandene Main voraussetzen. V7 verwendet entsprechend seine explizite V7-Bindung. Erst die bestehende authentisierte Recovery und anschließende Vollprüfung erlauben die Runtime.

@@ -47,6 +47,7 @@ class TimetableEntryViewModel:
     entry_kind: str = "subject_lesson"
     subject_ids: tuple[str, ...] = ()
     subject_options: tuple[TimetableOptionViewModel, ...] = ()
+    week_pattern: str = "all"
 
     def __post_init__(self) -> None:
         subjects = tuple(self.subject_ids)
@@ -83,6 +84,11 @@ class TimetableWeekViewModel:
     targets_by_type: dict[str, tuple[TimetableOptionViewModel, ...]]
 
     supports_extended_entries: bool = False
+    supports_week_patterns: bool = False
+    week_assignment: object | None = None
+    preview_kind: str | None = None
+    reference_monday: date | None = None
+    reference_kind: str | None = None
 
     @property
     def is_empty(self) -> bool:

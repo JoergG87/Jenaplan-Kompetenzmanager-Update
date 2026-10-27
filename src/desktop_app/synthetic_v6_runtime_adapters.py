@@ -7,6 +7,7 @@ import subprocess
 import sys
 
 from src.core.restore_runtime import RestoreTransactionPaths, RuntimeInstanceLock
+from src.core.timetable_schema import SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION
 from src.desktop_app.restore_worker import (
     RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED,
     RestoreWorkerProcess,
@@ -65,7 +66,8 @@ def build_internal_test_v6_restore_worker_service(root: Path, *, lock: RuntimeIn
         from src.core.restore_runtime import RestorePreflightError
         raise RestorePreflightError("Der synthetische V6-Workerroot widerspricht der Sperre.")
     InternalTestStartupGuard(lock).evaluate()
-    service = build_internal_test_v6_backup_service(root)
+    service = build_internal_test_v6_backup_service(root,
+            schema_identity=SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity)
     return SyntheticV6EncryptedLiveRestoreService(service,
         restart_launcher=DesktopSyntheticV6RestartLauncher())
 
@@ -96,7 +98,8 @@ def confirm_internal_test_v6_restore(root: Path, restore_id: str, token: str):
     from src.security.synthetic_v6_live_restore import confirm_synthetic_v6_restore_startup
 
     require_internal_test_v6_context(root)
-    service = build_internal_test_v6_backup_service(root)
+    service = build_internal_test_v6_backup_service(root,
+            schema_identity=SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity)
     return confirm_synthetic_v6_restore_startup(backup_service=service,
         runtime_root=root, restore_id=restore_id, token=token)
 
@@ -121,7 +124,8 @@ def build_internal_test_v6_restore_verifier(root: Path):
 
     require_internal_test_v6_context(root)
     try:
-        return build_internal_test_v6_backup_service(root)
+        return build_internal_test_v6_backup_service(root,
+            schema_identity=SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity)
     except Exception:
         # The fallback can only authenticate existing metadata; it cannot
         # create, rotate, restore, or normalize any key or directory.
@@ -145,4 +149,5 @@ def build_internal_test_v6_restore_verifier(root: Path):
             account_loader=lambda: account, restore_kind=SYNTHETIC_V6_LIVE_RESTORE_KIND,
             handoff_service_type=SyntheticV6EncryptedRestoreHandoffService)
         return build_internal_test_v6_backup_service(root,
+            schema_identity=SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity,
             authenticated_account=account, loaded_keys=loaded)

@@ -633,6 +633,10 @@ class AppShell(QMainWindow):
         self.settings_screen.documentation_subjects_save_requested.connect(
             self.save_documentation_subject_settings
         )
+        self.settings_screen.timetable_week_view_requested.connect(self.refresh_timetable_view)
+        self.settings_screen.timetable_cycle_requested.connect(self.configure_timetable_week_cycle)
+        self.settings_screen.timetable_override_requested.connect(self.set_timetable_week_override)
+        self.settings_screen.timetable_override_clear_requested.connect(self.clear_timetable_week_override)
         self.settings_screen.timetable_add_requested.connect(
             self.open_new_timetable_entry_dialog
         )
@@ -965,7 +969,7 @@ class AppShell(QMainWindow):
     def refresh_settings(self) -> None:
         """Refresh settings from SQLite-backed adapter data."""
         self.settings_screen.set_settings(self.adapter.settings_view_model())
-        self.settings_screen.set_timetable(self.timetable_adapter.week_view_model())
+        self.refresh_timetable_view()
         if self.lesson_time_templates_adapter is not None:
             self.settings_screen.lesson_time_templates_editor.set_view_model(
                 self.lesson_time_templates_adapter.view_model())
@@ -1569,6 +1573,30 @@ class AppShell(QMainWindow):
             return
         editor.set_view_model(self.lesson_time_templates_adapter.view_model())
         editor.message.set_message("Unterrichtszeit wurde gespeichert.", tone="success")
+
+    def refresh_timetable_view(self):
+        screen = self.settings_screen
+        screen.set_timetable(self.timetable_adapter.week_view_model(
+            screen.timetable_week_date.date().toPython(), screen.timetable_week_preview.currentData()))
+
+    def _save_timetable_week_change(self, action):
+        try:
+            action()
+        except (ValueError, RuntimeError) as error:
+            self.settings_screen.timetable_week_message.set_message(str(error), tone="warning")
+            return
+        self.refresh_timetable_view()
+        self.refresh_dashboard()
+        self.settings_screen.timetable_week_message.set_message("Wochenregel wurde gespeichert.", tone="success")
+
+    def configure_timetable_week_cycle(self, reference, kind):
+        self._save_timetable_week_change(lambda: self.timetable_adapter.configure_week_cycle(reference, kind))
+
+    def set_timetable_week_override(self, value, kind):
+        self._save_timetable_week_change(lambda: self.timetable_adapter.set_week_override(value, kind))
+
+    def clear_timetable_week_override(self, value):
+        self._save_timetable_week_change(lambda: self.timetable_adapter.clear_week_override(value))
 
     def open_new_timetable_entry_dialog(self, weekday: int) -> None:
         """Create one timetable entry from the settings week."""

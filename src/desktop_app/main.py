@@ -416,12 +416,15 @@ def main() -> int:
 
     try:
         final_v4_restore_confirm = "--final-v4-restore-confirm" in arguments
+        synthetic_v7_restore_confirm = "--synthetic-v7-restore-confirm" in arguments
         synthetic_v6_restore_confirm = "--synthetic-v6-restore-confirm" in arguments
+        if synthetic_v7_restore_confirm and (synthetic_v6_restore_confirm or final_v4_restore_confirm):
+            raise RuntimeStorageError("cipher_restore_confirm_arguments_conflict")
         if final_v4_restore_confirm and synthetic_v6_restore_confirm:
             raise RuntimeStorageError("cipher_restore_confirm_arguments_conflict")
-        restore_confirm = final_v4_restore_confirm or synthetic_v6_restore_confirm
+        restore_confirm = final_v4_restore_confirm or synthetic_v6_restore_confirm or synthetic_v7_restore_confirm
         if restore_confirm:
-            arguments.remove("--synthetic-v6-restore-confirm" if synthetic_v6_restore_confirm else "--final-v4-restore-confirm")
+            arguments.remove("--synthetic-v7-restore-confirm" if synthetic_v7_restore_confirm else "--synthetic-v6-restore-confirm" if synthetic_v6_restore_confirm else "--final-v4-restore-confirm")
             restore_runtime_root = _argument_value(arguments, "--runtime-root")
             restore_confirm_id = _argument_value(arguments, "--restore-id")
             restore_confirm_token = _argument_value(arguments, "--restore-token")
@@ -472,7 +475,7 @@ def main() -> int:
             require_internal_test_v6_context(data_root)
             inventory_port = InternalTestStartupInventory()
         else:
-            if synthetic_v6_restore_confirm:
+            if synthetic_v6_restore_confirm or synthetic_v7_restore_confirm:
                 raise RuntimeRootProtectionError("synthetic_v6_sealed_context_required")
             inventory_port = ProductStartupInventory()
         before_inventory = inventory_port.before_lock(data_root)
@@ -520,14 +523,24 @@ def main() -> int:
             )
             # Restore kind comes from existing transaction evidence. A foreign
             # contract is never retried using another schema's verifier.
-            from src.security.internal_test_v6_composition import internal_test_restore_is_v6
-            v6_restore = synthetic_v6_restore_confirm or internal_test_restore_is_v6(data_root)
+            from src.security.internal_test_v6_composition import internal_test_restore_kind
+            from src.security.synthetic_v6_live_restore import SYNTHETIC_V6_LIVE_RESTORE_KIND
+            from src.security.synthetic_v7_live_restore import SYNTHETIC_V7_LIVE_RESTORE_KIND
+            kind = internal_test_restore_kind(data_root)
+            if ((synthetic_v6_restore_confirm and kind != SYNTHETIC_V6_LIVE_RESTORE_KIND)
+                    or (synthetic_v7_restore_confirm and kind != SYNTHETIC_V7_LIVE_RESTORE_KIND)):
+                raise RuntimeStorageError("cipher_restore_schema_mismatch")
+            if kind == SYNTHETIC_V7_LIVE_RESTORE_KIND:
+                from src.desktop_app.synthetic_v7_runtime_adapters import (
+                    recover_internal_test_v7_restore as recover_internal_test_v6_restore,
+                    confirm_internal_test_v7_restore as confirm_internal_test_v6_restore)
+            v6_restore = synthetic_v6_restore_confirm or synthetic_v7_restore_confirm or kind in (SYNTHETIC_V6_LIVE_RESTORE_KIND, SYNTHETIC_V7_LIVE_RESTORE_KIND)
         else:
             v6_restore = False
         if v6_restore:
             if final_v4_restore_confirm:
                 raise RuntimeStorageError("cipher_restore_schema_mismatch")
-            if synthetic_v6_restore_confirm:
+            if synthetic_v6_restore_confirm or synthetic_v7_restore_confirm:
                 confirm_internal_test_v6_restore(data_root, str(restore_confirm_id), str(restore_confirm_token))
             else:
                 recovery = recover_internal_test_v6_restore(
@@ -771,7 +784,8 @@ def main() -> int:
                     authenticated_account=account, loaded_keys=v6_recovery_context[0].loaded)
             else:
                 candidate = build_internal_test_v6_backup_service(data_root, authenticated_account=account)
-            if internal_test_schema_identity(candidate) == SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity:
+            from src.core.timetable_weeks_schema import SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION
+            if internal_test_schema_identity(candidate) in (SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity, SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity):
                 v6_service = candidate
         if v6_service is not None:
             product_runtime = runtime_stack.enter_context(open_internal_test_v6_runtime(v6_service, lock=lock))
@@ -837,6 +851,10 @@ def main() -> int:
         else:
             from src.application.commands.synthetic_v6_backup_restore import SyntheticV6EncryptedRestoreApplicationService
             from src.desktop_app.synthetic_v6_runtime_adapters import DesktopSyntheticV6RestoreWorkerLauncher
+            from src.security.synthetic_v7_backup_runtime import SyntheticV7EncryptedBackupService
+            if type(v6_service) is SyntheticV7EncryptedBackupService:
+                from src.application.commands.synthetic_v7_backup_restore import SyntheticV7EncryptedRestoreApplicationService as SyntheticV6EncryptedRestoreApplicationService
+                from src.desktop_app.synthetic_v7_runtime_adapters import DesktopSyntheticV7RestoreWorkerLauncher as DesktopSyntheticV6RestoreWorkerLauncher
             encrypted_backup_service = v6_service
             # The existing support-reset backup strategy is V4-specific. No
             # V4 reset capability is passed into a V6 session.
@@ -1155,8 +1173,10 @@ def _run_packaged_smoke(
                 started.process.terminate()
             started.process.wait(timeout=5)
             os.close(started.parent_lifetime_fd)
-        if compatibility.sqlite_user_version == 6:
+        if compatibility.sqlite_user_version in (6, 7):
             from src.desktop_app.synthetic_v6_runtime_adapters import recover_internal_test_v6_restore
+            if compatibility.sqlite_user_version == 7:
+                from src.desktop_app.synthetic_v7_runtime_adapters import recover_internal_test_v7_restore as recover_internal_test_v6_restore
             recovery = recover_internal_test_v6_restore(paths.root)
         else:
             recovery = recover_interrupted_final_v4_restore(

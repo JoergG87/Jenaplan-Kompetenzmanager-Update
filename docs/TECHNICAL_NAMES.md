@@ -3745,3 +3745,14 @@ Native private Testhelfer: `_negatives`, `_migration_fault`, `_migration_inspect
 
 
 chevron-left und chevron-right ergänzen das vorhandene Outline-SVG-Set. QCalendarWidget-Regeln im zentralen APP_STYLESHEET gestalten die vorhandenen Qt-Datumspopups, ohne neue Widget-API.
+
+
+## A-/B-Wochen – 27.10.2026
+
+core/timetable_weeks.py: TimetableWeekCycle, TimetableWeekAssignment, iso_week_monday; security/infrastructure/timetable_weeks.py: SQLiteTimetableWeekRepository. timetable_entries.week_pattern = all/A/B. timetable_week_cycle singleton_id/reference_monday/reference_kind; timetable_week_overrides week_monday/week_kind. core/timetable_weeks_schema.py registriert SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION/REGISTRY und TIMETABLE_WEEKS_STATEMENTS. SyntheticTimetableWeeksMigration nutzt den bestehenden SQLCiphertransaktionspfad. V7-Strategien SyntheticV7Runtime, KeyedSyntheticV7CompatibilityInspector und SyntheticV7EncryptedBackupService sowie eigene Manifest-/READY-/Handoffverträge verwenden bestehende V6-/V4-Mechanik; keine Produktcapability. supports_week_patterns kennzeichnet exakte V7-Fähigkeit. week_assignment, configure_week_cycle, set_week_override, clear_week_override sind Adapterports. Ansichtsauswahl bleibt flüchtig.
+
+V7 nutzt OpenedSyntheticV7Runtime und SyntheticV7EncryptedBackupManifestV1, READY-Version 4, Manifestentry ...000007, synthetic-v7-backup-manifest-v1.json. SyntheticV7EncryptedLiveRestoreService/RestoreHandoffService und prepare/confirm/recover/classify_terminal_synthetic_v7_restore_* sind reine Identitätsstrategien der bestehenden Cipher-State-Machine. internal_test_runtime_type und internal_test_restore_kind wählen exakt geprüfte Strategien; internal_test_v7_composition bindet den vorhandenen Bootstrap. DesktopSyntheticV7RestoreWorkerLauncher/RestartLauncher, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED und --synthetic-v7-restore-confirm erweitern den vorhandenen versiegelten Prozesspfad. Shared V6-Runtime-Hooks inspector_type/opened_type/extra_historical_sources/extra_historical_paths behalten ihre V6-Defaults.
+
+Stundenplan-UX: timetable_week_rules_toggle und timetable_week_rules besitzen ausschließlich flüchtigen Aufklappzustand. Bestehende Referenz-/Korrekturfelder und ihre Adaptercommands bleiben unverändert zugeordnet; Vorschauhinweis erscheint nur bei Abweichung von der gültigen Woche.
+
+Die lokale Qt-Property timetableWeekNavigation kennzeichnet ausschließlich die beiden Wochenpfeile für die neutrale Darstellung im zentralen Theme.

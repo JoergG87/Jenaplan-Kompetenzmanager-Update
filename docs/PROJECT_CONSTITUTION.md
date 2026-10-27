@@ -1638,3 +1638,8 @@ PO-Auftrag 22.10.2026: bestehende Fachchips erhalten eine kleine Pflanze aus vor
 
 
 PO-UX-Auftrag 22.10.2026: Zeit-/Zahleneingaben appweit im vorhandenen Design modernisieren. Kleine klare Pfeile statt ungestalteter nativer Stepper; ruhige Markierung der ausgewählten Zeitziffern. Blaue Aktionsbuttons ausdrücklich unverändert. Reine Präsentation, keine Fach-/Speicheränderung.
+
+
+## A-/B-Wochen – 27.10.2026
+
+PO-Auftrag 27.10.2026 autorisiert A-/B-Wochen im bestehenden Stundenplan: fortlaufender Rhythmus ab Referenzmontag, einzelne dauerhafte Korrekturen ohne Phasenverschiebung. Eigenes synthetisches V7; V4/V6 unverändert, Produktmigration und Veröffentlichung gesperrt. Bestehende UX und transaktionaler SQLCipherpfad. Nach erneuter PO-Freigabe der minimalen V7-Erweiterung: Implementierung, gezielte Tests, Produktsuite und Commit; Stand der isolierten Test-App berichten, keine automatische Folgephase.

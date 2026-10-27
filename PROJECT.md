@@ -1935,3 +1935,14 @@ PO-freigegebene kleine Fachchip-Erweiterung: vorhandene Pflanzen zeigen read-onl
 ## Zeitfeld-Test-App – 22.10.2026
 
 - Zentral modernisierte Zeit-/Zahlenfelder als neue isolierte V6-Test-App aus c881cf2 bereitgestellt. 26 gezielte Prüfungen grün, zwei Cocoa-Quellvorschauen geprüft; Bundle/Startup/Neustart erfolgreich und nach Smokes unverändert. Aktionsbuttons und bestehende Testinstallation unverändert. Nachweise unter output/v6-acceptance/2026-10-22-time-controls/.
+
+
+## A-/B-Wochen – 27.10.2026
+
+A-/B-Auftrag 27.10.2026: letzte geplante Fachfunktion vor Pilotupdate. Ziel ist automatischer fortlaufender ISO-Wochenrhythmus, verschlüsselte Einzelkorrektur, Editorfilter und datumsgebundenes Dashboard unter neuem synthetischem V7. Produkt bleibt 0.4.4 / Build 404 / Final V4; V6 und V7 unveröffentlicht.
+
+Umsetzung: V7 mit week_pattern plus zwei kleinen verschlüsselten Wochentabellen; vorhandene Runtime-/Backup-/Restoremechanik als exakte V7-Strategien. V6-Identität unverändert. Bedienung: Einstellungen → Stundenplan → Wochenregeln → Referenzdatum und A/B speichern. Einträge erhalten Gültigkeit Jede Woche/A/B. Einzelwoche über Datum auswählen und nur diese Woche auf A/B setzen beziehungsweise Wochenkorrektur zurücknehmen. Ansichtswechsel speichert keine Regel.
+
+Paketstand dieses Codeauftrags: keine neue isolierte V7-Test-App gebaut, vorhandene Test-Apps und Daten erhalten. Frischer Paketbau, native Paket-/Anmelde-/Persistenzprüfung und menschliche Bedienprüfung bleiben offen. Keine automatische Folgephase; produktive Migration und Veröffentlichung weiterhin gesperrt.
+
+Abschließende Produktsuite: 3515 bestanden, 104 unveränderte bestehende Skips, 120 bestandene Untertests, Exit 0 (915,31 s). Gezielter Nachlauf: 59 bestanden, Exit 0. Keine neuen Skips oder Testausnahmen. Reale SQLCipherpfade für V4/V6→V7, Bestandserhaltung, Neustart sowie verschlüsseltes Backup/Restore; UI zusätzlich gerendert und visuell geprüft. Keine Behauptung nativer Paket- oder menschlicher Bedienabnahme.

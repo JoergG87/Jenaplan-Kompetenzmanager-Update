@@ -68,9 +68,13 @@ def verify_timetable_target_references(connection):
             if (row["weekday"] not in range(1, 6) or start >= end
                     or row["active"] not in (0, 1) or row["sort_order"] < 0):
                 raise ValueError
+            pattern = row.get("week_pattern", "all")
+            if pattern not in ("all", "A", "B"):
+                raise ValueError
             if row["active"]:
                 for other in rows:
                     if (other["active"] and other["timetable_entry_id"] != entry_id
+                            and (pattern == "all" or other.get("week_pattern", "all") in ("all", pattern))
                             and other["weekday"] == row["weekday"]
                             and start < TimetableValidator.parse_time(other["end_time"], "Ende")
                             and end > TimetableValidator.parse_time(other["start_time"], "Beginn")):

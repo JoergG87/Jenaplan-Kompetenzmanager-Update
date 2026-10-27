@@ -45,6 +45,7 @@ WORKER_TERMINATE_TIMEOUT_SECONDS = 2.0
 RESTORE_MODE_ZIP_V1 = "zip_v1"
 RESTORE_MODE_FINAL_V4_ENCRYPTED = "final_v4_encrypted"
 RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED = "synthetic_v6_encrypted"
+RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED = "synthetic_v7_encrypted"
 
 
 class RestoreWorkerLaunchError(RuntimeError):
@@ -285,7 +286,7 @@ def _abort_unconfirmed_restore(
     restore_id: str | None,
     restore_mode: str,
 ) -> None:
-    if restore_mode == RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED:
+    if restore_mode in (RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED):
         # Preserve all evidence on an unconfirmed synthetic worker start. The
         # authenticated V6 parent/recovery path owns journal transitions; never
         # fall back to the unrelated ZIP restore recovery implementation.
@@ -378,7 +379,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--restore-mode",
         choices=(RESTORE_MODE_ZIP_V1, RESTORE_MODE_FINAL_V4_ENCRYPTED,
-                 RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED),
+                 RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED),
         default=RESTORE_MODE_ZIP_V1,
     )
     return parser
@@ -410,7 +411,7 @@ def run(
         else None
     )
     try:
-        if args.restore_mode == RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED:
+        if args.restore_mode in (RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED):
             from src.security.internal_test_v6_composition import (
                 require_internal_test_v6_context, InternalTestStartupInventory,
                 InternalTestStartupGuard,
@@ -446,10 +447,12 @@ def run(
                     )
                 else:
                     service = encrypted_service_factory(runtime_root)
-            elif args.restore_mode == RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED:
+            elif args.restore_mode in (RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED):
                 from src.desktop_app.synthetic_v6_runtime_adapters import (
                     build_internal_test_v6_restore_worker_service,
                 )
+                if args.restore_mode == RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED:
+                    from src.desktop_app.synthetic_v7_runtime_adapters import build_internal_test_v7_restore_worker_service as build_internal_test_v6_restore_worker_service
                 # The sealed test context and complete inventory guard remain
                 # mandatory even for injected factories.
                 InternalTestStartupGuard(lock, inventory=inventory_port).evaluate(before=before_inventory)

@@ -35,6 +35,7 @@ class TimetableEntry:
     deleted_at: str = ""
     entry_kind: str = "subject_lesson"
     subject_ids: tuple[str, ...] = ()
+    week_pattern: str = "all"
 
     def __post_init__(self) -> None:
         subjects = tuple(self.subject_ids)
@@ -86,6 +87,8 @@ class TimetableValidator:
         valid_target_ids: dict[str, Iterable[str]],
         existing_entries: Iterable[TimetableEntry],
     ) -> None:
+        if entry.week_pattern not in ("all", "A", "B"):
+            raise TimetableValidationError("Bitte eine gültige Wochengültigkeit auswählen.")
         if entry.weekday not in range(1, 6):
             raise TimetableValidationError("Wochentag muss Montag bis Freitag sein.")
         start = self.parse_time(entry.start_time, "Beginn")
@@ -119,6 +122,8 @@ class TimetableValidator:
                 not existing.active
                 or existing.timetable_entry_id == entry.timetable_entry_id
                 or existing.weekday != entry.weekday
+                or (entry.week_pattern != "all" and existing.week_pattern != "all"
+                    and entry.week_pattern != existing.week_pattern)
             ):
                 continue
             existing_start = self.parse_time(existing.start_time, "Beginn")
@@ -165,6 +170,7 @@ class TimetableService:
         subject_id: str = "",
         entry_kind: str = "subject_lesson",
         subject_ids: tuple[str, ...] = (),
+        week_pattern: str = "all",
         target_type: str,
         target_id: str,
         room: str = "",
@@ -187,6 +193,7 @@ class TimetableService:
             timestamp,
             entry_kind=entry_kind,
             subject_ids=subject_ids,
+            week_pattern=week_pattern,
         )
         self._validate(entry)
         return self.repository.create_entry(entry)
@@ -235,26 +242,31 @@ class TimetableService:
 def build_timetable_projection(
     entries: Iterable[TimetableEntry],
     at: datetime,
+    week_kind_for_date: Callable[[date], str | None] | None = None,
+    *, search_days: int = 15,
 ) -> TimetableProjection:
     """Return current, next and today's active lessons for an explicit time."""
     active_entries = tuple(entry for entry in entries if entry.active)
+    def applies(entry, value):
+        return entry.week_pattern == "all" or (week_kind_for_date is not None
+            and entry.week_pattern == week_kind_for_date(value))
     today = tuple(
         _occurrence(entry, at.date(), at)
         for entry in sorted(active_entries, key=_entry_sort_key)
-        if entry.weekday == at.isoweekday()
+        if entry.weekday == at.isoweekday() and applies(entry, at.date())
     )
     current = next(
         (item for item in today if item.starts_at <= at < item.ends_at),
         None,
     )
     next_occurrence: TimetableOccurrence | None = None
-    for day_offset in range(0, 8):
+    for day_offset in range(0, search_days):
         occurrence_date = at.date() + timedelta(days=day_offset)
         weekday = occurrence_date.isoweekday()
         if weekday > 5:
             continue
         for entry in sorted(active_entries, key=_entry_sort_key):
-            if entry.weekday != weekday:
+            if entry.weekday != weekday or not applies(entry, occurrence_date):
                 continue
             occurrence = _occurrence(entry, occurrence_date, at)
             is_same_occurrence = (

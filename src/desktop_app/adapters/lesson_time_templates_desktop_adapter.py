@@ -10,7 +10,8 @@ class LessonTimeTemplatesDesktopAdapter:
     def __init__(self, runtime) -> None:
         from src.security.synthetic_v5_runtime import OpenedSyntheticV5Runtime
         from src.security.synthetic_v6_runtime import OpenedSyntheticV6Runtime
-        if type(runtime) not in (OpenedSyntheticV5Runtime, OpenedSyntheticV6Runtime):
+        from src.security.synthetic_v7_runtime import OpenedSyntheticV7Runtime
+        if type(runtime) not in (OpenedSyntheticV5Runtime, OpenedSyntheticV6Runtime, OpenedSyntheticV7Runtime):
             raise ValueError("synthetic_v5_runtime_required")
         self.database = runtime.database
         self.service = runtime.lesson_time_templates

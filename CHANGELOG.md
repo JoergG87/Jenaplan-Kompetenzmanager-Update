@@ -5639,3 +5639,12 @@ Kalendergestaltung 22.10.2026: Bestehende Datumspopups zentral an das App-Design
 
 
 Kalender-Testabnahme 22.10.2026: Mindestbreite 300 Pixel verhindert enge zweistellige Tageszellen. 28 gezielte Tests grün; native Vorschau des Beobachtungsdatumspopups und Jahreswechsel geprüft. Frische isolierte V6-Test-App: /private/var/folders/61/nxlq0vm9311gvx30ztnpj63r0000gn/T/jkm-internal-test-8651b4f88c8d46819666b7ae2ab4df4a/artifacts/JKM-Interner-Test-8651b4f88c8d46819666b7ae2ab4df4a.app. Paket-/Codebindung 200/200, 6033 Einträge vor/nach Smokes unverändert, ad-hoc ohne Entitlements. Start/Seed/synthetische Fixturevorbereitung/Neustart erfolgreich. Nachweise: output/v6-acceptance/2026-10-22-calendar-final. Keine A-/B-Wochen ergänzt.
+
+
+## A-/B-Wochen – 27.10.2026
+
+A-/B-Wochen in synthetischem V7: verschlüsselte Referenz und einzelne Wochenkorrekturen, all/A/B-Gültigkeit, fortlaufender ISO-Rhythmus einschließlich KW 53, datumsgebundenes Dashboard und kompakte Wochensteuerung mit eingeklappten Wochenregeln. Exakte V4→V7-/V6→V7-Testmigration und V7-Strategien für vorhandene Runtime/Backup/Restore; V6 und Produktregistry unverändert. Wochenpfeile auf PO-Wunsch neutral statt kräftig blau. Keine Produktmigration oder Veröffentlichung.
+
+V6-Regressionskorrektur: Restore-Worker/-Recovery verwenden ihre bekannte V6-Identität ausdrücklich, damit die Strategieauswahl während eines unterbrochenen Main-/Companion-Austauschs keine vorhandene Main voraussetzt. Bestehende authentisierte Recovery und Vollprüfung unverändert. Gezielt nachgeprüft: 59 Tests bestanden, darunter V6-Crash-Restore und reale V7-Migration/Neustart/Backup/Restore. Native Test-App-Abnahme bleibt offen.
+
+Abschließende Produktsuite: 3515 bestanden, 104 unveränderte bestehende Skips, 120 bestandene Untertests, Exit 0 (915,31 s). Gezielter Nachlauf: 59 bestanden, Exit 0. Keine neuen Skips oder Testausnahmen. Reale SQLCipherpfade für V4/V6→V7, Bestandserhaltung, Neustart sowie verschlüsseltes Backup/Restore; UI zusätzlich gerendert und visuell geprüft. Keine Behauptung nativer Paket- oder menschlicher Bedienabnahme.

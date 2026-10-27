@@ -238,6 +238,7 @@ def _validate_arguments(profile, arguments):
     parser.add_argument("--restore-worker", action="store_true")
     parser.add_argument("--final-v4-restore-confirm", action="store_true")
     parser.add_argument("--synthetic-v6-restore-confirm", action="store_true")
+    parser.add_argument("--synthetic-v7-restore-confirm", action="store_true")
     for name in ("handoff", "nonce", "lock-fd", "ready-fd", "parent-lifetime-fd",
                  "restore-mode", "runtime-root", "restore-id", "restore-token", "restore-lock-fd"):
         parser.add_argument(f"--{name}")
@@ -250,10 +251,10 @@ def _validate_arguments(profile, arguments):
     except (argparse.ArgumentError, SystemExit):
         _reject()
     if unknown or sum((args.restore_worker, args.final_v4_restore_confirm,
-                       args.synthetic_v6_restore_confirm)) != 1:
+                       args.synthetic_v6_restore_confirm, args.synthetic_v7_restore_confirm)) != 1:
         _reject()
     if args.restore_worker:
-        if args.restore_mode not in {"final_v4_encrypted", "synthetic_v6_encrypted"} or not args.handoff:
+        if args.restore_mode not in {"final_v4_encrypted", "synthetic_v6_encrypted", "synthetic_v7_encrypted"} or not args.handoff:
             _reject()
         handoff = Path(args.handoff)
         if handoff.parent != Path(profile.runtime_root) / "restore-handoffs" or handoff.suffix != ".json":

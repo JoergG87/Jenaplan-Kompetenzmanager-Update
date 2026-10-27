@@ -495,6 +495,22 @@ QPushButton#IconButton:pressed {{
 QPushButton#IconButton:focus {{
     border: 2px solid {COLOR_FOCUS};
 }}
+QPushButton#IconButton[timetableWeekNavigation="true"] {{
+    background-color: {COLOR_SURFACE_SOFT};
+    border-color: {COLOR_BORDER};
+    color: {COLOR_TEXT_MUTED};
+}}
+QPushButton#IconButton[timetableWeekNavigation="true"]:hover {{
+    background-color: {LIGHT_TEAL};
+    border-color: {COLOR_BORDER};
+}}
+QPushButton#IconButton[timetableWeekNavigation="true"]:pressed {{
+    background-color: {LIGHT_TEAL};
+    border-color: {COLOR_TURQUOISE};
+}}
+QPushButton#IconButton[timetableWeekNavigation="true"]:focus {{
+    border: 2px solid {COLOR_FOCUS};
+}}
 QLineEdit#SearchField {{
     min-height: 22px;
     background-color: {COLOR_GLASS};

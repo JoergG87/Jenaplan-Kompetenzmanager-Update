@@ -74,6 +74,7 @@ class TimetableEntryDialog(MotionDialog):
             self.room_input.text(),
             self.active_checkbox.isChecked(),
             self.entry.sort_order if self.entry else 0,
+            week_pattern=str(self.week_pattern_combo.currentData()) if self.week.supports_week_patterns else "all",
             entry_kind=str(self.entry_kind_combo.currentData()) if self.week.supports_extended_entries else "subject_lesson",
             subject_ids=tuple(
                 str(self.subject_list.item(index).data(Qt.ItemDataRole.UserRole))
@@ -110,6 +111,13 @@ class TimetableEntryDialog(MotionDialog):
             self.weekday_combo.addItem(label, value)
         self.weekday_combo.setCurrentIndex(max(0, weekday - 1))
         form.addRow("Wochentag", self.weekday_combo)
+
+        if self.week.supports_week_patterns:
+            self.week_pattern_combo = QComboBox()
+            self.week_pattern_combo.setAccessibleName("Gültigkeit des Stundenplaneintrags")
+            for label, value in (("Jede Woche", "all"), ("Nur A-Woche", "A"), ("Nur B-Woche", "B")):
+                self.week_pattern_combo.addItem(label, value)
+            form.addRow("Gültigkeit", self.week_pattern_combo)
 
         if self.templates is not None:
             self.lesson_template_combo = QComboBox()
@@ -246,6 +254,8 @@ class TimetableEntryDialog(MotionDialog):
         )
         self._populate_targets()
         self.target_combo.setCurrentIndex(self.target_combo.findData(entry.target_id))
+        if self.week.supports_week_patterns:
+            self.week_pattern_combo.setCurrentIndex(self.week_pattern_combo.findData(entry.week_pattern))
         self.room_input.setText(entry.room)
         self.active_checkbox.setChecked(entry.active)
         if self.week.supports_extended_entries:

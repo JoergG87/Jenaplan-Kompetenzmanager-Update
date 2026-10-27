@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.core.app_preferences import DISPLAY_NAME_MAX_LENGTH
-from src.desktop_app.components import AppCard, InlineMessage, PageHeader, SubjectAccentMarker, configure_button
+from src.desktop_app.components import AppCard, IconButton, InlineMessage, PageHeader, SubjectAccentMarker, configure_button
 from src.desktop_app.theme import create_card, set_label_style, subject_accent_icon
 from src.desktop_app.view_models.backup_restore_view_model import (
     BackupSummaryViewModel, RestorePreviewViewModel, build_backup_reminder,
@@ -80,6 +80,10 @@ class SettingsScreen(QWidget):
     """Render settings state and emit UI commands without service access."""
 
     documentation_subjects_save_requested = Signal(tuple)
+    timetable_week_view_requested = Signal()
+    timetable_cycle_requested = Signal(object, str)
+    timetable_override_requested = Signal(object, str)
+    timetable_override_clear_requested = Signal(object)
     timetable_add_requested = Signal(int)
     timetable_edit_requested = Signal(str)
     timetable_delete_requested = Signal(str)
@@ -377,6 +381,17 @@ class SettingsScreen(QWidget):
 
     def set_timetable(self, week: TimetableWeekViewModel) -> None:
         self.timetable_week = week
+        self.timetable_week_controls.setVisible(week.supports_week_patterns)
+        if week.supports_week_patterns:
+            self.timetable_override_clear.setEnabled(week.week_assignment.manual)
+            preview = week.preview_kind and week.preview_kind != week.week_assignment.effective_kind
+            status = week.week_assignment.label
+            if preview:
+                status += f" · Vorschau: {week.preview_kind}-Woche (ohne Änderung)"
+            self.timetable_week_status.setText(status)
+            if week.reference_monday:
+                self.timetable_reference_date.setDate(QDate(week.reference_monday))
+                self.timetable_reference_kind.setCurrentIndex(self.timetable_reference_kind.findData(week.reference_kind))
         count = sum(len(day.entries) for day in week.days)
         self.settings_cards["timetable"].status.setText("Nicht eingerichtet" if not count else f"{count} Unterrichtsblöcke eingerichtet")
         self.timetable_tabs.blockSignals(True)
@@ -553,9 +568,102 @@ class SettingsScreen(QWidget):
     def _timetable_card(self) -> QFrame:
         card = create_card(); card.setObjectName("TimetableSettingsSection"); layout = QVBoxLayout(card)
         help_label = QLabel("Wochenplan für Montag bis Freitag. Überschneidungen werden beim Speichern geprüft."); help_label.setWordWrap(True); set_label_style(help_label, "muted")
-        layout.addWidget(help_label); header = QHBoxLayout(); header.addWidget(self.timetable_tabs, 1); header.addWidget(self.timetable_add_button); layout.addLayout(header)
+        layout.addWidget(help_label)
+        self.timetable_week_controls = QWidget()
+        controls = QVBoxLayout(self.timetable_week_controls)
+        controls.setContentsMargins(0, 0, 0, 0)
+        navigation = QHBoxLayout()
+        self.timetable_week_date = QDateEdit(QDate(self._now_provider().date()))
+        self.timetable_week_date.setCalendarPopup(True)
+        self.timetable_week_date.setDisplayFormat("dd.MM.yyyy")
+        self.timetable_week_date.setAccessibleName("Datum der angezeigten Kalenderwoche")
+        for label, icon, offset in (("Vorherige Woche", "chevron-left", -7), ("Nächste Woche", "chevron-right", 7)):
+            button = IconButton(icon, label)
+            button.setProperty("timetableWeekNavigation", True)
+            button.clicked.connect(lambda checked=False, days=offset: self.timetable_week_date.setDate(self.timetable_week_date.date().addDays(days)))
+            navigation.addWidget(button)
+        navigation.insertWidget(1, self.timetable_week_date)
+        self.timetable_week_date.setFixedWidth(140)
+        today = QPushButton("Heute")
+        configure_button(today, "secondary", "Zur aktuellen Kalenderwoche")
+        today.clicked.connect(self._show_current_timetable_week)
+        navigation.addWidget(today)
+        navigation.addStretch(1)
+        self.timetable_week_preview = QComboBox()
+        self.timetable_week_preview.setAccessibleName("Wochenansicht ohne Speichern umschalten")
+        for label, value in (("Gültige Woche", None), ("A-Woche ansehen", "A"), ("B-Woche ansehen", "B")):
+            self.timetable_week_preview.addItem(label, value)
+        navigation.addWidget(self.timetable_week_preview)
+        self.timetable_week_rules_toggle = QPushButton("Wochenregeln …")
+        configure_button(self.timetable_week_rules_toggle, "secondary", "Referenzwoche und Einzelkorrekturen einblenden")
+        self.timetable_week_rules_toggle.setCheckable(True)
+        navigation.addWidget(self.timetable_week_rules_toggle)
+        controls.addLayout(navigation)
+        self.timetable_week_status = QLabel()
+        self.timetable_week_status.setWordWrap(True)
+        controls.addWidget(self.timetable_week_status)
+        self.timetable_week_rules = QWidget()
+        rules = QVBoxLayout(self.timetable_week_rules)
+        rules.setContentsMargins(0, 10, 0, 10)
+        rules.setSpacing(10)
+        correction_title = QLabel("Nur diese Kalenderwoche ändern")
+        set_label_style(correction_title, "section_title")
+        rules.addWidget(correction_title)
+        correction_hint = QLabel("Der Grundrhythmus und alle folgenden Wochen bleiben unverändert.")
+        correction_hint.setWordWrap(True)
+        set_label_style(correction_hint, "muted")
+        rules.addWidget(correction_hint)
+        corrections = QHBoxLayout()
+        for kind in ("A", "B"):
+            button = QPushButton(f"Diese Woche auf {kind} setzen")
+            configure_button(button, "secondary", "Nur die angezeigte Kalenderwoche dauerhaft korrigieren")
+            button.clicked.connect(lambda checked=False, value=kind: self.timetable_override_requested.emit(self.timetable_week_date.date().toPython(), value))
+            corrections.addWidget(button)
+        self.timetable_override_clear = QPushButton("Wochenkorrektur zurücknehmen")
+        configure_button(self.timetable_override_clear, "secondary", "Für diese Woche wieder den Grundrhythmus verwenden")
+        self.timetable_override_clear.clicked.connect(lambda: self.timetable_override_clear_requested.emit(self.timetable_week_date.date().toPython()))
+        corrections.addWidget(self.timetable_override_clear)
+        rules.addLayout(corrections)
+        reference_title = QLabel("Grundrhythmus festlegen")
+        set_label_style(reference_title, "section_title")
+        rules.addWidget(reference_title)
+        reference_hint = QLabel("Ein Datum in der Referenzwoche wählen und festlegen, ob sie A oder B ist. Danach wechselt der Rhythmus jede Woche.")
+        reference_hint.setWordWrap(True)
+        set_label_style(reference_hint, "muted")
+        rules.addWidget(reference_hint)
+        reference = QHBoxLayout()
+        reference.addWidget(QLabel("Referenzwoche:"))
+        self.timetable_reference_date = QDateEdit(QDate(self._now_provider().date()))
+        self.timetable_reference_date.setCalendarPopup(True)
+        self.timetable_reference_date.setDisplayFormat("dd.MM.yyyy")
+        self.timetable_reference_date.setAccessibleName("Datum innerhalb der Referenzwoche")
+        reference.addWidget(self.timetable_reference_date)
+        self.timetable_reference_kind = QComboBox()
+        self.timetable_reference_kind.setAccessibleName("A oder B für die Referenzwoche")
+        for kind in ("A", "B"): self.timetable_reference_kind.addItem(kind, kind)
+        reference.addWidget(self.timetable_reference_kind)
+        save = QPushButton("Referenz speichern")
+        configure_button(save, "secondary", "Grundrhythmus anhand dieser Referenzwoche speichern")
+        save.clicked.connect(lambda: self.timetable_cycle_requested.emit(self.timetable_reference_date.date().toPython(), self.timetable_reference_kind.currentData()))
+        reference.addWidget(save)
+        rules.addLayout(reference)
+        self.timetable_week_rules.hide()
+        self.timetable_week_rules_toggle.toggled.connect(self.timetable_week_rules.setVisible)
+        controls.addWidget(self.timetable_week_rules)
+        self.timetable_week_message = InlineMessage()
+        rules.addWidget(self.timetable_week_message)
+        self.timetable_week_controls.hide()
+        self.timetable_week_date.dateChanged.connect(lambda: self.timetable_week_view_requested.emit())
+        self.timetable_week_preview.currentIndexChanged.connect(lambda: self.timetable_week_view_requested.emit())
+        layout.addWidget(self.timetable_week_controls)
+        header = QHBoxLayout(); header.addWidget(self.timetable_tabs, 1); header.addWidget(self.timetable_add_button); layout.addLayout(header)
         set_label_style(self.timetable_empty_label, "muted"); self.timetable_empty_label.setObjectName("TimetableEmptyState"); layout.addWidget(self.timetable_empty_label); layout.addLayout(self.timetable_day_layout)
         return card
+
+    def _show_current_timetable_week(self):
+        self.timetable_week_preview.setCurrentIndex(0)
+        self.timetable_week_date.setDate(QDate(self._now_provider().date()))
+        self.timetable_week_view_requested.emit()
 
     def _school_years_card(self) -> QFrame:
         card = create_card()
@@ -875,6 +983,10 @@ class SettingsScreen(QWidget):
         subject_row.addWidget(subject)
         subject_row.addStretch(1)
         details.addLayout(subject_row)
+        if self.timetable_week and self.timetable_week.supports_week_patterns:
+            validity = QLabel({"all": "Jede Woche", "A": "Nur A-Woche", "B": "Nur B-Woche"}[entry.week_pattern])
+            set_label_style(validity, "muted")
+            details.addWidget(validity)
         target = QLabel(" · ".join(part for part in [entry.target_type_label, entry.target_label, entry.room] if part)); target.setWordWrap(True); set_label_style(target, "muted"); details.addWidget(target); layout.addLayout(details, 1)
         active = QCheckBox("Aktiv"); active.setChecked(entry.active); active.setObjectName(f"TimetableActive_{entry.timetable_entry_id}"); active.toggled.connect(lambda checked, entry_id=entry.timetable_entry_id: self.timetable_active_requested.emit(entry_id, checked)); layout.addWidget(active)
         edit = QPushButton("Bearbeiten"); configure_button(edit, "secondary", "Stunde bearbeiten"); edit.clicked.connect(lambda checked=False, entry_id=entry.timetable_entry_id: self.timetable_edit_requested.emit(entry_id)); layout.addWidget(edit)

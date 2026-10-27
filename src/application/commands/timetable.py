@@ -30,6 +30,7 @@ class SaveTimetableEntryCommand:
     sort_order: int = 0
     entry_kind: str = "subject_lesson"
     subject_ids: tuple[str, ...] = ()
+    week_pattern: str = "all"
 
 
 class TimetableApplicationService:
@@ -39,9 +40,11 @@ class TimetableApplicationService:
         self,
         domain_service: TimetableService,
         repository: TimetableRepository,
+        week_repository=None,
     ) -> None:
         self.domain_service = domain_service
         self.repository = repository
+        self.week_repository = week_repository
 
     def save(self, command: SaveTimetableEntryCommand) -> TimetableEntry:
         if not command.timetable_entry_id:
@@ -52,6 +55,7 @@ class TimetableApplicationService:
                 subject_id=command.subject_id,
                 entry_kind=command.entry_kind,
                 subject_ids=command.subject_ids,
+                week_pattern=command.week_pattern,
                 target_type=command.target_type,
                 target_id=command.target_id,
                 room=command.room,
@@ -77,6 +81,7 @@ class TimetableApplicationService:
                 existing.updated_at,
                 entry_kind=command.entry_kind,
                 subject_ids=command.subject_ids,
+                week_pattern=command.week_pattern,
             )
         )
 
@@ -87,4 +92,10 @@ class TimetableApplicationService:
         return self.repository.list_entries()
 
     def projection(self, at: datetime) -> TimetableProjection:
-        return build_timetable_projection(self.repository.list_entries(), at)
+        weeks = self.week_repository
+        cycle, overrides = weeks.snapshot() if weeks else (None, ())
+        # Each correction can suppress at most one scheduled week. Search a
+        # complete cycle per exception, including week wrap.
+        search_days = 15 + 14 * len(overrides)
+        kinds = (lambda value: cycle.assignment(value, overrides).effective_kind) if cycle else None
+        return build_timetable_projection(self.repository.list_entries(), at, kinds, search_days=search_days)

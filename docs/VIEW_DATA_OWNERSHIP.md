@@ -1657,3 +1657,10 @@ Fachpflanze (22.10.2026): observation_view_model besitzt die read-only Aggregati
 
 
 Zeit-/Zahlenfeld-UX 22.10.2026: Das zentrale Desktop-Theme besitzt Auswahlmarkierung und Pfeil-Subcontrols bestehender QAbstractSpinBox-Felder. Dialoge und ihre Adapter behalten Werte/Commands; keine neue Ansicht.
+
+
+## A-/B-Wochen – 27.10.2026
+
+Bestehende Stundenplanansicht erhält Datum/KW-Navigation, flüchtige A/B-Vorschau und ausdrücklich getrennte gespeicherte Einzelkorrektur. Domain besitzt Rhythmus und Wochenfilter, Repository verschlüsselte Referenz/Korrekturen, Adapter/ViewModels projizieren Labels/Status. Widgets enthalten weder Kalenderlogik noch SQL. Dashboard verwendet dieselbe datumsgebundene Domainprojektion, unabhängig von Ansichtsvorschau. Nächste Stunde berücksichtigt auch korrigierte spätere Wochen.
+
+Stundenplan-UX: timetable_week_rules_toggle und timetable_week_rules besitzen ausschließlich flüchtigen Aufklappzustand. Bestehende Referenz-/Korrekturfelder und ihre Adaptercommands bleiben unverändert zugeordnet; Vorschauhinweis erscheint nur bei Abweichung von der gültigen Woche.

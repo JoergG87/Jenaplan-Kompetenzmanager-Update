@@ -2697,3 +2697,10 @@ Fachpflanze (22.10.2026): ausschließlich bestehendes StudentCompetencyCockpitVi
 
 
 Zeit-/Zahlenfeld-UX 22.10.2026: nur vorhandene Qt-Eingabewerte und zentrale Design-Tokens; keine neue Datenquelle oder Persistenz.
+
+
+## A-/B-Wochen – 27.10.2026
+
+Synthetisches V7 ergänzt ausschließlich die verschlüsselte Main: timetable_entries.week_pattern TEXT NOT NULL DEFAULT all CHECK IN (all,A,B); timetable_week_cycle (singleton_id INTEGER PK CHECK =1, reference_monday TEXT NOT NULL, reference_kind TEXT CHECK IN (A,B)); timetable_week_overrides (week_monday TEXT PK NOT NULL, week_kind TEXT CHECK IN (A,B)). Datumswerte sind kanonische ISO-Montage und werden unabhängig fachlich geprüft. Leere Referenztabelle = noch nicht eingerichtet, nur all-Einträge zulässig. Einmalige Referenz, eindeutige Einzelkorrektur per UPSERT, kein Ferienkalender/AppPreferences. Exakte neue V7-Identität wird aus tatsächlicher DDL gemessen, V4/V6 bleiben unverändert. Direkte synthetische Kanten V4→V7 und V6→V7, kein produktiver Zwischenschritt.
+
+Gemessene und registrierte Identität: synthetic_v7_timetable_weeks, user_version=7, 909d9d366218a61df8f2107088d6653188d93faf7c8796e3cc9aff07ccba5c55. SQLCipher 4.17 erzeugt dieselbe Identität aus exaktem Final V4 und V6. PRODUCT_SCHEMA_REGISTRY bleibt Final-V4-only ohne Upgradekante.

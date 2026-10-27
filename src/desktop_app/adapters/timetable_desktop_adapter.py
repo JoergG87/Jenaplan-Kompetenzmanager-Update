@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, date
 
 from src.application.commands.timetable import (
     SaveTimetableEntryCommand,
@@ -36,6 +36,8 @@ class TimetableDesktopAdapter:
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
         self.repository = SQLiteTimetableRepository(database)
+        from src.security.infrastructure.timetable_weeks import SQLiteTimetableWeekRepository
+        self.week_repository = SQLiteTimetableWeekRepository(database)
         self.master_data_repository = SQLiteMasterDataRepository(database)
         self.competency_repository = SQLiteCompetencyRepository(database)
         domain_service = TimetableService(
@@ -48,11 +50,21 @@ class TimetableDesktopAdapter:
         self.application_service = TimetableApplicationService(
             domain_service,
             self.repository,
+            self.week_repository,
         )
 
-    def week_view_model(self) -> TimetableWeekViewModel:
+    def week_view_model(self, on: date | None = None, preview_kind: str | None = None) -> TimetableWeekViewModel:
         """Return the complete Monday-to-Friday settings projection."""
         entries = self.application_service.list_entries()
+        supported = self.week_repository.supported
+        cycle, overrides = self.week_repository.snapshot() if supported else (None, ())
+        from src.core.timetable_weeks import TimetableWeekAssignment, iso_week_monday
+        assignment = cycle.assignment(on or date.today(), overrides) if cycle else TimetableWeekAssignment(iso_week_monday(on or date.today()), None, None)
+        if preview_kind not in (None, "A", "B"):
+            raise ValueError("Ungültige Wochenansicht.")
+        selected = preview_kind or assignment.effective_kind
+        if on is not None and supported:
+            entries = tuple(entry for entry in entries if entry.week_pattern in ("all", selected))
         return TimetableWeekViewModel(
             days=tuple(
                 TimetableDayViewModel(
@@ -69,7 +81,27 @@ class TimetableDesktopAdapter:
             subjects=self._subject_options(),
             targets_by_type=self._target_options(),
             supports_extended_entries=self.repository.supports_extended_entries,
+            supports_week_patterns=supported,
+            week_assignment=assignment,
+            preview_kind=selected,
+            reference_monday=cycle.reference_monday if cycle else None,
+            reference_kind=cycle.reference_kind if cycle else None,
         )
+
+    def week_assignment(self, value: date):
+        return self.week_repository.assignment(value)
+
+    @product_writer
+    def configure_week_cycle(self, reference: date, kind: str):
+        self.week_repository.configure(reference, kind)
+
+    @product_writer
+    def set_week_override(self, value: date, kind: str):
+        self.week_repository.set_override(value, kind)
+
+    @product_writer
+    def clear_week_override(self, value: date):
+        self.week_repository.clear_override(value)
 
     @product_writer
     def save_entry(self, command: SaveTimetableEntryCommand) -> TimetableEntryViewModel:
@@ -100,6 +132,7 @@ class TimetableDesktopAdapter:
                 existing.sort_order,
                 entry_kind=existing.entry_kind,
                 subject_ids=existing.subject_ids,
+                week_pattern=existing.week_pattern,
             )
         )
 
@@ -152,6 +185,7 @@ class TimetableDesktopAdapter:
             entry_kind=entry.entry_kind,
             subject_ids=tuple(option.item_id for option in selected_options),
             subject_options=selected_options,
+            week_pattern=entry.week_pattern,
         )
 
     def _subject_options(self) -> tuple[TimetableOptionViewModel, ...]:
