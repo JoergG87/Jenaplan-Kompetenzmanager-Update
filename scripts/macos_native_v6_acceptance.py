@@ -17,7 +17,7 @@ import tempfile
 
 from scripts.macos_native_acceptance import _active, _child, _keys, _provider, _parent_handoff, _snapshot
 
-MODES = frozenset({"v6-seed", "v6-migrate", "v6-check", "v6-crash", "v6-matrix",
+MODES = frozenset({"v7-prepare", "v7-weeks", "v7-weeks-reopen", "v6-seed", "v6-migrate", "v6-check", "v6-crash", "v6-matrix",
     "v6-subject-plants", "v6-functions", "v6-functions-reopen", "v6-negatives", "v6-migration-fault", "v6-migration-inspect"})
 
 
@@ -990,11 +990,138 @@ def _subject_plants(profile):
     return result
 
 
+
+def _v7_prepare(profile):
+    """Only the new sealed synthetic fixture, using the existing V4->V7 path."""
+    from dataclasses import asdict
+    from src.core.restore_runtime import RuntimeInstanceLock
+    from src.security.transactional_timetable_weeks_migration import SyntheticTimetableWeeksMigration
+    root = Path(profile.runtime_root)
+    with RuntimeInstanceLock(root) as lock:
+        service = _v4_service(profile, seed=True)
+        _finalize(profile, lock)
+    identity = SyntheticTimetableWeeksMigration(service).execute()
+    with RuntimeInstanceLock(root) as lock:
+        _finalize(profile, lock)
+    result = {"status": "ok", "identity": asdict(identity), "synthetic_only": True}
+    _record(profile, "native-v7-preparation.json", result)
+    return result
+
+
+def _v7_weeks(profile, *, reopen=False):
+    """Small package smoke: actual existing widgets, A/B saves and fresh reopen."""
+    from dataclasses import replace
+    from datetime import date, datetime, time, timedelta
+    from PySide6.QtWidgets import QApplication
+    from PySide6.QtCore import QDate
+    from src.core.restore_runtime import RuntimeInstanceLock
+    from src.core.timetable_weeks import iso_week_monday
+    from src.core.timetable_weeks_schema import SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION
+    from src.desktop_app.adapters.student_desktop_adapter import StudentDesktopAdapter
+    from src.desktop_app.adapters.lesson_time_templates_desktop_adapter import LessonTimeTemplatesDesktopAdapter
+    from src.desktop_app.dialogs.timetable_entry_dialog import TimetableEntryDialog
+    from src.desktop_app.runtime import runtime_paths
+    from src.desktop_app.shell import AppShell
+    from src.desktop_app.theme import apply_app_theme
+    from src.security.internal_test_v6_composition import (
+        build_internal_test_v6_backup_service, open_internal_test_v6_runtime, InternalTestStartupGuard)
+    root = Path(profile.runtime_root)
+    proof_path = root.parent / "native-v7-weeks.json"
+    captures = root.parent / "native-v7-ui"
+    captures.mkdir(mode=0o700, exist_ok=True)
+    app = QApplication.instance() or QApplication([])
+    apply_app_theme(app)
+    def require(condition, code):
+        if not condition:
+            raise RuntimeError("native_v7_" + code)
+    with RuntimeInstanceLock(root) as lock:
+        InternalTestStartupGuard(lock).evaluate()
+        service = build_internal_test_v6_backup_service(root)
+        with open_internal_test_v6_runtime(service, lock=lock) as product:
+            opened = product.runtime
+            require(opened.identity == SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity, "identity")
+            from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
+            timetable = TimetableDesktopAdapter(opened.database)
+            if reopen:
+                proof = json.loads(proof_path.read_text())
+                first = timetable.repository.get_entry(proof["a_entry"])
+                second = timetable.repository.get_entry(proof["b_entry"])
+                require(first.week_pattern == "A" and second.week_pattern == "B", "reopened_entries")
+                instant = datetime.fromisoformat(proof["instant"])
+                assignment = timetable.week_assignment(instant.date())
+                require(assignment.manual and assignment.effective_kind == "B", "reopened_override")
+            else:
+                first = next(entry for entry in timetable.repository.list_entries() if entry.active)
+                value = iso_week_monday(date.today()) + timedelta(days=first.weekday - 1)
+                instant = datetime.combine(value, time.fromisoformat(first.start_time)) + timedelta(minutes=1)
+            adapter = StudentDesktopAdapter(database=opened.database, database_create_allowed=False,
+                today_provider=lambda: instant.date(), now_provider=lambda: instant,
+                managed_document_store=opened.documents)
+            shell = AppShell(opened.database.path, student_adapter=adapter, paths=runtime_paths(root),
+                now_provider=lambda: instant, backup_restore_available=False,
+                lesson_time_templates_adapter=LessonTimeTemplatesDesktopAdapter(opened))
+            shell.resize(1180,760); shell.show(); app.processEvents()
+            screen = shell.settings_screen
+            if not reopen:
+                screen.timetable_cycle_requested.emit(instant.date(), "A")
+                week = timetable.week_view_model()
+                entry = next(e for day in week.days for e in day.entries if e.timetable_entry_id == first.timetable_entry_id)
+                dialog = TimetableEntryDialog(week, weekday=entry.weekday, entry=entry, parent=shell)
+                dialog.week_pattern_combo.setCurrentIndex(dialog.week_pattern_combo.findData("A"))
+                require(shell._save_timetable_dialog(dialog), "editor_save")
+                second = timetable.save_entry(replace(dialog.command(), timetable_entry_id="", week_pattern="B", room="V7-Test · B-Woche"))
+                dialog.show(); app.processEvents()
+                require(dialog.grab().save(str(captures / "editor.png")), "editor_capture")
+                dialog.close()
+                screen.timetable_week_date.setDate(QDate(instant.date()))
+                screen.timetable_week_preview.setCurrentIndex(2)
+                require(not timetable.week_assignment(instant.date()).manual, "preview_wrote_override")
+                screen.timetable_override_requested.emit(instant.date(), "B")
+                require(timetable.week_assignment(instant.date()).manual, "manual_save")
+                screen.timetable_override_clear_requested.emit(instant.date())
+                require(not timetable.week_assignment(instant.date()).manual, "manual_reset")
+                screen.timetable_override_requested.emit(instant.date(), "B")
+                require(timetable.week_assignment(instant.date()+timedelta(weeks=1)).effective_kind == "B", "following_week_changed")
+                screen.timetable_week_date.setDate(QDate(instant.date()+timedelta(weeks=1)))
+                require(not screen.timetable_week.week_assignment.manual, "week_navigation")
+                screen.timetable_week_date.setDate(QDate(instant.date()))
+                screen.timetable_week_preview.setCurrentIndex(0)
+                proof = {"a_entry": first.timetable_entry_id, "b_entry": second.timetable_entry_id,
+                    "instant": instant.isoformat(), "reference_monday": iso_week_monday(instant.date()).isoformat()}
+                _record(profile, "native-v7-weeks.json", proof)
+            shell.refresh_dashboard(instant)
+            require(shell.dashboard_screen._hero_occurrence.entry.week_pattern == "B", "dashboard_week")
+            shell.show_timetable_settings(); app.processEvents()
+            require("manuell" in screen.timetable_week_status.text(), "manual_label")
+            require(shell.grab().save(str(captures / ("restart.png" if reopen else "weeks.png"))), "week_capture")
+            screen.timetable_week_rules_toggle.setChecked(True); app.processEvents()
+            require(shell.grab().save(str(captures / "rules.png")), "rules_capture")
+            shell.close(); app.processEvents()
+            result = {"status": "ok", "schema_version": opened.identity.schema_version,
+                "fingerprint": opened.identity.fingerprint, "cipher_provider": opened.compatibility.cipher_provider,
+                "cipher_version": opened.compatibility.cipher_version, "fresh_process_persistence": reopen,
+                "manual_ui_performed": False, "captures": str(captures)}
+        if reopen:
+            # Friendly synthetic login for Laura; use the existing password
+            # change service after all ordinary smoke restarts are complete.
+            from src.security.startup import build_security_runtime
+            from src.desktop_app.main import _packaged_smoke_password
+            from src.security.domain import AuthenticationStatus
+            security = build_security_runtime(runtime_paths(root))
+            changed = security.service.change_password(_packaged_smoke_password(root), "V7-Test-Laura!2026")
+            require(changed.status is AuthenticationStatus.AUTHENTICATED, "test_password")
+        _finalize(profile, lock)
+    _record(profile, "native-v7-reopen.json" if reopen else "native-v7-ui-result.json", result)
+    return result
+
+
 def run_frozen(mode):
     profile = _active(mode)
     if mode not in MODES:
         raise RuntimeError("native_v6_mode_invalid")
-    return {"v6-subject-plants": _subject_plants, "v6-seed": _seed, "v6-migrate": _migrate,
+    return {"v7-prepare": _v7_prepare, "v7-weeks": _v7_weeks,
+        "v7-weeks-reopen": lambda value: _v7_weeks(value, reopen=True),
+        "v6-subject-plants": _subject_plants, "v6-seed": _seed, "v6-migrate": _migrate,
         "v6-check": _check, "v6-crash": _crash, "v6-matrix": _matrix,
         "v6-migration-fault": _migration_fault, "v6-migration-inspect": _migration_inspect,
         "v6-negatives": _negatives, "v6-functions": _functions,

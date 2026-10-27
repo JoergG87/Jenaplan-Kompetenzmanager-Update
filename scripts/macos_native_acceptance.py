@@ -605,7 +605,7 @@ def _unsafe_child(executable):
 def run_frozen(mode):
     try:
         profile = _active(mode)
-        if mode.startswith("v6-"):
+        if mode.startswith(("v6-", "v7-")):
             from scripts.macos_native_v6_acceptance import run_frozen as run_v6
             payload = run_v6(mode); code = 0
         elif mode == "matrix":

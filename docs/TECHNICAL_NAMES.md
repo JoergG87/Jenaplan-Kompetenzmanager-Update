@@ -3756,3 +3756,5 @@ V7 nutzt OpenedSyntheticV7Runtime und SyntheticV7EncryptedBackupManifestV1, READ
 Stundenplan-UX: timetable_week_rules_toggle und timetable_week_rules besitzen ausschließlich flüchtigen Aufklappzustand. Bestehende Referenz-/Korrekturfelder und ihre Adaptercommands bleiben unverändert zugeordnet; Vorschauhinweis erscheint nur bei Abweichung von der gültigen Woche.
 
 Die lokale Qt-Property timetableWeekNavigation kennzeichnet ausschließlich die beiden Wochenpfeile für die neutrale Darstellung im zentralen Theme.
+
+V7-Paketauftrag 27.10.2026: v7-prepare, v7-weeks und v7-weeks-reopen sind drei geschlossene Modi des bestehenden scripts.macos_native_v6_acceptance-Prüfeinstiegs. _v7_prepare erstellt ausschließlich synthetische Beispieldaten und nutzt die vorhandene direkte V4→V7-Migration; _v7_weeks prüft die bestehenden A/B-Widgets und deren Neustartpersistenz. Keine Produktfunktion oder neue Testmatrix.

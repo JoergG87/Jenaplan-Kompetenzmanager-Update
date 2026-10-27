@@ -16,6 +16,7 @@ PRODUCT_BUNDLE_ID = "de.jenaplan.kompetenzmanager"
 PRODUCT_APP_NAME = "Jenaplan-Kompetenzmanager"
 SERVICES = ("data-master-key", "device-credential", "monotonic-security-anchor")
 NATIVE_TEST_MODES = frozenset({
+    "v7-prepare", "v7-weeks", "v7-weeks-reopen",
     "v6-seed", "v6-migrate", "v6-check", "v6-crash", "v6-matrix",
     "v6-subject-plants", "v6-functions", "v6-functions-reopen", "v6-negatives", "v6-migration-fault", "v6-migration-inspect",
     "initialize", "restart", "restart-denied", "cleanup", "existing-keys", "matrix", "hold-lock", "acl-preflight",

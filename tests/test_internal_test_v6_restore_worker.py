@@ -130,3 +130,14 @@ def test_real_crash_retained_metadata_authenticates_exact_v6_handoff(case, tmp_p
         assert handoff["restore_kind"] == SYNTHETIC_V6_LIVE_RESTORE_KIND
     assert not key_paths.metadata_root.exists()
     assert {p: _hash(p) for p in retained.rglob("*") if p.is_file()} == before
+
+
+def test_v7_package_smoke_modes_remain_sealed_only(profile):
+    from scripts.macos_native_v6_acceptance import run_frozen
+    from src.core.macos_test_package_profile import NATIVE_TEST_MODES
+    validated = validate_test_profile(profile)
+    for mode in ("v7-prepare", "v7-weeks", "v7-weeks-reopen"):
+        assert mode in NATIVE_TEST_MODES
+        _validate_arguments(validated, ["--internal-native-test", mode])
+        with pytest.raises(ValueError, match="test_profile_invalid"):
+            run_frozen(mode)
