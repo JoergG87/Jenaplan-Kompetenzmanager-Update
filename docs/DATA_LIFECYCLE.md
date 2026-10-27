@@ -4019,3 +4019,6 @@ Referenzdatum wird im Domainmodell auf ISO-Montag normalisiert. Wochenabstand in
 V6-Restorebootstrap bleibt ausdrücklich V6-gebunden: während einer unterbrochenen Main-/Companion-Ersetzung darf die Strategieauswahl keine vorhandene Main voraussetzen. V7 verwendet entsprechend seine explizite V7-Bindung. Erst die bestehende authentisierte Recovery und anschließende Vollprüfung erlauben die Runtime.
 
 V7-Paketprüfung: ausschließlich frischer versiegelter internal-test-Root mit neuen synthetischen Zugangsdaten. Bestehende Enrollment-/Seed-/Migrations-/Settingscommands verwenden; Grundrhythmus, A/B-Beispielstunde und eine Einzelkorrektur bleiben für Laura erhalten. Neustartprüfung im frischen Paketprozess, anschließend normales Anmelden mit eigenem synthetischem Testpasswort. Produktdaten/-schlüssel und vorhandene Test-Apps bleiben unberührt.
+
+
+A/B-Performance: Ansichtswechsel und Wochennavigation führen ausschließlich einen konsistenten Read-Snapshot aus. Einzelkorrektur behält BEGIN IMMEDIATE, Prüfung und COMMIT; Erfolg erst nach Writebestätigung und aktueller Stundenplanprojektion. Ein verborgenes Dashboard wird bei Aktivierung neu gelesen. Keine Schema-/Cipher-/Migrationsänderung.

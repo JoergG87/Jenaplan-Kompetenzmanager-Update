@@ -1586,7 +1586,7 @@ class AppShell(QMainWindow):
             self.settings_screen.timetable_week_message.set_message(str(error), tone="warning")
             return
         self.refresh_timetable_view()
-        self.refresh_dashboard()
+        self._refresh_dashboard_if_visible()
         self.settings_screen.timetable_week_message.set_message("Wochenregel wurde gespeichert.", tone="success")
 
     def configure_timetable_week_cycle(self, reference, kind):

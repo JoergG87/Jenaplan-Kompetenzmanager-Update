@@ -1,5 +1,5 @@
 """Encrypted Main repository; never AppPreferences."""
-from contextlib import closing
+from contextlib import closing, nullcontext
 from datetime import date
 from src.core.timetable_weeks import TimetableWeekCycle, TimetableWeekAssignment, iso_week_monday, _kind, verify_timetable_weeks
 
@@ -21,12 +21,14 @@ class SQLiteTimetableWeekRepository:
         with closing(self.database.connect()) as connection:
             return self.supports_connection(connection)
 
-    def snapshot(self):
-        with closing(self.database.connect()) as connection:
+    def snapshot(self, *, connection=None):
+        owned = connection is None
+        with (closing(self.database.connect()) if owned else nullcontext(connection)) as connection:
             if not self.supports_connection(connection):
                 return None, ()
-            with connection:
-                connection.execute("BEGIN")
+            with (connection if owned else nullcontext()):
+                if owned:
+                    connection.execute("BEGIN")
                 verify_timetable_weeks(connection)
                 row = connection.execute("SELECT reference_monday,reference_kind FROM timetable_week_cycle WHERE singleton_id=1").fetchone()
                 overrides = tuple((date.fromisoformat(r[0]), r[1]) for r in connection.execute("SELECT week_monday,week_kind FROM timetable_week_overrides"))

@@ -5655,3 +5655,8 @@ V7-Testpaket: vorhandenen sealed-only Paketprüfeinstieg um drei notwendige V7-V
 ## Isoliertes V7-Testpaket für Laura – 27.10.2026
 
 Ein einziges frisches isoliertes V7-Testpaket gebaut und an seinem tatsächlichen Bundle geprüft: Profil/Signatur, SQLCipher, Start/Anmeldung, A/B-Bedienpfade, Einzelkorrektur/Rücknahme sowie Neustartpersistenz bestanden. Reguläre Anmeldung und sichtbare Bedienung zusätzlich werkzeuggestützt geprüft; kein Ersatz für Lauras praktische Abnahme. Kurzanleitung und synthetischer Testzugang liegen beim Paket. Keine Produktfehlerkorrektur oder Fachänderung nötig; kein Push, Tag oder Release.
+
+
+## A-/B-Wochen: gezielte Reaktionszeitkorrektur – 27.10.2026
+
+Stundenplanprojektionen lesen Stunden, Wochenregeln und Fach-/Zieloptionen über genau eine bestehende SQLCipher-Verbindung im gemeinsamen kurzlebigen Snapshot. Fach-/Zieloptionen werden je Projektion einmal aufgelöst. Kein langlebiger Cache, keine Schemaänderung. Verdecktes Dashboard wird nach bestätigter Wochenkorrektur nicht unnötig aufgebaut; Aktivierung liest weiterhin frisch. Speichern bleibt synchron bestätigt und transaktional. Gezielte Quell-/Paketmessung über den vorhandenen V7-Paketprüfpfad.

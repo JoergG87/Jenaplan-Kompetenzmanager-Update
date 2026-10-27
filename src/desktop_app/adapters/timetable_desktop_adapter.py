@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, date
+from contextlib import closing
 
 from src.application.commands.timetable import (
     SaveTimetableEntryCommand,
@@ -55,9 +56,15 @@ class TimetableDesktopAdapter:
 
     def week_view_model(self, on: date | None = None, preview_kind: str | None = None) -> TimetableWeekViewModel:
         """Return the complete Monday-to-Friday settings projection."""
-        entries = self.application_service.list_entries()
-        supported = self.week_repository.supported
-        cycle, overrides = self.week_repository.snapshot() if supported else (None, ())
+        # One fresh, consistent read per request. Never retain a stale cache.
+        with closing(self.database.connect()) as connection, connection:
+            connection.execute("BEGIN")
+            entries = self.repository.list_entries(connection=connection)
+            supported = self.week_repository.supports_connection(connection)
+            cycle, overrides = self.week_repository.snapshot(connection=connection) if supported else (None, ())
+            subjects = self._subject_options(connection=connection)
+            targets = self._target_options(connection=connection)
+            extended = self.repository._extended(connection)
         from src.core.timetable_weeks import TimetableWeekAssignment, iso_week_monday
         assignment = cycle.assignment(on or date.today(), overrides) if cycle else TimetableWeekAssignment(iso_week_monday(on or date.today()), None, None)
         if preview_kind not in (None, "A", "B"):
@@ -71,16 +78,16 @@ class TimetableDesktopAdapter:
                     weekday,
                     WEEKDAY_LABELS[weekday],
                     tuple(
-                        self._entry_view_model(entry)
+                        self._entry_view_model(entry, subjects=subjects, targets=targets)
                         for entry in entries
                         if entry.weekday == weekday
                     ),
                 )
                 for weekday in range(1, 6)
             ),
-            subjects=self._subject_options(),
-            targets_by_type=self._target_options(),
-            supports_extended_entries=self.repository.supports_extended_entries,
+            subjects=subjects,
+            targets_by_type=targets,
+            supports_extended_entries=extended,
             supports_week_patterns=supported,
             week_assignment=assignment,
             preview_kind=selected,
@@ -159,13 +166,14 @@ class TimetableDesktopAdapter:
             tuple(occurrence_view_model(item) for item in projection.today),
         )
 
-    def _entry_view_model(self, entry: TimetableEntry) -> TimetableEntryViewModel:
-        subjects = dict((item.item_id, item.label) for item in self._subject_options())
-        selected_options = tuple(option for option in self._subject_options() if option.item_id in entry.subject_ids)
+    def _entry_view_model(self, entry: TimetableEntry, *, subjects=None, targets=None) -> TimetableEntryViewModel:
+        options = self._subject_options() if subjects is None else subjects
+        subjects = {item.item_id: item.label for item in options}
+        selected_options = tuple(option for option in options if option.item_id in entry.subject_ids)
         selected_options += tuple(TimetableOptionViewModel(subject, subject) for subject in entry.subject_ids if subject not in subjects)
         targets = {
             target_type: dict((item.item_id, item.label) for item in options)
-            for target_type, options in self._target_options().items()
+            for target_type, options in (self._target_options() if targets is None else targets).items()
         }
         return TimetableEntryViewModel(
             entry.timetable_entry_id,
@@ -188,10 +196,10 @@ class TimetableDesktopAdapter:
             week_pattern=entry.week_pattern,
         )
 
-    def _subject_options(self) -> tuple[TimetableOptionViewModel, ...]:
+    def _subject_options(self, *, connection=None) -> tuple[TimetableOptionViewModel, ...]:
         labels: dict[str, str] = {}
         sort_order: dict[str, int] = {}
-        for competency in self.competency_repository.list_competencies():
+        for competency in self.competency_repository.list_competencies(connection=connection):
             if competency.subject_id in COMPETENCY_CROSS_CURRICULAR_SUBJECT_KEYS:
                 continue
             labels.setdefault(competency.subject_id, competency.subject_name)
@@ -208,22 +216,22 @@ class TimetableDesktopAdapter:
         )
 
     def _target_options(
-        self,
+        self, *, connection=None,
     ) -> dict[str, tuple[TimetableOptionViewModel, ...]]:
         return {
             "group": tuple(
                 TimetableOptionViewModel(item.group_id, item.group_name)
-                for item in self.master_data_repository.list_student_groups()
+                for item in self.master_data_repository.list_student_groups(connection=connection)
                 if item.active
             ),
             "course": tuple(
                 TimetableOptionViewModel(item.course_id, item.course_name)
-                for item in self.master_data_repository.list_courses()
+                for item in self.master_data_repository.list_courses(connection=connection)
                 if item.active
             ),
             "course_group": tuple(
                 TimetableOptionViewModel(item.course_group_id, item.name)
-                for item in self.master_data_repository.list_course_groups()
+                for item in self.master_data_repository.list_course_groups(connection=connection)
                 if item.active
             ),
         }

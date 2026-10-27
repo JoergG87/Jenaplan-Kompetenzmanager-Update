@@ -3758,3 +3758,6 @@ Stundenplan-UX: timetable_week_rules_toggle und timetable_week_rules besitzen au
 Die lokale Qt-Property timetableWeekNavigation kennzeichnet ausschließlich die beiden Wochenpfeile für die neutrale Darstellung im zentralen Theme.
 
 V7-Paketauftrag 27.10.2026: v7-prepare, v7-weeks und v7-weeks-reopen sind drei geschlossene Modi des bestehenden scripts.macos_native_v6_acceptance-Prüfeinstiegs. _v7_prepare erstellt ausschließlich synthetische Beispieldaten und nutzt die vorhandene direkte V4→V7-Migration; _v7_weeks prüft die bestehenden A/B-Widgets und deren Neustartpersistenz. Keine Produktfunktion oder neue Testmatrix.
+
+
+Performanceauftrag: TimetableDesktopAdapter bündelt seine Projektion in einem kurzlebigen Read-Snapshot; bestehende Repository-Listen akzeptieren eine aufrufereigene connection. scripts/timetable_week_timing.measure_week_actions misst ausschließlich synthetische Qt-Aktionen im bestehenden Quell-/Paketprüfpfad.

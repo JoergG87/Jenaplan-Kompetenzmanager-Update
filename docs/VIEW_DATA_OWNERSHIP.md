@@ -1664,3 +1664,6 @@ Zeit-/Zahlenfeld-UX 22.10.2026: Das zentrale Desktop-Theme besitzt Auswahlmarkie
 Bestehende Stundenplanansicht erhält Datum/KW-Navigation, flüchtige A/B-Vorschau und ausdrücklich getrennte gespeicherte Einzelkorrektur. Domain besitzt Rhythmus und Wochenfilter, Repository verschlüsselte Referenz/Korrekturen, Adapter/ViewModels projizieren Labels/Status. Widgets enthalten weder Kalenderlogik noch SQL. Dashboard verwendet dieselbe datumsgebundene Domainprojektion, unabhängig von Ansichtsvorschau. Nächste Stunde berücksichtigt auch korrigierte spätere Wochen.
 
 Stundenplan-UX: timetable_week_rules_toggle und timetable_week_rules besitzen ausschließlich flüchtigen Aufklappzustand. Bestehende Referenz-/Korrekturfelder und ihre Adaptercommands bleiben unverändert zugeordnet; Vorschauhinweis erscheint nur bei Abweichung von der gültigen Woche.
+
+
+A/B-Performance: pro Ansichtswechsel ein frischer gemeinsamer Datenbank-Read-Snapshot für Stunden, Fach-/Zieloptionen und Wochenregeln. Optionen werden innerhalb dieser Projektion einmal aufgelöst; kein langlebiger Cache oder neue Datenquelle. Verdecktes Dashboard wird erst bei Aktivierung frisch geladen, sichtbares nach bestätigtem Write sofort.

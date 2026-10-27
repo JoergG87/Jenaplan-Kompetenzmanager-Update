@@ -1093,6 +1093,9 @@ def _v7_weeks(profile, *, reopen=False):
             require(shell.dashboard_screen._hero_occurrence.entry.week_pattern == "B", "dashboard_week")
             shell.show_timetable_settings(); app.processEvents()
             require("manuell" in screen.timetable_week_status.text(), "manual_label")
+            if not reopen:
+                from scripts.timetable_week_timing import measure_week_actions
+                _record(profile, "native-v7-performance.json", measure_week_actions(shell, app, instant))
             require(shell.grab().save(str(captures / ("restart.png" if reopen else "weeks.png"))), "week_capture")
             screen.timetable_week_rules_toggle.setChecked(True); app.processEvents()
             require(shell.grab().save(str(captures / "rules.png")), "rules_capture")

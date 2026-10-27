@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 import uuid
 from collections.abc import Mapping
-from contextlib import closing, contextmanager
+from contextlib import closing, contextmanager, nullcontext
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -1397,8 +1397,8 @@ class SQLiteTimetableRepository:
         values["active"] = bool(values["active"])
         return TimetableEntry(subject_id="", subject_ids=subjects, **values)
 
-    def list_entries(self) -> tuple[TimetableEntry, ...]:
-        with closing(self.database.connect()) as connection:
+    def list_entries(self, *, connection=None) -> tuple[TimetableEntry, ...]:
+        with (closing(self.database.connect()) if connection is None else nullcontext(connection)) as connection:
             extended = self._extended(connection)
             rows = connection.execute("""SELECT * FROM timetable_entries
                 WHERE deleted_at = ''
@@ -1656,8 +1656,8 @@ class SQLiteCompetencyRepository:
         if observed != expected:
             raise RuntimeError("competency_catalog_incompatible")
 
-    def list_competencies(self) -> tuple[CompetencyRecord, ...]:
-        with closing(self.database.connect()) as connection:
+    def list_competencies(self, *, connection=None) -> tuple[CompetencyRecord, ...]:
+        with (closing(self.database.connect()) if connection is None else nullcontext(connection)) as connection:
             rows = connection.execute(
                 """
                 SELECT
@@ -2642,8 +2642,8 @@ class SQLiteMasterDataRepository:
     def __init__(self, database: SQLiteDatabase) -> None:
         self.database = database
 
-    def list_student_groups(self) -> tuple[MasterDataGroupRecord, ...]:
-        with closing(self.database.connect()) as connection:
+    def list_student_groups(self, *, connection=None) -> tuple[MasterDataGroupRecord, ...]:
+        with (closing(self.database.connect()) if connection is None else nullcontext(connection)) as connection:
             rows = connection.execute(
                 """
                 SELECT group_id, group_name, active, sort_order
@@ -2706,8 +2706,8 @@ class SQLiteMasterDataRepository:
                 raise
         return group
 
-    def list_courses(self) -> tuple[MasterDataCourseRecord, ...]:
-        with closing(self.database.connect()) as connection:
+    def list_courses(self, *, connection=None) -> tuple[MasterDataCourseRecord, ...]:
+        with (closing(self.database.connect()) if connection is None else nullcontext(connection)) as connection:
             rows = connection.execute(
                 """
                 SELECT
@@ -2848,8 +2848,8 @@ class SQLiteMasterDataRepository:
                 "Einschreibung verwendet und kann nicht deaktiviert werden."
             )
 
-    def list_course_groups(self) -> tuple[MasterDataCourseGroupRecord, ...]:
-        with closing(self.database.connect()) as connection:
+    def list_course_groups(self, *, connection=None) -> tuple[MasterDataCourseGroupRecord, ...]:
+        with (closing(self.database.connect()) if connection is None else nullcontext(connection)) as connection:
             rows = connection.execute(
                 """
                 SELECT course_group_id, name, active, sort_order
