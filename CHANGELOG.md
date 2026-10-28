@@ -5660,3 +5660,5 @@ Ein einziges frisches isoliertes V7-Testpaket gebaut und an seinem tatsächliche
 ## A-/B-Wochen: gezielte Reaktionszeitkorrektur – 27.10.2026
 
 Stundenplanprojektionen lesen Stunden, Wochenregeln und Fach-/Zieloptionen über genau eine bestehende SQLCipher-Verbindung im gemeinsamen kurzlebigen Snapshot. Fach-/Zieloptionen werden je Projektion einmal aufgelöst. Kein langlebiger Cache, keine Schemaänderung. Verdecktes Dashboard wird nach bestätigter Wochenkorrektur nicht unnötig aufgebaut; Aktivierung liest weiterhin frisch. Speichern bleibt synchron bestätigt und transaktional. Gezielte Quell-/Paketmessung über den vorhandenen V7-Paketprüfpfad.
+
+Validierung 28.10.2026: 38 betroffene Tests und zwei erneut ausgeführte fokussierte Regressionen bestanden. Genau ein neues isoliertes V7-Paket aus 6ad2736; native Ansicht 146–159 ms, KW-Navigation 136–142 ms, bestätigtes Setzen 198–211 ms und Rücknahme 207–240 ms. Paketstart/Anmeldung, Dashboard und Neustartpersistenz bestanden. Keine Schemaänderung oder Produktfreigabe.
