@@ -3761,3 +3761,5 @@ V7-Paketauftrag 27.10.2026: v7-prepare, v7-weeks und v7-weeks-reopen sind drei g
 
 
 Performanceauftrag: TimetableDesktopAdapter bündelt seine Projektion in einem kurzlebigen Read-Snapshot; bestehende Repository-Listen akzeptieren eine aufrufereigene connection. scripts/timetable_week_timing.measure_week_actions misst ausschließlich synthetische Qt-Aktionen im bestehenden Quell-/Paketprüfpfad.
+
+Profilperformance 29.10.2026: `reset_competency_cockpit_filters(render=False)` setzt vorhandene Filter signalblockiert ohne Zwischenprojektion zurück. `set_competency_cockpit(refresh_report_subjects=False)` überlässt die Berichtsfächer dem unmittelbar folgenden bestehenden `set_report_overview`. Beide optionalen Präsentationsparameter behalten für eigenständige Aufrufe den bisherigen Standard True. Keine neue Datenquelle oder Persistenz.

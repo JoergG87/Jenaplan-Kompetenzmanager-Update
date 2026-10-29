@@ -8,6 +8,7 @@ from pathlib import Path
 from PySide6.QtCore import (
     QCoreApplication,
     QEvent,
+    QSignalBlocker,
     QRectF,
     QSize,
     Qt,
@@ -1715,7 +1716,7 @@ class StudentProfileScreen(QWidget):
             self._report_subjects_expanded = False
             self._report_timeline_initialized = False
             self._set_documentation_subjects_expanded(False)
-            self.reset_competency_cockpit_filters()
+            self.reset_competency_cockpit_filters(render=False)
 
         if student is None:
             self.name_label.setText("Kein Schüler ausgewählt")
@@ -1754,7 +1755,7 @@ class StudentProfileScreen(QWidget):
             observations,
             preserve_view_state=not should_reset_tab,
         )
-        self.set_competency_cockpit(competency_cockpit)
+        self.set_competency_cockpit(competency_cockpit, refresh_report_subjects=False)
         self.set_report_preview(report_preview)
         self.set_report_overview(report_overview)
         self.set_documents(documents)
@@ -2195,13 +2196,15 @@ class StudentProfileScreen(QWidget):
     def set_competency_cockpit(
         self,
         cockpit: StudentCompetencyCockpitViewModel | None,
+        *,
+        refresh_report_subjects: bool = True,
     ) -> None:
         """Store and render the read-only cockpit from the Sprint-6B projection."""
         self.current_competency_cockpit = cockpit
         self.competency_pdf_button.setEnabled(bool(cockpit and cockpit.subjects))
         self._populate_competency_subject_filter(cockpit)
         self.apply_competency_cockpit_filters()
-        if self.current_report_overview is not None:
+        if refresh_report_subjects and self.current_report_overview is not None:
             self._render_report_subjects(self.current_report_overview)
 
     def _request_competency_pdf(self) -> None:
@@ -2317,11 +2320,15 @@ class StudentProfileScreen(QWidget):
                 self._historical_competency_section(cockpit.historical_subjects)
             )
 
-    def reset_competency_cockpit_filters(self) -> None:
-        self.competency_subject_filter.setCurrentIndex(0)
-        self.competency_documentation_filter.setCurrentIndex(0)
-        self.competency_search_input.clear()
-        self.apply_competency_cockpit_filters()
+    def reset_competency_cockpit_filters(self, *, render: bool = True) -> None:
+        with (QSignalBlocker(self.competency_subject_filter),
+              QSignalBlocker(self.competency_documentation_filter),
+              QSignalBlocker(self.competency_search_input)):
+            self.competency_subject_filter.setCurrentIndex(0)
+            self.competency_documentation_filter.setCurrentIndex(0)
+            self.competency_search_input.clear()
+        if render:
+            self.apply_competency_cockpit_filters()
 
     def _filtered_cockpit_subject(
         self,

@@ -8092,6 +8092,48 @@ class DesktopAppAdapterTest(unittest.TestCase):
         )
         self.assertIsNotNone(app)
 
+    def test_profile_change_builds_only_new_cockpit_and_report_subjects_once(self) -> None:
+        QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        old_cockpit = build_student_competency_cockpit((
+            self._cockpit_status(self.math_first_competency_id, "Alter Inhalt"),
+        ))
+        new_cockpit = build_student_competency_cockpit((
+            self._cockpit_status(self.german_listening_competency_id, "Neuer Inhalt",
+                                 subject_id="deutsch", subject_name="Deutsch"),
+        ))
+        student = self._sample_student_detail()
+        screen.set_student(student, competency_cockpit=old_cockpit)
+        screen.competency_subject_filter.setCurrentIndex(2)
+        screen.competency_documentation_filter.setCurrentIndex(2)
+        screen.competency_search_input.setText("Alter")
+        with mock.patch.object(screen, "_cockpit_competency_row", wraps=screen._cockpit_competency_row) as rows, \
+                mock.patch.object(screen, "_render_report_subjects", wraps=screen._render_report_subjects) as reports:
+            screen.set_student(replace(student, student_id=f"{STUDENT_ID_PREFIX}-000002"),
+                               competency_cockpit=new_cockpit)
+        self.assertEqual([call.args[0].competency_id for call in rows.call_args_list],
+                         [self.german_listening_competency_id])
+        self.assertEqual(reports.call_count, 1)
+        self.assertEqual(screen.profile_tabs.currentIndex(), 0)
+        self.assertEqual(screen.competency_search_input.text(), "")
+        self.assertEqual(screen.competency_subject_filter.currentData(), "")
+        self.assertEqual(screen.competency_documentation_filter.currentData(), "")
+        self.assertIs(screen.current_competency_cockpit, new_cockpit)
+
+    def test_profile_cockpit_filter_reset_renders_once_after_all_controls_reset(self) -> None:
+        QApplication.instance() or QApplication([])
+        screen = student_profile_screen.StudentProfileScreen()
+        cockpit = build_student_competency_cockpit((
+            self._cockpit_status(self.math_first_competency_id, "Kompetenz"),
+        ))
+        screen.set_student(self._sample_student_detail(), competency_cockpit=cockpit)
+        screen.competency_subject_filter.setCurrentIndex(2)
+        screen.competency_documentation_filter.setCurrentIndex(2)
+        screen.competency_search_input.setText("Kompetenz")
+        with mock.patch.object(screen, "_cockpit_competency_row", wraps=screen._cockpit_competency_row) as rows:
+            screen.reset_competency_cockpit_filters()
+        self.assertEqual(rows.call_count, 1)
+
     def test_profile_refresh_keeps_observation_filters_and_scroll_state(self) -> None:
         app = QApplication.instance() or QApplication([])
         screen = student_profile_screen.StudentProfileScreen()
