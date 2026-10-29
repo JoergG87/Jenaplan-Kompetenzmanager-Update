@@ -9238,6 +9238,74 @@ class DesktopAppAdapterTest(unittest.TestCase):
             "+",
         )
 
+    def test_observation_dialog_disclosure_stays_out_of_graphics_effect_path(self) -> None:
+        """Scrolled catalog headings must paint directly, including after focus/click."""
+        app = QApplication.instance() or QApplication([])
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        dialog.show()
+        dialog.activateWindow()
+        app.processEvents()
+        for buttons in (dialog.competency_area_buttons, dialog.competency_topic_buttons):
+            for button in buttons.values():
+                dialog.catalog_scroll.ensureWidgetVisible(button)
+                button.setFocus(Qt.FocusReason.TabFocusReason)
+                QTest.keyClick(button, Qt.Key.Key_Space)
+                app.processEvents()
+                self.assertIsNone(button.graphicsEffect(), button.text())
+                self.assertFalse(getattr(button, "_motion_animations", {}), button.text())
+        self.assertTrue(all(tile.isVisible() for tile in dialog.competency_catalog_tiles.values()))
+        dialog.close()
+
+    def test_observation_dialog_expanded_catalog_preserves_chips_ratings_and_geometry(self) -> None:
+        app = QApplication.instance() or QApplication([])
+        dialog = self._observation_dialog_with_hierarchy()
+        self._select_observation_subject(dialog, "mathematik")
+        dialog.show()
+        app.processEvents()
+        competency = next(
+            option
+            for area in dialog._current_subject_group().learning_area_groups
+            for topic in area.competency_groups
+            for option in topic.competencies
+        )
+        dialog._select_competency(competency)
+        dialog.competency_rating_widgets[competency.competency_id].set_current_data("++")
+        selected = dialog.create_draft().competency_ratings
+        tiles = dict(dialog.competency_catalog_tiles)
+        self.assertEqual(len(tiles), 67)
+        for width, height in ((1180, 760), (1400, 900)):
+            dialog.resize(width, height)
+            for buttons, containers in (
+                (dialog.competency_area_buttons, dialog.competency_area_containers),
+                (dialog.competency_topic_buttons, dialog.competency_topic_containers),
+            ):
+                for key, button in buttons.items():
+                    if containers[key].isHidden():
+                        button.click()
+            app.processEvents()
+            # Visit every chip without hovering it; no recreation on disclosure/scroll.
+            previous_bottom = -1
+            for key, tile in tiles.items():
+                self.assertIs(dialog.competency_catalog_tiles[key], tile)
+                dialog.catalog_scroll.ensureWidgetVisible(tile)
+                app.processEvents()
+                self.assertTrue(tile.isVisible(), key)
+                self.assertFalse(tile.visibleRegion().isEmpty(), key)
+                top = tile.mapTo(dialog.catalog_content, QPoint()).y()
+                self.assertGreaterEqual(top, previous_bottom, key)
+                previous_bottom = top + tile.height()
+                self.assertTrue(all(label.width() > 0 and label.height() > 0
+                                    for label in tile.findChildren(QLabel)))
+            for button in dialog.competency_area_buttons.values():
+                button.click()
+            app.processEvents()
+        self._select_observation_subject(dialog, "deutsch")
+        self._select_observation_subject(dialog, "mathematik")
+        self.assertEqual(dialog.create_draft().competency_ratings, selected)
+        self.assertTrue(dialog.competency_catalog_tiles[competency.competency_id].is_selected())
+        dialog.close()
+
     def _observation_dialog_with_hierarchy(
         self,
         initial_draft: ObservationDraftViewModel | None = None,

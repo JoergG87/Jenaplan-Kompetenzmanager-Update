@@ -822,7 +822,9 @@ class NewObservationDialog(QDialog):
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         button.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-        configure_button(button, "quiet")
+        # Keep scrolled disclosure headings on QWidget's direct paint path.
+        # A retained opacity effect can leave a blank cached surface after layout/scroll.
+        configure_button(button, "quiet", with_motion=False)
         button.clicked.connect(lambda _checked=False: toggle(key))
         return button
 

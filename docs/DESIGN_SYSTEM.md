@@ -1376,3 +1376,7 @@ A-/B-Auftrag 27.10.2026: bestehende Stundenplanseite und scrollbar gehaltener Ed
 PO-UX-Korrektur 27.10.2026: Wochensteuerung kompakt mit bestehenden IconButton-Pfeilen, Datum, Heute, Vorschau und sekundärer Aktion Wochenregeln. Grundrhythmus und Einzelkorrekturen liegen in einem standardmäßig eingeklappten Bereich. Der Status nennt tatsächliche Wochenzuordnung; eine abweichende Vorschau wird ausdrücklich als ungespeichert erkennbar. Keine dauerhafte Doppelstatuszeile oder Reihe von Korrekturbuttons im normalen Stundenplan.
 
 PO-Präzisierung: ausschließlich die beiden Wochenpfeile erhalten neutrale helle Fläche, graue Kontur, sanftes Petrol bei Hover/Drücken und bestehenden sichtbaren Fokus. Andere Icon- und Aktionsbuttons behalten ihre Farben.
+
+## Kompetenzkatalog – native Sichtkorrektur 29.10.2026
+
+`NewObservationDialog._hierarchy_button` konfiguriert `ObservationHierarchyToggle` ausdrücklich mit `with_motion=False`. Der bestehende Verzicht auf GraphicsEffect-/Opacity-Animationen im Beobachtungs-Kompetenzbereich gilt auch für dessen einzelne Bereichs-/Themenbuttons. Andernfalls bleibt nach Fokus/Hover ein Opacity-Effekt am scrollenden Button zurück; der Screenshot vom 29.10.2026 zeigt verschwundene Bereichs-/Themenüberschriften bei weiter vorhandener Geometrie und Qt-Accessibility. Direkte QWidget-/QSS-Darstellung erhält Hoverfarbe, Fokusrahmen, Pointer und sofortiges Disclosure ohne zusätzliche Repaintsteuerung. Korrigierte Cocoa-Oberfläche nach Auf-/Zuklappen und Scrollen nativ sowie vom PO sichtbar nachgeprüft.
