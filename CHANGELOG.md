@@ -5672,3 +5672,7 @@ Validierung 28.10.2026: 38 betroffene Tests und zwei erneut ausgeführte fokussi
 ## Profilöffnung – gezielte PO-Erweiterung 29.10.2026
 
 Filterreset blockiert seine drei Kontrollsignale und rendert beim Kindwechsel keinen alten Cockpitbestand mehr. Der neue Bestand wird einmal aufgebaut; die Fachübersicht wird im selben Profilupdate ebenfalls nur einmal aufgebaut. Kein Cache, keine Datenmodell- oder Bewertungsänderung. Native synthetische SQLite-Messung: normaler Kindwechsel Median 2146→1274 ms; nach vorherigen Kompetenzfiltern 4993→1078 ms. Erster profilierter Aufruf 1328→1372 ms: kein belegter Kaltstartgewinn. 128 gezielte Tests und 15 Untertests bestanden; zwei neue Regressionen scheitern vorher und bestehen danach. Abschließendes isoliertes Paket noch offen.
+
+## Abschluss isolierter Testkandidat – 29.10.2026
+
+Einziger abschließender V7-Testkandidat aus `6d195c4` erfolgreich gebaut und auditiert; native Start-/V7-/Wiederöffnungsprüfungen bestanden. Fertiges macOS-Fenster mit Schülerprofil und aufgeklapptem Mathematik-Katalog sichtbar geprüft. Details und Grenzen in PROJECT.md; Laura-Abnahme manuell offen.
