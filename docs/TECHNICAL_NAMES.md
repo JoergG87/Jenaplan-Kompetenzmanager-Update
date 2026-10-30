@@ -2,6 +2,8 @@
 
 ## Releasekandidat 405 – 30.10.2026
 
+run_product_v7_maintenance ersetzt nach erfolgreichem Commit und vollständigem Drain das eigene Prozessabbild per execve durch den bestehenden --complete-v7-migration-Einstieg. Keine Lock-/Descriptorübergabe und kein wartender lebender Vorgänger; vollständiger normaler Neuerwerb und Existing-only-Prüfungen bleiben erhalten.
+
 Wartungsfehler geben ausschließlich kleingeschriebene Diagnosecodes aus; unbekannte oder unzulässige Fehlercodes werden zu product_v7_maintenance_failed. Keine freie Exceptionnachricht. Unbekannte Fehler ergänzen ausschließlich Fehlerklasse und Quellbasename/Zeile, ohne Quelltext, absolute Pfade oder Werte.
 
 Der bestehende doppelt isolierte --packaged-smoke-test erhält die geschlossenen Modi migration-source, migration-snapshot und v7-write. Sie verwenden vorhandene Seed-/Vollinhalts-/Adapterports ausschließlich nach synthetischer Root- und Authentifizierungsprüfung. Keine neue Produktquelle oder Framework.

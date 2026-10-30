@@ -1,5 +1,9 @@
 # Data Lifecycle
 
+## Release 405: Wartungsabschluss – 30.10.2026
+
+Nach erfolgreicher SQLCipher-Transaktion sind alle Main-/Companionverbindungen und der Wartungslock geschlossen. execve ersetzt das eigene Wartungsabbild durch --complete-v7-migration; kein lebender wartender Elternprozess, keine Lock-/Descriptorübergabe. Das neue Abbild lädt Existing-only-Keys erneut, erwirbt den normalen Runtime-Lock und prüft den vollständigen Zielbestand vor dem Abschlussbeleg und Appneustart. Fehlgeschlagenes exec oder Abschluss hält mit erhaltenem V4-Vollbackup an; keine stille Fortsetzung oder neue Writerfreigabe.
+
 ## Releasekandidat 405 – 30.10.2026
 
 Expliziter Wartungsstart --migrate-v4-to-v7 bleibt einziger V4→V7-Schreibweg. Die lokalen Pakettests befüllen ausschließlich doppelt isolierte synthetische Roots über vorhandene V4-Seedadapter und prüfen reguläre V7-Schreibvorgänge. Releaseversionierung und lokaler Paketbau sind autorisiert, Veröffentlichung separat. Rückfall verlangt das vollständige geprüfte V4-Backup im ursprünglichen Schlüsselkontext; kein Main-Einzeldateiaustausch. Nach V7-Schreibvorgängen verwirft Rückkehr zum V4-Sicherungszeitpunkt alle späteren Änderungen.

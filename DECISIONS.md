@@ -1,5 +1,9 @@
 # Architekturentscheidungen
 
+## Release 405: Abschluss ohne wartenden Wartungsvorgänger – 30.10.2026
+
+Der native Produktlauf hat vollständiges Backup, unabhängige Verifikation, V4→V7-Transaktion und Commit bestanden. Der bisher wartende subprocess.run-Vorgänger verursachte im Abschlusskind den korrekten Live-owner-Veto von RuntimeInstanceLock. Korrektur: nach geschlossenem Lock und vollständigem Connection-Drain ersetzt execve das Wartungsabbild durch den vorhandenen Abschluss-Einstieg. Kein Lock-/Descriptorhandoff, keine Relock- oder Live-owner-Ausnahme, keine Übernahme einer alten Lease. Das frische Abbild erwirbt den bestehenden Lock normal und verifiziert Backup, vollständigen Zielbestand, Dokumente und Schlüssel erneut. Der normale V7-Appstart erfolgt weiterhin erst nach verifiziertem Abschluss. Kein neuer Migrations-/Testmechanismus.
+
 ## Produktkomposition V7 – 29.10.2026
 
 Der PO autorisiert die gezielte Produktanbindung vorhandener V7-Strategien. Kein neuer Migrations-/Restorealgorithmus: ProductV7Migration verwendet die bestehende direkte SQLCipher-Einzeltransaktion, ProductV7Runtime die bestehende V7-Sitzung mit anderem Scopeport, Produktrestore die vorhandene Cipherzustandsmaschine. Eine versionierte PRODUCT_V7_SCHEMA_REGISTRY führt exakt die bestehende V7-Identität und ausschließlich V4→V7; die historische V4-Registry bleibt für stillgelegte A0/A2-Verträge geschlossen.

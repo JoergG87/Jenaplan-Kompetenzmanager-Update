@@ -1,7 +1,6 @@
 """Explicit one-shot maintenance entry; ordinary startup never calls execute."""
 from pathlib import Path
 import os
-import subprocess
 import sys
 
 from src.core.restore_runtime import RuntimeInstanceLock
@@ -33,10 +32,13 @@ def run_product_v7_maintenance(root, *, complete=False):
         environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
     working_directory = root if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[2]
     if complete:
-        # New process after migration, with no inherited connections or gates.
+        # Fresh image after migration, with no inherited connections or gates.
         migration.complete()
-        subprocess.Popen(_command(["--runtime-root", str(root)]),
-            close_fds=True, env=environment, cwd=working_directory, start_new_session=True)
-        return 0
-    return subprocess.run(_command(["--complete-v7-migration", "--runtime-root", str(root)]),
-        close_fds=True, env=environment, cwd=working_directory, check=False).returncode
+        command = _command(["--runtime-root", str(root)])
+    else:
+        command = _command(["--complete-v7-migration", "--runtime-root", str(root)])
+    # Replace each drained image rather than racing a live recorded parent.
+    # No lock/descriptor handoff: the new image acquires the lock normally.
+    os.chdir(working_directory)
+    os.execve(command[0], command, environment)
+    raise RuntimeError("product_v7_exec_returned")

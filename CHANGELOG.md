@@ -1,5 +1,7 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+- Nativer Wartungshalt nach erfolgreichem Commit behoben: frisches Abschlussabbild per execve statt wartendem Elternprozess. Unveränderte Live-owner-/Lockprüfungen, vollständiger Connection-Drain, keine Descriptorübergabe. Begleitdokumentstand auf 30.10.2026 aktualisiert.
+
 - Unbekannte Wartungsfehler liefern zusätzlich ausschließlich Fehlerklasse und Quellbasename/Zeile ohne Exceptiontext, Quelltext, absolute Pfade oder Werte, damit Paketfehler sicher lokalisierbar sind.
 
 - Releasegates: verbleibende feste Paketversionsassertionen auf 405 aktualisiert und fachliche Struktur in Release Notes erhalten.

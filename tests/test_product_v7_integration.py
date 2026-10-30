@@ -309,15 +309,20 @@ def test_explicit_completion_entry_restarts_normal_product_app(tmp_path,monkeypa
             provider=qualified_sqlcipher_test_provider(),**kwargs)
     monkeypatch.setattr(maintenance,'build_product_v7_service',builder)
     starts=[]
-    real_popen=maintenance.subprocess.Popen
-    def launch(command,**kwargs):
-        if '--runtime-root' in command:
-            starts.append((command,kwargs));return SimpleNamespace()
-        return real_popen(command,**kwargs)
-    monkeypatch.setattr(maintenance.subprocess,'Popen',launch)
+    class ImageReplaced(BaseException):
+        pass
+    def replace_image(executable, command, environment):
+        assert executable == command[0]
+        starts.append(command)
+        with RuntimeInstanceLock(paths.final_v4.root):
+            pass
+        raise ImageReplaced()
+    monkeypatch.setattr(maintenance.os,'execve',replace_image)
+    monkeypatch.setattr(maintenance.os,'chdir',lambda path: None)
     monkeypatch.setattr(main.sys,'argv',['app','--complete-v7-migration','--runtime-root',str(paths.final_v4.root)])
-    assert main.main()==0
-    assert starts and starts[0][0][-2:]==['--runtime-root',str(paths.final_v4.root)]
+    with pytest.raises(ImageReplaced):
+        main.main()
+    assert starts and starts[0][-2:]==['--runtime-root',str(paths.final_v4.root)]
     verify_product_v7_completion(service(paths,loaded,installation))
 
 
@@ -340,17 +345,23 @@ def test_explicit_migration_entry_uses_fresh_completion_process(tmp_path,monkeyp
             loaded_keys=current.runtime.final_v4.loaded_keys,provider=qualified_sqlcipher_test_provider(),**kwargs)
     monkeypatch.setattr(maintenance,'build_product_v7_service',builder)
     commands=[]
-    real_run=maintenance.subprocess.run
-    def child(command,**kwargs):
-        if '--complete-v7-migration' not in command:
-            return real_run(command,**kwargs)
+    class ImageReplaced(BaseException):
+        pass
+    def replace_image(executable, command, environment):
+        assert '--complete-v7-migration' in command
+        assert executable == command[0]
+        # No inherited descriptor/lease is passed. Same-PID image replacement
+        # avoids weakening the live-owner lock veto for a waiting parent.
+        assert '--restore-lock-fd' not in command
+        with RuntimeInstanceLock(root):
+            pass
         commands.append(command)
-        source=builder(root,v4_source=True)
-        _run_process(complete,(source.paths,source.loaded,source.installation_id))
-        return SimpleNamespace(returncode=0)
-    monkeypatch.setattr(maintenance.subprocess,'run',child)
+        raise ImageReplaced()
+    monkeypatch.setattr(maintenance.os,'execve',replace_image)
+    monkeypatch.setattr(maintenance.os,'chdir',lambda path: None)
     monkeypatch.setattr(main.sys,'argv',['app','--migrate-v4-to-v7','--runtime-root',str(root)])
-    assert main.main()==0
+    with pytest.raises(ImageReplaced):
+        main.main()
     assert '--complete-v7-migration' in commands[0]
 
 
