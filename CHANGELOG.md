@@ -1,5 +1,7 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+- Produktbuilder: macOS-Bash-3.2-kompatible nichtleere Payloadargumentliste und erhaltener Fehlerstatus beim EXIT-Cleanup; Regression führt die tatsächlichen Shellfragmente aus.
+
 - PO-autorisierte lokale Releasefertigstellung; finale V7-Release-Notes und dokumentierter bewusster Wartungs-/Rückfallweg.
 - Bestehender doppelt isolierter Produktpaket-Smoke prüft realistisch befüllte V4-Quelle, typisierte Vollinhaltsprojektion und reguläre V7-Schreibvorgänge. V7-Smoke-Recovery verwendet die Produktstrategie. Keine neue Schemaidentität, kein neuer Fachpfad, keine Veröffentlichung.
 

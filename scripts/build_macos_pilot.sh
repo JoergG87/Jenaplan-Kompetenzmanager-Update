@@ -214,7 +214,7 @@ cleanup_mount() {
         hdiutil detach "$MOUNT_DIR" -quiet >/dev/null 2>&1 || true
     fi
 }
-trap cleanup_mount EXIT
+trap 'build_exit_status=$?; cleanup_mount; exit "$build_exit_status"' EXIT
 
 if [ -e "$BUILD_ROOT" ] || [ -L "$BUILD_ROOT" ] \
     || [ -e "$DIST_ROOT" ] || [ -L "$DIST_ROOT" ]; then
@@ -249,17 +249,18 @@ fi
 "$VENV/bin/python" -m pip install --disable-pip-version-check --no-index --no-deps "$SQLCIPHER_417_WHEEL"
 "$VENV/bin/python" scripts/audit_macos_security_runtime.py
 
-PAYLOAD_PROFILE_ARGS=()
+PAYLOAD_ARGS=(
+    --output "$PAYLOAD"
+    --data-mode "$DATA_MODE"
+    --version "$VERSION"
+    --git-commit "$GIT_COMMIT"
+    --source-tree-state "$SOURCE_TREE_STATE"
+    --architecture "$ARCHITECTURE"
+)
 if [ "$PACKAGE_PROFILE" = "internal-test" ]; then
-    PAYLOAD_PROFILE_ARGS=(--test-profile "$TEST_PROFILE")
+    PAYLOAD_ARGS+=(--test-profile "$TEST_PROFILE")
 fi
-"$VENV/bin/python" scripts/prepare_macos_pilot_payload.py \
-    --output "$PAYLOAD" \
-    --data-mode "$DATA_MODE" \
-    --version "$VERSION" \
-    --git-commit "$GIT_COMMIT" \
-    --source-tree-state "$SOURCE_TREE_STATE" \
-    --architecture "$ARCHITECTURE" "${PAYLOAD_PROFILE_ARGS[@]}"
+"$VENV/bin/python" scripts/prepare_macos_pilot_payload.py "${PAYLOAD_ARGS[@]}"
 
 if [ "$PACKAGE_PROFILE" = "product" ]; then
 "$VENV/bin/python" scripts/build_pilot_documents.py \
@@ -530,11 +531,11 @@ BUILD_TIME="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     echo "Signierung: $SIGNING_STATUS"
     echo "Notarisierung: nicht durchgeführt"
     echo "Datenmodus: $DATA_MODE (Release-Kandidat ohne Pilot- oder Echtdaten)"
-    echo "Produktiver Support-Reset: installationsgebundene Auth-Recovery mit Final-V4-Preflight und verifiziertem Safety-.jkmebackup"
+    echo "Produktiver Support-Reset: V4 installationsgebunden; in V7 kein V4-Support-Resetadapter"
     echo "Updatekanal: pilot (manuelle Prüfung; keine automatische Installation)"
     echo "Pilot-Appcast: $PILOT_APPCAST_URL"
     echo "Stable-Kanal: deaktiviert"
-    echo "Produktdaten: frischer Final-V4-Cipher-Bestand; keine Klartext- oder Altbestandsmigration"
+    echo "Produktdaten: frischer Final-V4-Cipher-Bestand; vorhandenes V4 nur bewusst per verifizierter Wartung transaktional auf V7"
     echo "Gebündelte Datenbankruntime: sqlcipher3 0.6.2+jkm.sqlcipher4170.1 / SQLCipher 4.17.0 community / SQLite 3.53.3 / CommonCrypto"
     echo "Backup/Restore: installationsgebundene .jkmebackup-Runtime; kein ZIP-v1 im Cipher-Modus"
     echo "Windows-Freigabe: nicht erteilt"

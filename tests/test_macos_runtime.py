@@ -398,3 +398,19 @@ class MacosRuntimeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_product_payload_arguments_and_cleanup_preserve_bash_failures(tmp_path):
+    """Run the actual script fragments under macOS /bin/bash, including nounset."""
+    source = Path("scripts/build_macos_pilot.sh").read_text()
+    start = source.index("PAYLOAD_ARGS=(")
+    end = source.index('"$VENV/bin/python" scripts/prepare_macos_pilot_payload.py', start)
+    result = subprocess.run(["/bin/bash", "-uc",
+        'PACKAGE_PROFILE=product; PAYLOAD=p; DATA_MODE=release; VERSION=0.5.0; '
+        'GIT_COMMIT=c; SOURCE_TREE_STATE=clean; ARCHITECTURE=arm64; '
+        + source[start:end] + 'printf "%s\\n" "${PAYLOAD_ARGS[@]}"'], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert "--test-profile" not in result.stdout and "--architecture" in result.stdout
+    trap_line = next(line for line in source.splitlines() if line.startswith("trap "))
+    result = subprocess.run(["/bin/bash", "-ec", 'cleanup_mount() { true; }; ' + trap_line + '; false'])
+    assert result.returncode == 1
