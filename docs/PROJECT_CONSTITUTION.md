@@ -1,5 +1,9 @@
 # Project Constitution
 
+## Produktive V4→V7-Komposition – PO-Auftrag 29.10.2026
+
+Autorisiert sind Produktadapter, explizite Wartungsmigration und V7-Worker/Restart, ausschließlich an synthetischen Produktinstallationen zu qualifizieren. Keine neue Schemaidentität: exakt vorhandenes V7. Bestehende V4-Starts bleiben erhalten; keine stille Migration, kein First Run nach Fehlern, keine Schlüsselrotation. Vorhandene SQLCipher-Transaktion und Restorezustandsmaschine werden wiederverwendet. Keine Versionserhöhung, reale Daten-/Schlüsselnutzung, Paketveröffentlichung oder Feedänderung.
+
 ## Transaktionale Schemaumstellung – PO-Auftrag 15.10.2026
 
 Dieser spätere PO-Auftrag ersetzt den blockierten Versuch einer ununterbrochenen, nicht übertragbaren Upgrade-Lockautorität. Gewählt ist eine kleine SQLCipher-Einzeldateitransaktion mit vorherigem vollständig verschlüsseltem und unabhängig geprüftem V4-Vollbackup. Der Bedrohungsrahmen umfasst normale konkurrierende Appinstanzen, Crash, SQL-Fehler, beschädigte Daten, falsche Schlüssel und Benutzerfehler. Kompromittierte gleichberechtigte Prozesse, absichtliche Kernel-Lockmanipulation und vollständiger lokaler Dateisystemrollback werden nicht als beherrschbar behauptet. Die bestätigten beiden P1 bleiben historische Befunde; ihre Dateiaustausch-/Journal-Schreib-APIs werden aus dem Produktcode entfernt und durch dauerhaft ablehnende Einstiege ersetzt. Historische Implementierungen sind ausschließlich unter tests/historical_upgrade zulässig und dürfen aus src oder Produktpaketen nicht importiert werden.

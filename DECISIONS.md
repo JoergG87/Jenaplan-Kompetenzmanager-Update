@@ -1,5 +1,13 @@
 # Architekturentscheidungen
 
+## Produktkomposition V7 – 29.10.2026
+
+Der PO autorisiert die gezielte Produktanbindung vorhandener V7-Strategien. Kein neuer Migrations-/Restorealgorithmus: ProductV7Migration verwendet die bestehende direkte SQLCipher-Einzeltransaktion, ProductV7Runtime die bestehende V7-Sitzung mit anderem Scopeport, Produktrestore die vorhandene Cipherzustandsmaschine. Eine versionierte PRODUCT_V7_SCHEMA_REGISTRY führt exakt die bestehende V7-Identität und ausschließlich V4→V7; die historische V4-Registry bleibt für stillgelegte A0/A2-Verträge geschlossen.
+
+Der normale Start führt niemals die Migration aus. Explizite Wartung endet in einem neuen Prozess; erst unabhängiger keyed Reopen, vollständiger historischer Bestandsvergleich und synchronisierter HMAC-Abschlussbeleg erlauben V7-Produktstart. Der Beleg ist über vorhandene domainseparierte KDF an Installation und Datenbankkontext gebunden und authentisiert Quellbackuphash, Zielidentität und vorhandene Schlüsselidentitäten. Er gewährt keine schemafremde Restoreautorität und ersetzt keine erneute aktuelle Integritätsprüfung. Fehler vor/nach Commit ohne Abschluss bleiben gesperrt; ein bewusst gestarteter Abschluss prüft die vorhandene Quelle/Zieltransaktion erneut. Kein Main-Dateiaustausch und keine Wiederbelebung alter Lease-/Journalmutation.
+
+Immutable Existing-only-Metadaten dürfen auch beim Backup-Snapshot keine WAL-Nebenartefakte erzeugen oder vorhandenes WAL ausblenden. Der bestehende Snapshotport respektiert deshalb seine vorhandene immutable-Konfiguration und verweigert in diesem Modus sämtliche Sidecars; normaler V4-WAL-Snapshot bleibt unverändert.
+
 ## Entscheidung: Einzeldatei-SQLCipher-Transaktion statt Upgrade-Dateiaustausch – 15.10.2026
 
 Der PO eröffnet ausdrücklich einen neuen angemessenen Bedrohungsrahmen. Weg B wird gewählt. A benötigt externe Journal-/Ankerzustände, Kandidaten-/Rollbackdateien, Austauschintention und mehrere Neustart-/Writerfreigaben; die bestätigte Lease-Kontinuitätslücke plus Journalmutation nach Lockverlust bleiben P1. Ein eigener NOTE_FUNLOCK-Monitor würde weiter neue Lifecycle- und Mutationsgrenzen erzeugen. B übernimmt Atomizität für DDL, Daten und user_version direkt von SQLite; vollständiges bestehendes .jkmebackup sichert die Installation vorher unabhängig. Die bestehende Datenbank wird nie ersetzt; Schlüssel, Companion und Managed Documents bleiben identisch. Weniger eigener Recoverycode und kein verteilter Commit. Aufwand und Wartbarkeit sprechen für B, sofern echte Cipher-/Crashnachweise erfolgreich sind.

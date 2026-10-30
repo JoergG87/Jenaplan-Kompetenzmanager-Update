@@ -25,7 +25,8 @@ SYNTHETIC_V7_LIVE_RESTORE_AUTH_PURPOSE = (
 
 
 def _require_service(service, runtime_root=None):
-    if type(service) is not SyntheticV7EncryptedBackupService:
+    from src.security.product_v7 import ProductV7BackupService
+    if type(service) not in (SyntheticV7EncryptedBackupService, ProductV7BackupService):
         raise RestorePreflightError("Der synthetische V7-Restorevertrag fehlt.")
     service.require_synthetic()
     root = service.paths.final_v4.key_runtime.root.resolve(strict=True)
@@ -47,23 +48,24 @@ class SyntheticV7EncryptedRestoreHandoffService(FinalV4EncryptedRestoreHandoffSe
             # directory is between renames. This loads no keys and grants no
             # runtime admission; the existing bootstrap authenticates the DMK
             # and exact HMAC before using the context.
-            from src.core.runtime_root_protection import require_mutable_test_root, RuntimeRootKind
-            root = Path(context["runtime_root"])
-            if root.resolve(strict=True) != root:
-                raise RestoreHandoffError("Der synthetische V7-Restoreroot ist ungueltig.")
-            protection = require_mutable_test_root(root)
-            if protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
-                raise RestoreHandoffError("Der synthetische V7-Restoreroot fehlt.")
+            self.require_root(Path(context["runtime_root"]))
         super().__init__(backup_service, **context)
 
     def _runtime_root(self):
         if self.backup_service is not None:
             return _require_service(self.backup_service)
+        self.require_root(self.runtime_root)
+        return self.runtime_root
+
+    @staticmethod
+    def require_root(root):
         from src.core.runtime_root_protection import require_mutable_test_root, RuntimeRootKind
-        protection = require_mutable_test_root(self.runtime_root)
+        if root.resolve(strict=True) != root:
+            raise RestoreHandoffError("Der V7-Restoreroot ist ungueltig.")
+        protection = require_mutable_test_root(root)
         if protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST:
             raise RestoreHandoffError("Der synthetische V7-Restoreroot fehlt.")
-        return self.runtime_root
+
 
 
 class SyntheticV7EncryptedLiveRestoreService(FinalV4EncryptedLiveRestoreService):
@@ -71,7 +73,7 @@ class SyntheticV7EncryptedLiveRestoreService(FinalV4EncryptedLiveRestoreService)
     def __init__(self, backup_service, *, fault_hook=None, restart_launcher=None):
         _require_service(backup_service)
         super().__init__(backup_service,
-            handoff_service=SyntheticV7EncryptedRestoreHandoffService(backup_service),
+            handoff_service=_handoff_type(backup_service)(backup_service),
             fault_hook=fault_hook, restart_launcher=restart_launcher)
 
 
@@ -90,7 +92,7 @@ def prepare_synthetic_v7_live_restore(*, backup_service, lock, staging_root,
     try:
         if before_handoff is not None:
             before_handoff()
-        handoff = SyntheticV7EncryptedRestoreHandoffService(backup_service).create(
+        handoff = _handoff_type(backup_service)(backup_service).create(
             staging_root=staging_root, expected_container_sha256=expected_container_sha256,
             safety_backup=safety, restore_id=restore_id, app_version=app_version,
             build_commit=build_commit, source_tree_state=source_tree_state)
@@ -105,8 +107,8 @@ def _verify_handoff_history(service, paths):
     path = paths.consumed_handoff if paths.consumed_handoff.exists() else paths.handoff
     payload = _read_canonical_json(path, RestoreHandoffError)
     observed = payload.pop("authentication_hmac_sha256", None)
-    handoff = SyntheticV7EncryptedRestoreHandoffService(service)
-    if (payload.get("restore_kind") != SYNTHETIC_V7_LIVE_RESTORE_KIND
+    handoff = _handoff_type(service)(service)
+    if (payload.get("restore_kind") != _restore_kind(service)
             or payload.get("runtime_root") != str(_require_service(service))
             or payload.get("restore_id") != paths.transaction.name
             or payload.get("installation_id") != service.installation_id
@@ -126,7 +128,7 @@ def confirm_synthetic_v7_restore_startup(*, backup_service, runtime_root,
     if hashlib.sha256(manifest.to_bytes()).hexdigest() != handoff.get("manifest_sha256"):
         raise RestoreHandoffError("Der synthetische V7-Restartbestand widerspricht dem Manifest.")
     return _confirm_cipher_restore_startup(
-        restore_kind=SYNTHETIC_V7_LIVE_RESTORE_KIND,
+        restore_kind=_restore_kind(backup_service),
         manifest_reader=backup_service.read_manifest, backup_service=backup_service,
         runtime_root=root, restore_id=restore_id, token=token)
 
@@ -141,13 +143,13 @@ def recover_interrupted_synthetic_v7_restore(*, backup_service, runtime_root):
             paths = restore_transaction_paths(root, child.name)
             state = RestoreJournal(paths).read()
             if state.get("phase") not in {"completed", "rolled_back", "aborted_before_replacement"}:
-                if state.get("restore_kind") != SYNTHETIC_V7_LIVE_RESTORE_KIND:
+                if state.get("restore_kind") != _restore_kind(backup_service):
                     raise RestoreHandoffError("Ein fremder Restorevertrag blockiert V7-Recovery.")
                 _verify_handoff_history(backup_service, paths)
     return _recover_interrupted_cipher_restore(
-        restore_kind=SYNTHETIC_V7_LIVE_RESTORE_KIND,
+        restore_kind=_restore_kind(backup_service),
         manifest_reader=backup_service.read_manifest,
-        live_restore_type=SyntheticV7EncryptedLiveRestoreService,
+        live_restore_type=_live_restore_type(backup_service),
         backup_service=backup_service, runtime_root=root)
 
 
@@ -168,7 +170,7 @@ def classify_terminal_synthetic_v7_restore_artifacts(backup_service):
     paths = restore_transaction_paths(root, children[0].name)
     state = RestoreJournal(paths).read()
     phase = state.get("phase")
-    if (state.get("restore_kind") != SYNTHETIC_V7_LIVE_RESTORE_KIND
+    if (state.get("restore_kind") != _restore_kind(backup_service)
             or phase not in {"completed", "rolled_back", "aborted_before_replacement"}):
         raise RestoreHandoffError("Der synthetische Restore ist nicht abgeschlossen.")
     handoff = _verify_handoff_history(backup_service, paths)
@@ -205,3 +207,23 @@ def classify_terminal_synthetic_v7_restore_artifacts(backup_service):
     if handoff_root.exists() and any(path not in allowed_handoffs for path in handoff_root.iterdir()):
         raise RestoreHandoffError("Fremde synthetische Handoffevidenz ist vorhanden.")
     return True
+
+
+def _handoff_type(service):
+    from src.security.product_v7 import ProductV7BackupService
+    if type(service) is ProductV7BackupService:
+        from src.security.product_v7_restore import ProductV7RestoreHandoffService
+        return ProductV7RestoreHandoffService
+    return SyntheticV7EncryptedRestoreHandoffService
+
+
+def _restore_kind(service):
+    return _handoff_type(service).restore_kind
+
+
+def _live_restore_type(service):
+    from src.security.product_v7 import ProductV7BackupService
+    if type(service) is ProductV7BackupService:
+        from src.security.product_v7_restore import ProductV7LiveRestoreService
+        return ProductV7LiveRestoreService
+    return SyntheticV7EncryptedLiveRestoreService

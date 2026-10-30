@@ -13,3 +13,14 @@ SYNTHETIC_TIMETABLE_WEEKS_REGISTRY = DatabaseSchemaRegistry(
     (FINAL_V4_SCHEMA_REGISTRATION, SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION, SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION),
     tuple(SchemaUpgradeRelation(source.identity, SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity)
         for source in (FINAL_V4_SCHEMA_REGISTRATION, SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION)))
+
+# Current product composition uses this versioned registry. Historical A0/A2
+# codecs deliberately retain their closed V4-only registry.
+from .schema_registry import SchemaAdmission
+PRODUCT_V7_SCHEMA_REGISTRATION = SchemaRegistration(
+    "product_v7_timetable_weeks", SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity,
+    frozenset({SchemaAdmission.RUNTIME, SchemaAdmission.HISTORICAL_INSPECTION}))
+PRODUCT_V7_SCHEMA_REGISTRY = DatabaseSchemaRegistry(
+    (FINAL_V4_SCHEMA_REGISTRATION, PRODUCT_V7_SCHEMA_REGISTRATION),
+    (SchemaUpgradeRelation(FINAL_V4_SCHEMA_REGISTRATION.identity,
+                          PRODUCT_V7_SCHEMA_REGISTRATION.identity),))

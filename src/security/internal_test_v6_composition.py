@@ -207,7 +207,14 @@ def internal_test_restore_kind(root):
     from src.core.restore_runtime import RestoreJournal, restore_transaction_paths
     from src.security.synthetic_v6_live_restore import SYNTHETIC_V6_LIVE_RESTORE_KIND
     from src.security.final_v4_live_restore import FINAL_V4_LIVE_RESTORE_KIND
-    require_internal_test_v6_context(root)
+    from src.security.synthetic_v7_live_restore import SYNTHETIC_V7_LIVE_RESTORE_KIND
+    return inspect_restore_kind(root, require_context=require_internal_test_v6_context,
+        allowed_kinds={SYNTHETIC_V6_LIVE_RESTORE_KIND, SYNTHETIC_V7_LIVE_RESTORE_KIND, FINAL_V4_LIVE_RESTORE_KIND})
+
+
+def inspect_restore_kind(root, *, require_context, allowed_kinds):
+    from src.core.restore_runtime import RestoreJournal, restore_transaction_paths
+    require_context(root)
     root = Path(root)
     kinds = set()
     for directory in (root / "restore-transactions", root / "restore-handoffs"):
@@ -221,10 +228,9 @@ def internal_test_restore_kind(root):
             else:
                 state = json.loads(child.read_text())
             kinds.add(state.get("restore_kind"))
-    from src.security.synthetic_v7_live_restore import SYNTHETIC_V7_LIVE_RESTORE_KIND
     if not kinds:
         return None
-    if len(kinds) == 1 and kinds <= {SYNTHETIC_V6_LIVE_RESTORE_KIND, SYNTHETIC_V7_LIVE_RESTORE_KIND, FINAL_V4_LIVE_RESTORE_KIND}:
+    if len(kinds) == 1 and kinds <= allowed_kinds:
         return next(iter(kinds))
     raise SyntheticV6RuntimeError("synthetic_v6_restore_contract_conflict")
 

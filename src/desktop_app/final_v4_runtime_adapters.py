@@ -34,6 +34,7 @@ class DesktopFinalV4RestoreWorkerLauncher:
 
 
 class DesktopFinalV4RestartLauncher:
+    confirm_argument = "--final-v4-restore-confirm"
     """Start the source or frozen app for the restore resume handshake."""
 
     def launch(
@@ -48,7 +49,7 @@ class DesktopFinalV4RestartLauncher:
         except OSError:
             return None
         arguments = [
-            "--final-v4-restore-confirm",
+            self.confirm_argument,
             "--runtime-root",
             str(paths.runtime_root),
             "--restore-id",

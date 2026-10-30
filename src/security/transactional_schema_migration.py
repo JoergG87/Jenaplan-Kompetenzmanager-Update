@@ -159,7 +159,10 @@ class SyntheticTransactionalMigration:
         if inventory.restore_evidence or inventory.upgrade_evidence:
             raise UpgradeError("transaction_existing_evidence")
 
-    def execute(self):
+    def _transaction_connection(self, drain):
+        return drain.synthetic_transaction_connection(self.main, lambda: self._connect(self.main))
+
+    def execute(self, *, lock=None):
         self._require_synthetic()
         if self.service.opened is None:
             raise UpgradeError("transaction_existing_runtime_required")
@@ -169,7 +172,13 @@ class SyntheticTransactionalMigration:
         self._require_upgrade()
         gate = self.service._gate
         owner = "synthetic-transaction-v1"
-        with RuntimeInstanceLock(self.root):
+        from contextlib import nullcontext
+        if lock is not None:
+            from src.security.upgrade_startup import ProductUpgradeStartupGuard
+            if lock.runtime_root != self.root:
+                raise UpgradeError("transaction_lock_root_invalid")
+            ProductUpgradeStartupGuard(lock)._require_lock()
+        with (RuntimeInstanceLock(self.root) if lock is None else nullcontext(lock)):
             inventory = ProductStartupInventory().inspect(self.root)
             if inventory.status.value in {"unsafe", "changed"}:
                 raise UpgradeError("transaction_inventory_unsafe")
@@ -208,7 +217,7 @@ class SyntheticTransactionalMigration:
                             capability=capability, owner_id=owner, require_authority=self._require_synthetic)
                         with drain:
                             self._emit("connections_closed")
-                            with drain.synthetic_transaction_connection(self.main, lambda: self._connect(self.main)) as connection:
+                            with self._transaction_connection(drain) as connection:
                                 self._configure_transaction(connection)
                                 try:
                                     connection.execute("BEGIN EXCLUSIVE")

@@ -109,19 +109,28 @@ def build_internal_test_v7_restore_verifier(root: Path):
     the old V4 recovery algorithm independently authenticates an exact retained
     metadata candidate against the V7 handoff before a verifier is composed.
     """
-    from src.core.restore_runtime import RestoreJournal, RestoreManualRecoveryRequired, restore_transaction_paths
     from src.security.internal_test_v7_composition import (
         build_internal_test_v7_backup_service, require_internal_test_v7_context,
     )
-    from src.security.final_v4_live_restore import _bootstrap_handoff_context
     from src.security.synthetic_v7_live_restore import (
         SYNTHETIC_V7_LIVE_RESTORE_KIND, SyntheticV7EncryptedRestoreHandoffService,
     )
-    from src.security.infrastructure.sqlite_repository import ExistingStartupAccountRepository
 
-    require_internal_test_v7_context(root)
+    return _build_v7_restore_verifier(root,
+        require_context=require_internal_test_v7_context,
+        service_builder=build_internal_test_v7_backup_service,
+        restore_kind=SYNTHETIC_V7_LIVE_RESTORE_KIND,
+        handoff_type=SyntheticV7EncryptedRestoreHandoffService)
+
+
+def _build_v7_restore_verifier(root, *, require_context, service_builder,
+        restore_kind, handoff_type):
+    from src.core.restore_runtime import RestoreJournal, RestoreManualRecoveryRequired, restore_transaction_paths
+    from src.security.final_v4_live_restore import _bootstrap_handoff_context
+    from src.security.infrastructure.sqlite_repository import ExistingStartupAccountRepository
+    require_context(root)
     try:
-        return build_internal_test_v7_backup_service(root)
+        return service_builder(root)
     except Exception:
         # The fallback can only authenticate existing metadata; it cannot
         # create, rotate, restore, or normalize any key or directory.
@@ -134,7 +143,7 @@ def build_internal_test_v7_restore_verifier(root: Path):
                 paths = restore_transaction_paths(root, child.name)
                 state = RestoreJournal(paths).read()
                 if state.get("phase") not in {"completed", "rolled_back", "aborted_before_replacement"}:
-                    if state.get("restore_kind") != SYNTHETIC_V7_LIVE_RESTORE_KIND:
+                    if state.get("restore_kind") != restore_kind:
                         raise RestoreManualRecoveryRequired("Ein fremder Restorevertrag blockiert V7-Recovery.")
                     candidates.append((paths, state))
         if len(candidates) != 1:
@@ -142,7 +151,7 @@ def build_internal_test_v7_restore_verifier(root: Path):
         account = ExistingStartupAccountRepository(root / "security/security.sqlite", None).load_bound_active_account()
         paths, state = candidates[0]
         _handoff, loaded = _bootstrap_handoff_context(paths, state,
-            account_loader=lambda: account, restore_kind=SYNTHETIC_V7_LIVE_RESTORE_KIND,
-            handoff_service_type=SyntheticV7EncryptedRestoreHandoffService)
-        return build_internal_test_v7_backup_service(root,
+            account_loader=lambda: account, restore_kind=restore_kind,
+            handoff_service_type=handoff_type)
+        return service_builder(root,
             authenticated_account=account, loaded_keys=loaded)

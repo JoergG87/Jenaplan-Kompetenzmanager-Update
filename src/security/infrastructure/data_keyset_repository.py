@@ -134,6 +134,13 @@ class SQLiteDataKeysetRepository:
     def create_snapshot(self, target_path: Path) -> Path:
         """Create one consistent no-clobber snapshot of metadata plus WAL."""
 
+        if self._checkpointed_immutable_reads:
+            for suffix in ("-wal", "-shm", "-journal"):
+                try:
+                    Path(str(self._database_path) + suffix).lstat()
+                except FileNotFoundError:
+                    continue
+                raise SecurityStoreError("data_keyset_snapshot_sidecars_present")
         self._validate_store()
         target = Path(target_path)
         if target.exists() or target.is_symlink():
@@ -151,7 +158,7 @@ class SQLiteDataKeysetRepository:
             os.close(descriptor)
             descriptor = None
             with closing(sqlite3.connect(
-                f"file:{self._database_path.resolve()}?mode=ro", uri=True
+                self._read_only_uri(), uri=True
             )) as source:
                 source.execute("PRAGMA query_only = ON")
                 with closing(sqlite3.connect(target, isolation_level=None)) as snapshot:

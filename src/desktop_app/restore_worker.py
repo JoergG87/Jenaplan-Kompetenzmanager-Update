@@ -44,6 +44,7 @@ WORKER_READY_TIMEOUT_SECONDS = 5.0
 WORKER_TERMINATE_TIMEOUT_SECONDS = 2.0
 RESTORE_MODE_ZIP_V1 = "zip_v1"
 RESTORE_MODE_FINAL_V4_ENCRYPTED = "final_v4_encrypted"
+RESTORE_MODE_FINAL_V7_ENCRYPTED = "final_v7_encrypted"
 RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED = "synthetic_v6_encrypted"
 RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED = "synthetic_v7_encrypted"
 
@@ -286,7 +287,7 @@ def _abort_unconfirmed_restore(
     restore_id: str | None,
     restore_mode: str,
 ) -> None:
-    if restore_mode in (RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED):
+    if restore_mode in (RESTORE_MODE_FINAL_V7_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED):
         # Preserve all evidence on an unconfirmed synthetic worker start. The
         # authenticated V6 parent/recovery path owns journal transitions; never
         # fall back to the unrelated ZIP restore recovery implementation.
@@ -378,7 +379,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--parent-lifetime-fd", type=int)
     parser.add_argument(
         "--restore-mode",
-        choices=(RESTORE_MODE_ZIP_V1, RESTORE_MODE_FINAL_V4_ENCRYPTED,
+        choices=(RESTORE_MODE_ZIP_V1, RESTORE_MODE_FINAL_V4_ENCRYPTED, RESTORE_MODE_FINAL_V7_ENCRYPTED,
                  RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED),
         default=RESTORE_MODE_ZIP_V1,
     )
@@ -425,6 +426,10 @@ def run(
             )
             inventory_port = ProductStartupInventory()
             before_inventory = inventory_port.before_lock(runtime_root)
+        if args.restore_mode == RESTORE_MODE_FINAL_V7_ENCRYPTED:
+            from src.security.product_v7 import ProductV7StartupInventory, ProductV7StartupGuard
+            inventory_port = ProductV7StartupInventory()
+            before_inventory = inventory_port.before_lock(runtime_root)
         lock = RuntimeInstanceLock(runtime_root, inherited_fd=args.lock_fd)
         lock.acquire()
         try:
@@ -447,6 +452,11 @@ def run(
                     )
                 else:
                     service = encrypted_service_factory(runtime_root)
+            elif args.restore_mode == RESTORE_MODE_FINAL_V7_ENCRYPTED:
+                from src.desktop_app.product_v7_runtime_adapters import build_product_v7_restore_worker_service
+                ProductV7StartupGuard(lock, inventory=inventory_port).evaluate(before=before_inventory)
+                service = (build_product_v7_restore_worker_service(runtime_root, lock=lock)
+                           if encrypted_service_factory is None else encrypted_service_factory(runtime_root))
             elif args.restore_mode in (RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED):
                 from src.desktop_app.synthetic_v6_runtime_adapters import (
                     build_internal_test_v6_restore_worker_service,

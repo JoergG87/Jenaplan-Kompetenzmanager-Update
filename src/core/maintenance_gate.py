@@ -858,6 +858,26 @@ class ConnectionDrain:
         if (path != expected or _connection_path(path) not in self._runtime_keys
                 or protection is None or protection.kind is not RuntimeRootKind.SYNTHETIC_TEST):
             raise MaintenanceGateError("transaction_synthetic_main_required")
+        with self._transaction_connection(path, opener) as connection:
+            yield connection
+
+    @contextmanager
+    def product_transaction_connection(self, path, opener):
+        """Explicit product main transaction, under the same frozen drain."""
+        from pathlib import Path
+        from .runtime_root_protection import require_product_runtime_root
+        path = Path(path)
+        root = path.parent.parent
+        require_product_runtime_root(root, first_run=False)
+        if (path != root / "final-v4-sqlcipher-runtime-v1/final-v4.sqlcipher"
+                or _connection_path(path) not in self._runtime_keys):
+            raise MaintenanceGateError("transaction_product_main_required")
+        with self._transaction_connection(path, opener) as connection:
+            yield connection
+
+    @contextmanager
+    def _transaction_connection(self, path, opener):
+        from contextlib import closing
         with self.maintenance_connections():
             with closing(opener()) as connection:
                 if (not isinstance(connection, RegisteredConnection)

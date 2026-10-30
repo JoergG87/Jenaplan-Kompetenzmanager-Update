@@ -51,7 +51,7 @@ class SyntheticTimetableWeeksMigration(SyntheticTimetableMigration):
         if source == FINAL_V4_SCHEMA_REGISTRATION.identity:
             # Existing normalization in the SAME transaction, no intermediate
             # installed version or backup/restore authority.
-            SyntheticTimetableMigration(self.service)._apply_schema(connection)
+            SyntheticTimetableMigration._apply_schema(self, connection)
         for statement in TIMETABLE_WEEKS_STATEMENTS:
             connection.execute(statement)
         self._emit("schema_changed")
@@ -108,11 +108,17 @@ class SyntheticTimetableWeeksMigration(SyntheticTimetableMigration):
         if connection.execute("SELECT 1 FROM timetable_entries e LEFT JOIN timetable_entry_subjects s ON s.timetable_entry_id=e.timetable_entry_id GROUP BY e.timetable_entry_id HAVING count(s.subject_id) <> 1").fetchone():
             raise UpgradeError("transaction_historical_subject_changed")
 
-    def inspect_restart(self):
+    def inspect_restart(self, *, lock=None):
         from src.core.restore_runtime import RuntimeInstanceLock
         from pathlib import Path
         self._require_synthetic()
-        with RuntimeInstanceLock(self.root):
+        from contextlib import nullcontext
+        if lock is not None:
+            from src.security.upgrade_startup import ProductUpgradeStartupGuard
+            if lock.runtime_root != self.root:
+                raise UpgradeError("transaction_lock_root_invalid")
+            ProductUpgradeStartupGuard(lock)._require_lock()
+        with (RuntimeInstanceLock(self.root) if lock is None else nullcontext(lock)):
             source, companion = self._verified_backup_content()
             self._no_sidecars(self.companion)
             for suffix in ("-wal", "-shm"):

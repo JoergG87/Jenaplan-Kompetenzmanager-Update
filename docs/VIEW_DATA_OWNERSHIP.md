@@ -1,5 +1,9 @@
 # View Data Ownership
 
+## Produkt-V7 – 29.10.2026
+
+Keine neue Fachansicht. Produktkomposition verbindet vorhandene Repositories, Zeitvorlagen- und Stundenplanadapter einschließlich A/B und Kompetenzansicht. Security besitzt keyed Zulassung, Migration, Abschlussbeleg und Restoreprüfung; Desktop besitzt ausdrücklichen Wartungsstart, Prozessende und Neustart. Widgets erhalten weder SQL noch Migrationslogik.
+
 ## Unterrichtszeitvorlagen – isolierter erster Fachschritt – 15.10.2026
 
 No new view. Core owns validation and copy-as-suggestion semantics; SQLiteLessonTimeTemplateRepository owns parameterized persistence in the encrypted target main. Security owns synthetic migration, backup evidence and keyed restart inspection. Widgets have no SQL or business rules. Historical upgrade execution code belongs exclusively to tests, never a product composition.

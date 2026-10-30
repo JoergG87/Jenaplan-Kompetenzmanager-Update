@@ -647,6 +647,7 @@ class FinalV4EncryptedBackupService:
                     SQLiteDataKeysetRepository(
                         self.paths.final_v4.key_runtime.keyset_metadata,
                         PlatformFilePermissionManager(),
+                        checkpointed_immutable_reads=getattr(self, "_checkpointed_metadata_reads", False),
                     ).create_snapshot(keyset_path)
                     _copy_regular_verified(
                         self.paths.final_v4.key_runtime.envelope_registry,

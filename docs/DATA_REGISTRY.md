@@ -1,5 +1,9 @@
 # Data Registry
 
+## Produkt-V7 – 29.10.2026
+
+Keine neue Fachtabelle oder Schemaidentität. Produktziel ist exakt user_version=7 / 909d9d366218a61df8f2107088d6653188d93faf7c8796e3cc9aff07ccba5c55. Versionierte PRODUCT_V7_SCHEMA_REGISTRY enthält V4 und V7; die historische PRODUCT_SCHEMA_REGISTRY bleibt für alte A0/A2-Verträge geschlossen. Quelle bleibt source.jkmebackup unter schema-upgrade-source/transaction-timetable-weeks-v1. completed.json bindet Installation, vorhandenen Datenbank-/DMK-Kontext, Quellbackuphash und Zielidentität mit HMAC; es bestätigt den abgeschlossenen Wartungsvorgang, ersetzt keine keyed Runtime-/Dokumentprüfung. V7-Backup nutzt denselben verschlüsselten Container mit eigenem Produktmanifest und exakter READY-Identität.
+
 ## Synthetisches Ziel für Unterrichtszeitvorlagen – 15.10.2026
 
 lesson_time_templates: lesson_number INTEGER primary key (>0), start_time TEXT and end_time TEXT (canonical HH:MM, start < end). Source of truth is the encrypted main database, never AppPreferences or plaintext settings. Only isolated synthetic V5 registers this additive schema; all V4 tables/columns/rows remain identical. Existing timetable_entries stores actual copied times independently, with its real single subject_id unchanged. No invented subject or duplicated observation. Future organizational lessons require explicit kind and zero actual subjects; combined lessons require a link table to actual subjects and one observation subject. These are pending model work, not implemented schema.

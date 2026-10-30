@@ -178,6 +178,12 @@ def test_keyset_snapshot_includes_wal_and_never_clobbers_target(
             repository.database_path.name + "-wal"
         ).is_file()
 
+        immutable = SQLiteDataKeysetRepository(repository.database_path,
+            PlatformFilePermissionManager(), checkpointed_immutable_reads=True)
+        refused = tmp_path / "immutable-snapshot.sqlite"
+        with pytest.raises(SecurityStoreError, match="data_keyset_snapshot_sidecars_present"):
+            immutable.create_snapshot(refused)
+        assert not refused.exists()
         target = tmp_path / "snapshot" / "data-keysets.sqlite"
         assert repository.create_snapshot(target) == target
         assert target.read_bytes()[18:20] == b"\x01\x01"

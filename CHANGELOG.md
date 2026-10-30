@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Produktive V4→V7-Integration – unveröffentlicht nach Build 404
+
+- Vorhandene exakte V7-Runtime, Repositories/Adapter und verschlüsseltes Backup/Restore in den regulären Produktstart integriert; V4 behält seinen bisherigen Startpfad.
+- Ausdrücklicher Wartungseinstieg mit Existing-only-Keys, unabhängig geprüftem V4-Vollbackup und vorhandener direkter SQLCipher-Transaktion. Authentisierter Abschluss nach vollständiger Ziel-/Bestandsprüfung; kein automatisches Upgrade, kein First-Run-Fallback oder Schlüsselwechsel.
+- Produkt-V7-Worker/Restart/Recovery verwenden die vorhandene Restoremaschine mit eigener exakter Manifest-/READY-/Handoffbindung. Immutable Metadatensnapshots respektieren die bestehende Leseart und lehnen Sidecars ab.
+- Final 3538 Tests und 120 Unterprüfungen bestanden, 104 unveränderte bestehende Skips; 482/482 Provenienzdateien während des vollständigen Laufs identisch. Technische Integration im synthetischen Quellumfang GO. Tests und Grenzen siehe PROJECT.md. Version/Build 404, Produktdaten/-schlüssel, Pilotfeed und Pflanzen-ZIP unverändert; keine Veröffentlichung.
+
 ## Transaktionale Migration / Unterrichtszeitvorlagen – unveröffentlicht nach Build 404
 
 - Entscheidung für eine einzelne SQLCipher-Transaktion mit vollständigem vorherigem verschlüsseltem V4-Backup; synthetisches additives Ziel und isolierte Zeitvorlagen-Fachfunktion, ohne Produktmigration oder Versionserhöhung.

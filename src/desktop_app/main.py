@@ -322,6 +322,21 @@ def _require_authenticated_cipher_context(
 def main() -> int:
     """Start the desktop app."""
     arguments = list(sys.argv)
+    maintenance_flags = [flag for flag in ("--migrate-v4-to-v7", "--complete-v7-migration") if flag in arguments]
+    if maintenance_flags:
+        try:
+            if len(maintenance_flags) != 1 or any(flag in arguments for flag in (
+                    "--restore-worker", "--final-v4-restore-confirm", "--final-v7-restore-confirm",
+                    "--synthetic-v6-restore-confirm", "--synthetic-v7-restore-confirm")):
+                raise RuntimeError("product_v7_maintenance_arguments_invalid")
+            from src.desktop_app.product_v7_maintenance import run_product_v7_maintenance
+            root = _argument_value(arguments, "--runtime-root")
+            if root is None:
+                raise RuntimeError("product_v7_maintenance_root_required")
+            return run_product_v7_maintenance(Path(root), complete=maintenance_flags[0] == "--complete-v7-migration")
+        except Exception:
+            print("Wartung sicher angehalten; vorhandenen Bestand und Quellbackup erhalten.", file=sys.stderr)
+            return 3
     if "--internal-native-test" in arguments:
         from src.core.macos_test_package_profile import test_identity
         if test_identity() is None or not getattr(sys, "frozen", False):
@@ -380,6 +395,8 @@ def main() -> int:
     if "--restore-worker" in arguments:
         from src.desktop_app.restore_worker import (
             RESTORE_MODE_FINAL_V4_ENCRYPTED,
+            RESTORE_MODE_FINAL_V7_ENCRYPTED,
+            RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED,
             RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED,
             run as run_restore_worker,
         )
@@ -389,7 +406,7 @@ def main() -> int:
             restore_mode = arguments[mode_index + 1]
         except (ValueError, IndexError):
             restore_mode = None
-        if restore_mode not in {RESTORE_MODE_FINAL_V4_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED}:
+        if restore_mode not in {RESTORE_MODE_FINAL_V4_ENCRYPTED, RESTORE_MODE_FINAL_V7_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V6_ENCRYPTED, RESTORE_MODE_SYNTHETIC_V7_ENCRYPTED}:
             print(
                 "App-Start abgelehnt: cipher_backup_restore_not_available.",
                 file=sys.stderr,
@@ -415,6 +432,11 @@ def main() -> int:
         smoke_data_root = None
 
     try:
+        final_v7_restore_confirm = "--final-v7-restore-confirm" in arguments
+        if final_v7_restore_confirm:
+            if any(flag in arguments for flag in ("--final-v4-restore-confirm", "--synthetic-v6-restore-confirm", "--synthetic-v7-restore-confirm")):
+                return 3
+            arguments[arguments.index("--final-v7-restore-confirm")] = "--final-v4-restore-confirm"
         final_v4_restore_confirm = "--final-v4-restore-confirm" in arguments
         synthetic_v7_restore_confirm = "--synthetic-v7-restore-confirm" in arguments
         synthetic_v6_restore_confirm = "--synthetic-v6-restore-confirm" in arguments
@@ -437,7 +459,10 @@ def main() -> int:
             ):
                 raise RuntimeStorageError("cipher_restore_confirm_arguments_incomplete")
         else:
-            restore_runtime_root = None
+            restore_runtime_root = _argument_value(arguments, "--runtime-root")
+            if restore_runtime_root is not None:
+                from src.security.product_v7 import require_product_v7_scope
+                require_product_v7_scope(Path(restore_runtime_root))
             restore_confirm_id = None
             restore_confirm_token = None
         resume_restore_id = _argument_value(arguments, "--restore-resume")
@@ -451,7 +476,7 @@ def main() -> int:
         inherited_lock_fd = (
             None if inherited_lock_value is None else int(inherited_lock_value)
         )
-    except (RuntimeStorageError, ValueError) as error:
+    except (RuntimeStorageError, RuntimeRootProtectionError, ValueError, OSError) as error:
         print(f"App-Start abgelehnt: {error}", file=sys.stderr)
         return 3
 
@@ -477,7 +502,8 @@ def main() -> int:
         else:
             if synthetic_v6_restore_confirm or synthetic_v7_restore_confirm:
                 raise RuntimeRootProtectionError("synthetic_v6_sealed_context_required")
-            inventory_port = ProductStartupInventory()
+            from src.security.product_v7 import ProductV7StartupInventory
+            inventory_port = ProductV7StartupInventory()
         before_inventory = inventory_port.before_lock(data_root)
         root_protection, fresh_unmarked_root = _preflight_desktop_runtime_root(
             data_root,
@@ -501,7 +527,8 @@ def main() -> int:
     try:
         lock = RuntimeInstanceLock(data_root, inherited_fd=inherited_lock_fd)
         lock.acquire()
-        startup_guard = (InternalTestStartupGuard if internal_test else ProductUpgradeStartupGuard)(lock, inventory=inventory_port)
+        from src.security.product_v7 import ProductV7StartupGuard
+        startup_guard = (InternalTestStartupGuard if internal_test else ProductV7StartupGuard)(lock, inventory=inventory_port)
         startup_guard.evaluate(before=before_inventory)
         if fresh_unmarked_root:
             root_protection = publish_pilot_product_root(
@@ -536,8 +563,30 @@ def main() -> int:
                     confirm_internal_test_v7_restore as confirm_internal_test_v6_restore)
             v6_restore = synthetic_v6_restore_confirm or synthetic_v7_restore_confirm or kind in (SYNTHETIC_V6_LIVE_RESTORE_KIND, SYNTHETIC_V7_LIVE_RESTORE_KIND)
         else:
+            from src.security.internal_test_v6_composition import inspect_restore_kind
+            from src.security.product_v7 import require_product_v7_scope
+            from src.security.product_v7_restore import PRODUCT_V7_RESTORE_KIND
+            from src.security.final_v4_live_restore import FINAL_V4_LIVE_RESTORE_KIND
+            # Empty/initializing roots have no restore evidence and must retain
+            # the existing V4 first-run path.
+            kind = (inspect_restore_kind(data_root, require_context=require_product_v7_scope,
+                allowed_kinds={PRODUCT_V7_RESTORE_KIND, FINAL_V4_LIVE_RESTORE_KIND})
+                if (data_root / "restore-transactions").exists() or (data_root / "restore-handoffs").exists() else None)
+            if final_v7_restore_confirm and kind != PRODUCT_V7_RESTORE_KIND:
+                raise RuntimeStorageError("cipher_restore_schema_mismatch")
+            if final_v4_restore_confirm and not final_v7_restore_confirm and kind == PRODUCT_V7_RESTORE_KIND:
+                raise RuntimeStorageError("cipher_restore_schema_mismatch")
             v6_restore = False
-        if v6_restore:
+        if not internal_test and kind == PRODUCT_V7_RESTORE_KIND:
+            from src.desktop_app.product_v7_runtime_adapters import (
+                recover_product_v7_runtime_restore, confirm_product_v7_runtime_restore)
+            if final_v7_restore_confirm:
+                confirm_product_v7_runtime_restore(data_root, str(restore_confirm_id), str(restore_confirm_token))
+            else:
+                recovery = recover_product_v7_runtime_restore(data_root, on_verified_rollback=v6_recovery_context.append)
+                if recovery.status == "resume_required":
+                    confirm_product_v7_runtime_restore(data_root, str(recovery.restore_id), str(recovery.resume_token))
+        elif v6_restore:
             if final_v4_restore_confirm:
                 raise RuntimeStorageError("cipher_restore_schema_mismatch")
             if synthetic_v6_restore_confirm or synthetic_v7_restore_confirm:
@@ -787,8 +836,16 @@ def main() -> int:
             from src.core.timetable_weeks_schema import SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION
             if internal_test_schema_identity(candidate) in (SYNTHETIC_TIMETABLE_SCHEMA_REGISTRATION.identity, SYNTHETIC_TIMETABLE_WEEKS_SCHEMA_REGISTRATION.identity):
                 v6_service = candidate
+        if (not internal_test and not new_database_initialization_candidate
+                and (data_root / "schema-upgrade-source/transaction-timetable-weeks-v1/completed.json").exists()):
+            from src.security.product_v7 import build_product_v7_service, product_schema_identity, TARGET, open_product_v7_runtime
+            candidate = build_product_v7_service(data_root, authenticated_account=account,
+                loaded_keys=v6_recovery_context[0].loaded if v6_recovery_context else None)
+            if product_schema_identity(candidate) == TARGET:
+                v6_service = candidate
         if v6_service is not None:
-            product_runtime = runtime_stack.enter_context(open_internal_test_v6_runtime(v6_service, lock=lock))
+            runtime_opener = open_internal_test_v6_runtime if internal_test else open_product_v7_runtime
+            product_runtime = runtime_stack.enter_context(runtime_opener(v6_service, lock=lock))
             from src.desktop_app.adapters.lesson_time_templates_desktop_adapter import LessonTimeTemplatesDesktopAdapter
             lesson_time_templates_adapter = LessonTimeTemplatesDesktopAdapter(product_runtime.runtime)
         else:
@@ -855,6 +912,9 @@ def main() -> int:
             if type(v6_service) is SyntheticV7EncryptedBackupService:
                 from src.application.commands.synthetic_v7_backup_restore import SyntheticV7EncryptedRestoreApplicationService as SyntheticV6EncryptedRestoreApplicationService
                 from src.desktop_app.synthetic_v7_runtime_adapters import DesktopSyntheticV7RestoreWorkerLauncher as DesktopSyntheticV6RestoreWorkerLauncher
+            if not internal_test:
+                from src.application.commands.product_v7_backup_restore import ProductV7RestoreApplicationService as SyntheticV6EncryptedRestoreApplicationService
+                from src.desktop_app.product_v7_runtime_adapters import DesktopProductV7RestoreWorkerLauncher as DesktopSyntheticV6RestoreWorkerLauncher
             encrypted_backup_service = v6_service
             # The existing support-reset backup strategy is V4-specific. No
             # V4 reset capability is passed into a V6 session.
