@@ -1,5 +1,7 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+- Unbekannte Wartungsfehler liefern zusätzlich ausschließlich Fehlerklasse und Quellbasename/Zeile ohne Exceptiontext, Quelltext, absolute Pfade oder Werte, damit Paketfehler sicher lokalisierbar sind.
+
 - Releasegates: verbleibende feste Paketversionsassertionen auf 405 aktualisiert und fachliche Struktur in Release Notes erhalten.
 - Bei paralleler Recovery darf ein von SQLite regulär entferntes optionales Sidecar den Dateirechteabschluss nicht abbrechen; Hauptdatei- und andere Rechtefehler bleiben Fehler. Deterministische Race-Regression und unveränderte Recovery-Konkurrenzprüfung.
 - Wartung meldet feste Prozessgrenzen und sanitisierten Fehlercode. Realistisch befüllte Produktfixture prüft Existing-only-Schlüssel, V4→V7-Transaktion, Abschluss und Wiederanlauf in neuen Prozessen. V7-Grenze des V4-Support-Resets ausdrücklich dokumentiert.

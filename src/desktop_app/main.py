@@ -340,6 +340,13 @@ def main() -> int:
             if not isinstance(code, str) or not code or any(c not in "abcdefghijklmnopqrstuvwxyz0123456789_" for c in code):
                 code = "product_v7_maintenance_failed"
             print("Wartung sicher angehalten; vorhandenen Bestand und Quellbackup erhalten. " + code, file=sys.stderr)
+            if code == "product_v7_maintenance_failed":
+                # Structural diagnostics only: no exception message, source
+                # lines, local paths, account values or key material.
+                import traceback
+                print("Wartung: " + type(error).__name__, file=sys.stderr)
+                for frame in traceback.extract_tb(error.__traceback__):
+                    print("Wartung: " + Path(frame.filename).name + ":" + str(frame.lineno), file=sys.stderr)
             return 3
     if "--internal-native-test" in arguments:
         from src.core.macos_test_package_profile import test_identity
