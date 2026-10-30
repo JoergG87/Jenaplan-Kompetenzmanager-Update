@@ -393,3 +393,64 @@ def test_packaged_v7_write_and_snapshot_use_real_encrypted_product(migrated, cap
                 assert dict((name, count) for name, count, digest in result["main_content"])["observations"] > 0
                 assert result["managed_document_hashes"]
             assert opened.runtime.lesson_time_templates.suggest(1).start_time == "08:00"
+
+
+def test_realistically_populated_product_source_migrates(tmp_path, monkeypatch):
+    import gc
+    from src.core.runtime_root_protection import prepare_synthetic_test_root
+    from src.desktop_app import main
+    from src.desktop_app.runtime import runtime_paths
+    from src.security.startup import build_security_runtime, finalize_security_runtime
+    from scripts.seed_test_data import seed_cipher_pilot_test_data
+    from tests.test_product_upgrade_startup import product_main_ports, MemoryDataMasterKeyStore
+    root = (tmp_path / "populated").resolve()
+    prepare_synthetic_test_root(root)
+    store = MemoryDataMasterKeyStore()
+    opened = product_main_ports(root, monkeypatch, store)
+    assert main.main() == 0
+    gc.collect()
+    assert main.main() == 0
+    current = opened[-1]
+    with RuntimeInstanceLock(root) as lock:
+        seed_cipher_pilot_test_data(current, source_root=root)
+        paths = runtime_paths(root)
+        finalize_security_runtime(build_security_runtime(paths), paths, lock)
+    loaded = current.runtime.final_v4.loaded_keys
+    _run_process(maintenance_existing_keys, (str(root), store, False))
+    _run_process(maintenance_existing_keys, (str(root), store, True))
+    _run_process(reopen, (current.runtime.documents.paths, loaded, current.installation_id))
+
+
+def maintenance_existing_keys(root, store, complete_phase, channel):
+    try:
+        source = build_product_v7_service(Path(root), key_store=store,
+            provider=qualified_sqlcipher_test_provider(), v4_source=True)
+        migration = ProductV7Migration(source)
+        if complete_phase:
+            migration.complete()
+        else:
+            migration.execute()
+        channel.send(("ok",))
+    except BaseException:
+        import traceback
+        channel.send(("error", traceback.format_exc()))
+    finally:
+        channel.close()
+
+
+@pytest.mark.parametrize("diagnostic, expected", [
+    ("product_v7_existing_keys_required", "product_v7_existing_keys_required"),
+    ("private secret /Users/example", "product_v7_maintenance_failed"),
+])
+def test_maintenance_failure_prints_only_sanitized_code(monkeypatch, capsys, diagnostic, expected):
+    from src.desktop_app import main
+    import src.desktop_app.product_v7_maintenance as maintenance
+    from src.core.schema_upgrade import UpgradeError
+    def fail(*args, **kwargs):
+        raise UpgradeError(diagnostic)
+    monkeypatch.setattr(maintenance, "run_product_v7_maintenance", fail)
+    monkeypatch.setattr(main.sys, "argv", ["app", "--migrate-v4-to-v7", "--runtime-root", "/synthetic"])
+    assert main.main() == 3
+    message = capsys.readouterr().err
+    assert expected in message
+    assert "private secret" not in message and "/Users/" not in message

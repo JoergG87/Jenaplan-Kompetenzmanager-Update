@@ -2,6 +2,8 @@
 
 ## V7 ab 0.5.0 / Build 405
 
+V7 bietet derzeit keinen V4-Support-Resetadapter. Vorhandene Recovery-Codes und die Pilotbetreuung bleiben die vorgesehenen Hilfen. V4-spezifische Support-Resetbeschreibungen weiter unten gelten nur für noch nicht umgestellte V4-Installationen.
+
 Nach der bewussten Wartungsumstellung sichert die App das exakte V7-Schema im eigenen verschlüsselten Backupvertrag. Vorhandene Schüler, Bewertungen, Beobachtungen, Dokumente und Entwürfe werden übernommen. V7-Backups lassen sich ausschließlich über den passenden V7-Restore im ursprünglichen Installations- und Schlüsselkontext wiederherstellen.
 
 Das vor der Migration unabhängig geprüfte V4-Vollbackup bleibt als Rückfallquelle erhalten. Kein V4-Backup direkt in eine aktive V7-Installation einspielen und keine einzelne Main-Datei austauschen. Eine betreute vollständige Rückkehr zum V4-Sicherungszeitpunkt verwirft alle späteren Änderungen. Build 404 darf eine V7-Datenbank nicht öffnen.

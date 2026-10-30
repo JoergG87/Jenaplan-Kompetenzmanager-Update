@@ -1,5 +1,9 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+- Releasegates: verbleibende feste Paketversionsassertionen auf 405 aktualisiert und fachliche Struktur in Release Notes erhalten.
+- Bei paralleler Recovery darf ein von SQLite regulär entferntes optionales Sidecar den Dateirechteabschluss nicht abbrechen; Hauptdatei- und andere Rechtefehler bleiben Fehler. Deterministische Race-Regression und unveränderte Recovery-Konkurrenzprüfung.
+- Wartung meldet feste Prozessgrenzen und sanitisierten Fehlercode. Realistisch befüllte Produktfixture prüft Existing-only-Schlüssel, V4→V7-Transaktion, Abschluss und Wiederanlauf in neuen Prozessen. V7-Grenze des V4-Support-Resets ausdrücklich dokumentiert.
+
 - Bestehendes festes Releaseversionsgate auf 0.5.0 / Build 405 aktualisiert; Security-Abhängigkeits- und Packagingassertionen bleiben erhalten.
 
 - Produktbuilder: macOS-Bash-3.2-kompatible nichtleere Payloadargumentliste und erhaltener Fehlerstatus beim EXIT-Cleanup; Regression führt die tatsächlichen Shellfragmente aus.

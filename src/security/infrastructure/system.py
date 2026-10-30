@@ -56,7 +56,14 @@ class PlatformFilePermissionManager:
 
     def secure_sqlite_files(self, database_path: Path) -> None:
         for suffix in ("", "-wal", "-shm", "-journal"):
-            self.secure_file(Path(f"{database_path}{suffix}"))
+            path = Path(f"{database_path}{suffix}")
+            try:
+                self.secure_file(path)
+            except FileNotFoundError:
+                # SQLite may remove an optional sidecar when another reader
+                # closes. Main-file and all other permission failures propagate.
+                if not suffix or path.exists() or path.is_symlink():
+                    raise
 
     def verify(self, security_directory: Path) -> bool | None:
         if os.name != "posix":

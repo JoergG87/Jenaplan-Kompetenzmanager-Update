@@ -339,3 +339,21 @@ def test_failed_write_connection_setup_closes_new_connection(tmp_path, monkeypat
         repository._connect_write()
     assert caught.value is error
     connection.close.assert_called_once_with()
+
+
+def test_disappearing_optional_sqlite_sidecar_does_not_break_recovery(tmp_path, monkeypatch):
+    import os
+    permissions = PlatformFilePermissionManager()
+    database = tmp_path / "security.sqlite"
+    database.write_bytes(b"synthetic")
+    sidecar = Path(str(database) + "-shm")
+    sidecar.write_bytes(b"synthetic")
+    real_chmod = os.chmod
+    def remove_before_chmod(path, mode, **kwargs):
+        if Path(path) == sidecar:
+            sidecar.unlink()
+        return real_chmod(path, mode, **kwargs)
+    monkeypatch.setattr(os, "chmod", remove_before_chmod)
+    permissions.secure_sqlite_files(database)
+    assert database.stat().st_mode & 0o777 == 0o600
+    assert not sidecar.exists()

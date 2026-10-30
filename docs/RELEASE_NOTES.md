@@ -13,6 +13,10 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 - Deutlich schnellere Wochenumschaltung und weitere Darstellungs- und Stabilitätskorrekturen.
 - Die Beobachtungssituation „Sitzkreis“ ergänzt die bestehende Auswahl.
 
+## Fachliche Struktur
+
+Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz bleiben unabhängig von der Unterrichtsfachwahl immer verfügbar. Die individuelle Fachauswahl priorisiert die Dokumentation; sie löscht keine historischen Bewertungen. Beobachtungen, Kompetenz-Cockpit, Berichte und LEG verwenden weiterhin den offiziellen Entwicklungsbuchkatalog mit 331 Kompetenzen.
+
 ## Bewusste Umstellung von Build 404
 
 Das Ersetzen des App-Bundles führt keine automatische Datenmigration aus. Eine vorhandene Final-V4-Installation bleibt beim gewöhnlichen Start V4. V7 wird ausschließlich über den ausdrücklich gestarteten Wartungsweg aktiviert, nachdem die App vollständig beendet wurde:
@@ -30,6 +34,8 @@ Die Wartung sollte mit Unterstützung der Pilotbetreuung ausgeführt werden. Pla
 - Bei einem Wartungsfehler hält die App kontrolliert an. Vorhandenen Bestand, Fehlermeldung und Quellbackup erhalten und die Pilotbetreuung hinzuziehen. Kein Löschen von Wartungsbelegen, keine Schlüsselneuanlage und kein Austausch einzelner Datenbankdateien.
 - Nach einer bereits erfolgreich committeten, aber noch nicht abgeschlossenen Migration ist die gesonderte erneute Abschlussprüfung `--complete-v7-migration` möglich; sie ist kein automatisches Fortsetzen und prüft den vollständigen Zielbestand erneut.
 - Eine Rückkehr zu Build 404 erfordert die vollständige geprüfte V4-Sicherung im ursprünglichen Schlüsselkontext. Build 404 darf V7 nicht öffnen. Alle Änderungen nach dem V4-Sicherungszeitpunkt gingen bei dieser Rückkehr verloren; kein automatischer Downgrade.
+
+V7 bietet derzeit keinen V4-Support-Resetadapter. Vorhandene Recovery-Codes bleiben der erste Wiederherstellungsweg; bei weiterem Unterstützungsbedarf die Pilotbetreuung hinzuziehen. Die V4-spezifischen Support-Resetbeschreibungen in älteren Anleitungsabschnitten gelten ausschließlich vor der V7-Umstellung.
 
 ## Pilotkanal und Installation
 

@@ -24,7 +24,8 @@ def run_product_v7_maintenance(root, *, complete=False):
     with RuntimeInstanceLock(root) as lock:
         ProductUpgradeStartupGuard(lock)._require_lock()
         service = build_product_v7_service(root, v4_source=True)
-        migration = ProductV7Migration(service)
+        migration = ProductV7Migration(service, fault_hook=lambda boundary:
+            print("Wartung: " + boundary, file=sys.stderr, flush=True))
         if not complete:
             migration.execute(lock=lock)
     environment = dict(os.environ)

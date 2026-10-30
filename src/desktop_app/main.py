@@ -334,8 +334,12 @@ def main() -> int:
             if root is None:
                 raise RuntimeError("product_v7_maintenance_root_required")
             return run_product_v7_maintenance(Path(root), complete=maintenance_flags[0] == "--complete-v7-migration")
-        except Exception:
-            print("Wartung sicher angehalten; vorhandenen Bestand und Quellbackup erhalten.", file=sys.stderr)
+        except Exception as error:
+            code = getattr(error, "code", "product_v7_maintenance_failed")
+            # Only a fixed diagnostic token, never arbitrary exception text.
+            if not isinstance(code, str) or not code or any(c not in "abcdefghijklmnopqrstuvwxyz0123456789_" for c in code):
+                code = "product_v7_maintenance_failed"
+            print("Wartung sicher angehalten; vorhandenen Bestand und Quellbackup erhalten. " + code, file=sys.stderr)
             return 3
     if "--internal-native-test" in arguments:
         from src.core.macos_test_package_profile import test_identity

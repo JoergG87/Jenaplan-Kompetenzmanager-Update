@@ -2,6 +2,8 @@
 
 ## Releasekandidat 405 – 30.10.2026
 
+Wartungsfehler geben ausschließlich kleingeschriebene Diagnosecodes aus; unbekannte oder unzulässige Fehlercodes werden zu product_v7_maintenance_failed. Keine freie Exceptionnachricht.
+
 Der bestehende doppelt isolierte --packaged-smoke-test erhält die geschlossenen Modi migration-source, migration-snapshot und v7-write. Sie verwenden vorhandene Seed-/Vollinhalts-/Adapterports ausschließlich nach synthetischer Root- und Authentifizierungsprüfung. Keine neue Produktquelle oder Framework.
 
 ## Produkt-V7 – 29.10.2026

@@ -351,8 +351,8 @@ def test_spec_product_and_test_profile_use_same_security_basis(tmp_path, profile
     assert bundle["info_plist"]["JKMInternalTestProfileSHA256"] == profile_digest(validated)
     assert analysis["runtime_hooks"] == [profile["build_root"] + "/internal_test_hook.py"]
     assert analysis["binaries"] == [(str(tmp_path / "JENAPLAN_MACOS_SECURITY_BRIDGE"), ".")]
-    assert bundle["info_plist"]["CFBundleVersion"] == "404"
-    assert bundle["info_plist"]["CFBundleShortVersionString"] == "0.4.4"
+    assert bundle["info_plist"]["CFBundleVersion"] == "405"
+    assert bundle["info_plist"]["CFBundleShortVersionString"] == "0.5.0"
     assert "sqlcipher3._sqlite3" in analysis["hiddenimports"]
     assert product["TEST_PROFILE"] is None
 
