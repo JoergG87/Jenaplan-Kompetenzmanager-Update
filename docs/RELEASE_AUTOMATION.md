@@ -1,5 +1,17 @@
 # Pilot-Releaseautomation
 
+## 0.5.0 / Build 405 – lokaler Kandidat, Updateabschluss offen – 30.10.2026
+
+Sauberer Produktquellcommit `38f6e8c5c2d9`; separater Versionscommit `77f370f`. Bestehende Pipeline vollständig gebaut, finale Gesamtsuite **3544 bestanden / 104 bestehende Skips / 120 Unterprüfungen**, elf Originalpaketgates und Restore-Worker-Smoke bestanden. 209 Frozen-Module plus tatsächlicher Main stimmen mit Quelle überein; 6196 Bundleeinträge nach nativem Lauf unverändert und mit DMG verglichen. SQLCipher 4.17.0 / SQLite 3.53.3 / CommonCrypto, Produkt-Bundle-ID und vorhandener Pilotkanal qualifiziert.
+
+Nativer Produktmigrationspfad V4→V7 mit realistisch befüllter synthetischer Quelle bestanden: Vollbackup unabhängig verifiziert, historische Inhalte und Dokumente erhalten, bestehende Anmeldung, V7-Schreibvorgänge und vollständiger tatsächlicher V7-Restore mit bestätigtem Worker-/Restart-Handschlag. Native Wartungsblockade durch wartenden Vorgänger behoben, ohne Live-owner-Veto oder Lockprüfung zu lockern: geschlossene Wartungsabbilder werden durch den bestehenden Abschluss-/Normalstart ersetzt.
+
+Unveränderter veröffentlichter Build 404 selbst: synthetisch 24 Schüler, 3 Gruppen, 3 Kurse, 331 Kompetenzen, 71 Beobachtungen, 5 Dokumente / 7 Container, 2 Berichts- und 2 LEG-Entwürfe, Revisionen/PDFs, 10 Stundenplaneinträge; vorhandene Anmeldung und unabhängig geprüftes Backup/RESTORE_READY bestanden. Sparkles tatsächlicher Versionsvergleich erlaubt 405 > 404; Bundle-ID, Feed und Vertrauensschlüssel identisch. Beim realen Appaustausch am gleichen isolierten Pfad wartet der neue Zugriff auf den vorhandenen 404-DMK auf eine macOS-Keychainfreigabe. Computer-Use-Schutz sperrt SecurityAgent; Mac als gesperrt gemeldet. Daher gesamte 404→405-Migration/Anmeldung und nachfolgender paketierter 404-gegen-V7-Fall **offen**, nicht bestanden.
+
+**NO-GO für die Veröffentlichungsfreigabe bis zum Abschluss dieses lokalen Updategates.** Keine neue bestätigte offene P0/P1 im qualifizierten Codeumfang. P2-/Funktionsgrenze: V7 besitzt keinen V4-Support-Resetadapter; Recovery-Codes und Pilotbetreuung bleiben vorgesehen. Bestehende Ad-hoc-Strategie beibehalten; Sparkle-Ed25519-Signaturen für alle vier Assets, Notes und lokalen Feed unabhängig verifiziert. Developer ID/Notarisierung nicht behauptet oder als neue Pflicht eingeführt. Öffentliche signierte Feed-/Download-/Sparkleinstallation bleibt ein Veröffentlichungsgate; keine Veröffentlichung ausgeführt.
+
+Kandidat und ausführlicher Bericht: `release/output/0.5.0-build405-38f6e8c5c2d9/RELEASE_CANDIDATE_REPORT.md`; vollständiges lokales Inventar `SHA256SUMS-ALL-405.txt`. Nur `artifacts/` enthält die vier regulären Veröffentlichungassets; `staged-feed/` ist ausschließlich lokal. Historische Kandidaten bleiben getrennt; Build 404 und seine veröffentlichten Artefakte unverändert.
+
 ## Mac-Pilot 0.4.4 / Build 404 veröffentlicht – 13.10.2026
 
 Veröffentlicht aus 79d59591344397fdc462f40e1c0335c75066463e im bestehenden Pilotkanal. GitHub-Pre-Release v0.4.4-build404 und signierter Pilot-Appcast öffentlich verifiziert; Feed-Commit 942087e0325b4b417738ba70b55a2148e011091b. Kein Stable-Wechsel, keine Developer-ID-/Notarisierungsbehauptung. Die installierte produktive Mac-App wurde weder gestartet noch aktualisiert; vorhandene Produktdaten und Produktschlüssel blieben unberührt.

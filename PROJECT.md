@@ -1,5 +1,13 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Releasekandidat 0.5.0 / Build 405 – lokaler Abschluss 30.10.2026
+
+Produktpaket aus exakt `38f6e8c5c2d9` über die bestehende saubere macOS-Pipeline gebaut. Finale Produktsuite: **3544 bestanden, 104 unveränderte Skips, 120 Unterprüfungen, 996.37 s**. Elf Paketgates und separater Restore-Worker-Smoke bestanden. Nativer Produktpfad mit 24 synthetischen Schülern, 331 Kompetenzen, 71 Beobachtungen, fünf Dokumenten/sieben verschlüsselten Containern, Entwürfen/Revisionen und Stundenplan: bewusstes V4→V7, unabhängig verifiziertes Vollbackup, vollständige Datenerhaltung, vorhandenes Passwort, V7-Schreibvorgänge und echter V7-Worker-/Restart-/Restorepfad bestanden.
+
+**Gesamtempfehlung derzeit NO-GO für Veröffentlichungsfreigabe:** tatsächliche Build-404→405-Keychainkontinuität wartet auf den macOS-Systemdialog. Version/Sparkle-Vertrauen und realistisch befüllter unveränderter Build 404 sind qualifiziert; vollständige Migration/Anmeldung auf genau diesem 404-Schlüsselkontext sowie dessen paketierter V7-Ablehnungsfall sind noch offen. Computer Use sperrt SecurityAgent und meldet einen gesperrten Mac. Das ist ein offenes lokales Updategate, kein bestandener öffentlicher Feedtest. Kein bestätigter offener P0/P1 im qualifizierten Codeumfang; V7-Support-Resetgrenze dokumentiert.
+
+Artefakte, endgültige Release Notes, Sparkle-Signaturen, nur lokal vorbereiteter Feed, Prüfsummen und Nachweise: `release/output/0.5.0-build405-38f6e8c5c2d9/`. App Ad-hoc signiert, deep/strict gültig; kein Developer-ID-/Notarisierungsanspruch und keine neue entsprechende Pflicht. Veröffentlichung/Push/Tag/Feedänderung nicht ausgeführt. Lauras fachliche V7-Abnahme laut Auftrag erfolgt; keine neue volle Bedienabnahme verlangt.
+
 ## Produktintegration V4→V7 – 29.10.2026
 
 PO-Implementierungsauftrag: regulären V7-Produktstart, ausdrückliche V4→V7-Wartung und vorhandenen Worker-/Restart-/Restorepfad verbinden; keine weitere Readinessanalyse, kein Produktbuild und keine Veröffentlichung. Baseline 1f92f15 auf spike/python-gui. Fremde Dokumentänderungen einschließlich vorheriger Vorprüfung bleiben erhalten und werden nicht mitcommittet.
