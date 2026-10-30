@@ -1,5 +1,7 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+- Bestehendes festes Releaseversionsgate auf 0.5.0 / Build 405 aktualisiert; Security-Abhängigkeits- und Packagingassertionen bleiben erhalten.
+
 - Produktbuilder: macOS-Bash-3.2-kompatible nichtleere Payloadargumentliste und erhaltener Fehlerstatus beim EXIT-Cleanup; Regression führt die tatsächlichen Shellfragmente aus.
 
 - PO-autorisierte lokale Releasefertigstellung; finale V7-Release-Notes und dokumentierter bewusster Wartungs-/Rückfallweg.
