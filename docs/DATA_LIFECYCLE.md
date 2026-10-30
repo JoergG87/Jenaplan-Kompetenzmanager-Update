@@ -1,5 +1,9 @@
 # Data Lifecycle
 
+## Releasekandidat 405 – 30.10.2026
+
+Expliziter Wartungsstart --migrate-v4-to-v7 bleibt einziger V4→V7-Schreibweg. Die lokalen Pakettests befüllen ausschließlich doppelt isolierte synthetische Roots über vorhandene V4-Seedadapter und prüfen reguläre V7-Schreibvorgänge. Releaseversionierung und lokaler Paketbau sind autorisiert, Veröffentlichung separat. Rückfall verlangt das vollständige geprüfte V4-Backup im ursprünglichen Schlüsselkontext; kein Main-Einzeldateiaustausch. Nach V7-Schreibvorgängen verwirft Rückkehr zum V4-Sicherungszeitpunkt alle späteren Änderungen.
+
 ## Produkt-V7-Wartung – 29.10.2026
 
 Nur ausdrücklicher Wartungseinstieg: bestehende Locks und Existing-only-Keys, exaktes V4, verschlüsseltes Vollbackup und unabhängige Extraktionsprüfung, Connection-Drain, bestehende direkte SQLCipher-V4→V7-Transaktion, vollständiger historischer Datenvergleich und Zielintegrität, endgültiges Ende des Wartungslaufs. Erst nach erneutem keyed Reopen und Dokument-/Companionprüfung wird completed.json exklusiv geschrieben und synchronisiert. Vor- oder Nachcommitabbruch ohne Abschlussbeleg hält regulären Start an; bewusster Abschluss prüft mit dem erhaltenen Quellbackup den vollständigen V7-Zielbestand erneut. Kein automatischer Rollback oder Resume beim normalen Start. Nach ordnungsgemäßem Abschluss dürfen reguläre V7-Schreibvorgänge den aktuellen Bestand verändern; historische Sicherung dient nicht als Vergleich des später veränderten Livebestands. V7-Restore nutzt vorhandene Handoff-/Safety-/Worker-/Confirm-/Rollbackmaschine mit eigenem exaktem Produktvertrag. V4-Restore bleibt eigenständig; kein schemafremder Fallback und kein Main-Einzeldateidowngrade.

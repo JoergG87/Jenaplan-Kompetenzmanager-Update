@@ -1,5 +1,9 @@
 # UI Data Mapping
 
+## Releasekandidat 405 – 30.10.2026
+
+Keine neuen UI-Felder. V7-Paketnachweis verwendet vorhandene Wochenzyklus-, Ausnahme- und Zeitvorlagenadapter.
+
 ## Produkt-V7 – 29.10.2026
 
 Keine neuen Fachfelder. Bestehende Zeitvorlagen-, Stundenplan-/A/B-, Beobachtungs-, Bewertungs- und Backupfelder werden auch für exakt zugelassenes Produkt-V7 verbunden. Expliziter Wartungsaufruf ist ein getrennter Programmeinstieg, kein versteckter Appstartschritt. Fehler verwenden vorhandenen sanitisierten Starthalt; kein First-Run-Angebot.

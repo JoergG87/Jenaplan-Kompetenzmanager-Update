@@ -1,5 +1,11 @@
 # Jenaplan-Kompetenzmanager - Benutzerhandbuch
 
+## V7-Pilotupdate 0.5.0 / Build 405
+
+Nach der bewussten Wartungsumstellung stehen A-/B-Wochen mit manuellen Ausnahmen, globale Unterrichtszeitvorlagen, Stammgruppenstunden und kombinierte Fächer zur Verfügung. Eine Beobachtung aus einer kombinierten Stunde verlangt eine eindeutige Fachwahl. Fachpflanzen zeigen den vorhandenen Kompetenzstand; Kalender, Eingabefelder und Kompetenzansicht wurden verbessert. Die Wochenumschaltung ist deutlich schneller.
+
+Die Installation des Updates allein verändert das Schema nicht. Die Pilotbetreuung führt den ausdrücklich beschriebenen Wartungsweg aus den Release Notes aus. Vorhandene Zugangsdaten und Daten bleiben erhalten. Vor jedem Schemawechsel wird ein verschlüsseltes Vollbackup unabhängig geprüft; bei Problemen hält die Wartung kontrolliert an. Nach der Umstellung verwenden Backup und Restore den V7-Vertrag. Eine Rückkehr zum V4-Backup verliert spätere Änderungen.
+
 ## 1. Titel und Versionsstand
 
 - Produktversion: {{PILOT_VERSION}}

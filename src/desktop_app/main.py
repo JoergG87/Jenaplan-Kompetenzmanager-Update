@@ -1169,6 +1169,33 @@ def _run_packaged_smoke(
         "student_count": student_count,
         "window_title": window.windowTitle(),
     }
+    if mode == "migration-source":
+        from scripts.seed_test_data import seed_cipher_pilot_test_data
+        if compatibility.sqlite_user_version != 4:
+            raise RuntimeStorageError("migration_source_v4_required")
+        seed_cipher_pilot_test_data(product_runtime, source_root=paths.root)
+    elif mode == "v7-write":
+        from datetime import date
+        from src.desktop_app.adapters.timetable_desktop_adapter import TimetableDesktopAdapter
+        if compatibility.sqlite_user_version != 7 or window.lesson_time_templates_adapter is None:
+            raise RuntimeStorageError("migration_target_v7_required")
+        timetable = TimetableDesktopAdapter(product_runtime.database)
+        timetable.configure_week_cycle(date(2026, 10, 26), "A")
+        timetable.set_week_override(date(2026, 11, 2), "A")
+        product_runtime.runtime.lesson_time_templates.set_times(1, "08:00", "08:45")
+        if not timetable.week_assignment(date(2026, 11, 2)).manual:
+            raise RuntimeStorageError("migration_target_write_failed")
+    if mode in {"migration-source", "migration-snapshot", "v7-write"}:
+        from contextlib import closing
+        from src.core.database_content_evidence import database_content_evidence
+        with closing(product_runtime.database.connect()) as connection:
+            payload["main_content"] = database_content_evidence(connection).tables
+        documents = product_runtime.documents
+        documents.validate_restart()
+        payload["managed_document_hashes"] = {
+            str(path.relative_to(paths.root)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(paths.root.rglob("*.jkmedoc"))
+        }
     if mode in {"restore-worker", "restore-ready", "restore-parent-exit"}:
         backup_result = backup_application.create(
             CreateBackupCommand(
@@ -1237,7 +1264,12 @@ def _run_packaged_smoke(
             from src.desktop_app.synthetic_v6_runtime_adapters import recover_internal_test_v6_restore
             if compatibility.sqlite_user_version == 7:
                 from src.desktop_app.synthetic_v7_runtime_adapters import recover_internal_test_v7_restore as recover_internal_test_v6_restore
-            recovery = recover_internal_test_v6_restore(paths.root)
+            from src.core.macos_test_package_profile import test_identity
+            if compatibility.sqlite_user_version == 7 and test_identity() is None:
+                from src.desktop_app.product_v7_runtime_adapters import recover_product_v7_runtime_restore
+                recovery = recover_product_v7_runtime_restore(paths.root)
+            else:
+                recovery = recover_internal_test_v6_restore(paths.root)
         else:
             recovery = recover_interrupted_final_v4_restore(
                 runtime_root=paths.root,
@@ -1271,7 +1303,7 @@ def _run_packaged_smoke(
         if not deleted or repository.active_data_keyset() is not None:
             raise RuntimeStorageError("Final-V4-Pakettest-Keychain-Cleanup fehlgeschlagen.")
         payload["keychain_cleanup"] = "ok"
-    elif mode not in {"initialize", "restart"}:
+    elif mode not in {"initialize", "restart", "migration-source", "migration-snapshot", "v7-write"}:
         raise RuntimeStorageError("Unbekannter Final-V4-Pakettestmodus.")
     window.close()
     app.processEvents()

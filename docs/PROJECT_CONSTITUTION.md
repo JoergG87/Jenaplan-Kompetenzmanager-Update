@@ -1,5 +1,9 @@
 # Project Constitution
 
+## Releasekandidat 405 – PO-Auftrag 30.10.2026
+
+Lokale Fertigstellung von 0.5.0 / Build 405 mit bestehender Produkt-V4→V7-Komposition, synthetischer Build-404-Updateprüfung und unveränderter Pilot-Signierungsstrategie autorisiert. Versionscommit, Produktpaketbau und technische Korrekturen erlaubt; keine Veröffentlichung, kein Push/Tag, keine realen Produktdaten oder Produktschlüssel. Lauras fachliche V7-Abnahme ist erfolgt. Historische engere Auftragsgrenzen bleiben historische Nachweise.
+
 ## Produktive V4→V7-Komposition – PO-Auftrag 29.10.2026
 
 Autorisiert sind Produktadapter, explizite Wartungsmigration und V7-Worker/Restart, ausschließlich an synthetischen Produktinstallationen zu qualifizieren. Keine neue Schemaidentität: exakt vorhandenes V7. Bestehende V4-Starts bleiben erhalten; keine stille Migration, kein First Run nach Fehlern, keine Schlüsselrotation. Vorhandene SQLCipher-Transaktion und Restorezustandsmaschine werden wiederverwendet. Keine Versionserhöhung, reale Daten-/Schlüsselnutzung, Paketveröffentlichung oder Feedänderung.

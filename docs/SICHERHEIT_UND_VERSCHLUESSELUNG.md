@@ -1,5 +1,9 @@
 # Sicherheit und Verschlüsselung
 
+## Produkt-V7 ab 0.5.0 / Build 405
+
+Die bewusste Wartungsumstellung prüft den vorhandenen Final-V4-Bestand und vorhandene Schlüssel, erstellt und verifiziert ein verschlüsseltes Vollbackup und führt die bestehende SQLCipher-Transaktion auf das exakt registrierte V7 aus. Kein normaler Start führt diese Migration aus. V7 besitzt passende Produkt-Runtime-, Backup- und Restorestrategien; der ursprüngliche Installations-/Schlüsselkontext bleibt erhalten. Historische V4-spezifische Abläufe gelten weiter für noch nicht umgestellte Installationen. Keine Schlüsselrotation, keine automatische Rückmigration und kein Main-Einzeldateiaustausch.
+
 Stand: 14. August 2026
 Geltung: Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 Status: Vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder

@@ -361,3 +361,35 @@ def test_unprotected_runtime_override_is_rejected_without_mutation(tmp_path,monk
     monkeypatch.setattr(main.sys,'argv',['app','--runtime-root',str(root)])
     assert main.main()==3
     assert set(root.iterdir())==before
+
+
+def test_packaged_v7_write_and_snapshot_use_real_encrypted_product(migrated, capsys):
+    import json
+    from unittest.mock import MagicMock
+    from src.desktop_app.main import _run_packaged_smoke
+    from src.desktop_app.runtime import runtime_paths
+    paths, loaded, installation = migrated
+    current = service(paths, loaded, installation)
+    with RuntimeInstanceLock(paths.final_v4.root) as lock:
+        with ProductV7Runtime(current).open_existing(lock=lock) as runtime:
+            opened = SimpleNamespace(runtime=runtime, database=runtime.database,
+                documents=runtime.documents, first_run=False,
+                database_context_id=loaded.database_context_id,
+                database_key_fingerprint_sha256=loaded.database_key_fingerprint_sha256,
+                dmk_fingerprint_sha256=loaded.dmk_fingerprint_sha256)
+            window = MagicMock()
+            window.adapter.current_school_year.return_value = None
+            window.curriculum_adapter.list_entries.return_value = ()
+            window.windowTitle.return_value = "synthetic"
+            window.isVisible.return_value = False
+            for mode in ("v7-write", "migration-snapshot"):
+                assert _run_packaged_smoke(MagicMock(), window,
+                    runtime_paths(paths.final_v4.root), mode=mode,
+                    product_runtime=opened, security_runtime=None,
+                    backup_application=None, restore_application=None,
+                    login_authenticated=True) == 0
+                result = json.loads(capsys.readouterr().out.splitlines()[-1])
+                assert result["schema_version"] == 7
+                assert dict((name, count) for name, count, digest in result["main_content"])["observations"] > 0
+                assert result["managed_document_hashes"]
+            assert opened.runtime.lesson_time_templates.suggest(1).start_time == "08:00"

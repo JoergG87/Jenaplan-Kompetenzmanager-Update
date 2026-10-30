@@ -1,5 +1,9 @@
 # Technical Naming Registry
 
+## Releasekandidat 405 – 30.10.2026
+
+Der bestehende doppelt isolierte --packaged-smoke-test erhält die geschlossenen Modi migration-source, migration-snapshot und v7-write. Sie verwenden vorhandene Seed-/Vollinhalts-/Adapterports ausschließlich nach synthetischer Root- und Authentifizierungsprüfung. Keine neue Produktquelle oder Framework.
+
 ## Produkt-V7 – 29.10.2026
 
 Ergänzte Strategie-/Portnamen: PRODUCT_V7_SCHEMA_REGISTRATION, ProductV7BackupManifest, ProductV4MigrationBackupService, ProductV7StartupInventory, require_product_v7_scope, open_product_v7_runtime, verify_product_v7_completion; ProductV7Migration.complete; run_product_v7_maintenance; build_product_v7_restore_verifier/worker_service, recover_product_v7_runtime_restore und confirm_product_v7_runtime_restore. Restorevertrag PRODUCT_V7_RESTORE_KIND, Produktmanifest-ID 00000000-0000-4000-8000-000000000107, product-v7-backup-manifest-v1.json; READY-Version 4 mit exakter V7-Identität. Der Abschlussbeleg verwendet die bestehende KDF mit purpose jenaplan-kompetenzmanager/product-v4-v7-completed/v1 und Kontext Installation/Datenbank. Der gewöhnliche --runtime-root-Einstieg akzeptiert ausschließlich bereits geschützte kanonische Produkt-/synthetische Roots; kein First Run über diesen Override. Fehlercodes product_v7_* sind sanitisiert. SQLiteDataKeysetRepository.create_snapshot respektiert checkpointed_immutable_reads und verweigert Sidecars mit data_keyset_snapshot_sidecars_present. Shared Ports: inspect_restore_kind, _build_v7_restore_verifier, ConnectionDrain._transaction_connection; FinalV4RestartLauncher.confirm_argument parametriert ausschließlich den Confirm-Flag. SyntheticTransactionalMigration.execute und SyntheticTimetableWeeksMigration.inspect_restart akzeptieren optional einen tatsächlich gehaltenen, rootgebundenen bestehenden RuntimeInstanceLock.

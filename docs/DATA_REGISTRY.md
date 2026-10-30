@@ -1,5 +1,9 @@
 # Data Registry
 
+## Releasekandidat 405 – 30.10.2026
+
+Keine Schemaänderung: bestehende Produktkante Final V4→exaktes V7. Paketnachweise erfassen ausschließlich typisierte Tabellenhashes und Zähler einer neuen synthetischen Installation; keine Fachdatenwerte oder Schlüssel im Releaseinventar.
+
 ## Produkt-V7 – 29.10.2026
 
 Keine neue Fachtabelle oder Schemaidentität. Produktziel ist exakt user_version=7 / 909d9d366218a61df8f2107088d6653188d93faf7c8796e3cc9aff07ccba5c55. Versionierte PRODUCT_V7_SCHEMA_REGISTRY enthält V4 und V7; die historische PRODUCT_SCHEMA_REGISTRY bleibt für alte A0/A2-Verträge geschlossen. Quelle bleibt source.jkmebackup unter schema-upgrade-source/transaction-timetable-weeks-v1. completed.json bindet Installation, vorhandenen Datenbank-/DMK-Kontext, Quellbackuphash und Zielidentität mit HMAC; es bestätigt den abgeschlossenen Wartungsvorgang, ersetzt keine keyed Runtime-/Dokumentprüfung. V7-Backup nutzt denselben verschlüsselten Container mit eigenem Produktmanifest und exakter READY-Identität.

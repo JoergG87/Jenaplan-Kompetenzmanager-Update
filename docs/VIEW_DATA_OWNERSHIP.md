@@ -1,5 +1,9 @@
 # View Data Ownership
 
+## Releasekandidat 405 – 30.10.2026
+
+Keine neue Ansicht. Bestehender Paket-Smoke koordiniert synthetische Seed-/Snapshotnachweise; Fachoperationen bleiben bei Adaptern und Services, typisierte Hashprojektion bei Core.
+
 ## Produkt-V7 – 29.10.2026
 
 Keine neue Fachansicht. Produktkomposition verbindet vorhandene Repositories, Zeitvorlagen- und Stundenplanadapter einschließlich A/B und Kompetenzansicht. Security besitzt keyed Zulassung, Migration, Abschlussbeleg und Restoreprüfung; Desktop besitzt ausdrücklichen Wartungsstart, Prozessende und Neustart. Widgets erhalten weder SQL noch Migrationslogik.

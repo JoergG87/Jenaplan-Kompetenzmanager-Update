@@ -1,5 +1,11 @@
 # Installation des Jenaplan-Kompetenzmanagers
 
+## Update auf 0.5.0 / Build 405
+
+Das App-Update aus Build 404 ersetzt zunächst nur das Programm. Der gewöhnliche Start migriert keine Daten. Für A-/B-Wochen und die weiteren V7-Funktionen ist anschließend der ausdrücklich gestartete Wartungsweg erforderlich. Die Pilotbetreuung beendet die App vollständig und verwendet den in den Release Notes beschriebenen Befehl `--migrate-v4-to-v7 --runtime-root` mit dem bestehenden kanonischen Datenroot.
+
+Die Wartung prüft den bestehenden Schlüsselkontext und Final V4, erstellt und verifiziert ein verschlüsseltes Vollbackup, migriert transaktional auf V7 und startet neu. Das bisherige Passwort gilt weiter. Bei einem Fehler Bestand und Backup erhalten und die Pilotbetreuung hinzuziehen; keine Dateien einzeln ersetzen oder Schlüssel neu anlegen. Eine Rückkehr zu Build 404 setzt ein vollständiges V4-Backup im ursprünglichen Schlüsselkontext voraus und verliert spätere Änderungen.
+
 Diese Anleitung gilt für die Mac-Pilotversion
 {{PILOT_VERSION}} / Build {{PILOT_BUILD}}.
 
