@@ -1,5 +1,29 @@
 # Pilot-Releaseautomation
 
+## Build 405 vollständig zur Veröffentlichung vorbereitet – 31.10.2026
+
+**GO für die lokale Veröffentlichungsvorbereitung.** Paketquelle `38f6e8c5c2d9bb149fdd166a09397d41462d0df6`, Dokumentationsquelle `d90011e20bb3373fb0a6b37bea29099c99f5f0fc`, abgeschlossene Paket-/Updatequalifikation `597eb287e91fe137dbf6a814804da6fcc78a3de4`. Vorgesehener Tag `v0.5.0-build405` zeigt gemäß bestehendem Releasevertrag später auf die Paketquelle, nicht auf diesen Dokumentationsabschluss. Kein Tag erstellt.
+
+Einziger aktiver Satz: `release/output/0.5.0-build405-docrevision-20261031/release-manifest.local.json` und sanitisiertes `release-manifest.json`. DMG und Dokumentations-ZIP bytegleich zur endgültigen Qualifikation. Alle 58 im Manifest gebundenen bisherigen Nachweisdateien erneut hashgeprüft; Produkt-/Update-/Migrations-/Restoregates übernommen, keine erneute Gesamtsuite. Dokumentation vollständig: 8 PDFs, 61 Seiten, 25 synthetische Screenshots, 50 ZIP-Einträge.
+
+Finale GitHub-Asset-Allowlist (SHA-256):
+
+| Datei | SHA-256 |
+| --- | --- |
+| `Jenaplan-Kompetenzmanager-0.5.0-macOS-arm64.dmg` | `3ddc4a4ed40abdcefa181dacbd55587ed8d9f6004d956ecc8c7bfefa4276a4f7` |
+| `Jenaplan-Kompetenzmanager-0.5.0-Dokumentation.zip` | `6a379800c13f64eae2cd1a891faddf94a63e394d04a9759645dfcb9b78bfa829` |
+| `SHA256SUMS-0.5.0-Build-405.txt` | `4648acf48c35e295c640e736eaa46144884d17875480efc28019236f0730220f` |
+| `RELEASE_INVENTORY-0.5.0-Build-405.txt` | `7a59a6c78e7c8dc17aa7c9a6f35a33ef521593743cba58ee99b98e2ed1f095c1` |
+
+Gezielte Korrekturen: überholten Keychain-NO-GO-Satz im aktiven Textinventar durch den finalen Qualifikationsstand ersetzt; identische qualifizierte GitHub-Notes zusätzlich unter dem von `publish_appcast` erwarteten `artifacts/GITHUB_RELEASE_NOTES.md` bereitgestellt. Aktive Prüfsummenlisten konsistent erneuert; vorherige Listen als historische Nachweise unter `final-release-gates/historical/` erhalten. Historische STOP-Berichte sind keine aktiven Releaseinventare.
+
+Bestehende Automation `_sign_update`, `_build_appcast`, `_verify_ed25519` und `_verify_feed_signature` verwendet, keine neue Releasepipeline. Sparkle 2.9.4, bestehendes Konto `de.jenaplan.kompetenzmanager.pilot`; kein Schlüsselexport/-wechsel. Signierung nur über kurzlebige private `payload.bin`-Kopie. DMG (235361769 Bytes), qualifizierte HTML-Notes und Appcastprefix mit unabhängigem öffentlichen Ed25519-Verifier bestätigt. Signaturen, signierte Längen und Hashes in `final-release-gates/sparkle-signatures.json`; Appcastdatei hat zusätzlich den unverändert von der bestehenden Pipeline erzeugten Signaturkommentar. Feedhash und signierte Prefixlänge sind ausdrücklich getrennt. Notes und Feed sind spätere Pages-Dateien, keine zusätzlichen GitHub-Assets.
+
+Remotevorprüfung tatsächlich lesend ausgeführt: Ziel `JoergG87/Jenaplan-Kompetenzmanager-Update`; 405-Tag lokal/remote und 405-Release/Draft fehlen; 404 ist veröffentlichtes Pre-Release. Live-Pagesfeed bytegleich zum Repositoryfeed, dessen Signatur und lokale veröffentlichte 404-DMG-Signatur unter dem konfigurierten Pilotschlüssel unabhängig gültig. Maximaler Pilotbuild 404, keine doppelten Builds; vorbereiteter Feed ergänzt genau 405 und erhält alle bisherigen Einträge. Stable-Verzeichnis fehlt, Stable bleibt deaktiviert. Öffentliches Feedblob vor/nach Vorbereitung identisch. Nachweise: `final-release-gates/remote-preflight.json`, `local-gate-result.json`, `final-inventory-verification.json`, `SHA256SUMS-FINAL.txt`. Gezielte Prüfung: `rtk proxy python3 -m pytest tests/test_release_pilot.py tests/test_sparkle_feed.py -q --tb=short` → 47 bestanden, keine Skips.
+
+Keine offenen technischen Blocker im beauftragten lokalen Signatur-/Manifestumfang. Öffentliche Phasen bleiben bewusst pending, `release_authorization=false`. Verbleibend: gesonderter Veröffentlichungsauftrag; Tag-/Releasefreiheit und unveränderten Feed unmittelbar erneut prüfen; bestehendes `publish-github` mit diesem Manifest ausführen (Pre-Release, Latest=false, exakt vier Assets, unabhängiger Download-/Hashvergleich); anschließend bestehendes `publish-appcast` und `verify`. Diese Phase erzeugt den Feed wegen seines Publikationsdatums neu und signiert ihn erneut; bei verzögerter Veröffentlichung dürfen vorbereitete und neu erzeugte Feedbytes niemals verwechselt werden. Bestehende Signaturen für identische DMG-/Notesbytes bleiben gültig. Kein Stable-Rollout.
+
+
 ## Endgültiger 405: Schlüsselbund-/Updategate geschlossen – 31.10.2026
 
 Die folgende Sperre der Dokumentationsrevision ist historisch: Das endgültige DMG wurde ohne erneuten Neubau am ursprünglichen synthetischen 404-Schlüsselkontext qualifiziert. Ad-hoc-CDHash 404 `81a654aca76be93bf447e6078e1a6b79b348f516`, ursprünglicher 405 `0cbe3881fbae44c0c18ca88f0f82c5ad038fd858`, finale Revision `b02b1c9f3604051fa2d2c39d1f04e021bfb6f244`; Bundle-ID, Executable und Entitlements unverändert. Native Evidenz: vorhandene ACL vertraute den beiden früheren CDHashes; securityd versuchte den Dialog, hielt wegen `inDarkWake` mit -25337 an. Nutzer bestätigte nach Rückkehr persönlich den regulären Dialog. Danach vorhandene Anmeldung, unveränderte Schlüsselfingerprints und vollständige V7-Inhaltsgleichheit erfolgreich.

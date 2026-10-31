@@ -1,5 +1,10 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+## 0.5.0 / Build 405 – lokale Veröffentlichungsvorbereitung abgeschlossen – 31.10.2026
+
+Endgültige Sparkle-Signaturen für unverändertes qualifiziertes DMG, Release Notes und lokalen Pilot-Appcast mit vorhandenem Pilotschlüssel erzeugt und unabhängig verifiziert. Build-404-DMG und aktueller Feed unter demselben öffentlichen Schlüssel geprüft. Releaseinventar/Prüfsummen aktualisiert, Notes-Eingabepfad der bestehenden Automation ergänzt; 47 gezielte Release-/Feedtests bestanden. Keine Produktcodeänderung, kein Neubau, kein Push/Tag/Release/öffentlicher Feedwechsel. Details und endgültige Hashes in `docs/RELEASE_AUTOMATION.md`.
+
+
 ## Schlüsselbund-/Updateabschluss 405 – 31.10.2026
 
 - Endgültige Dokumentationsrevision am ursprünglichen synthetischen 404-Schlüsselkontext nach persönlicher macOS-Freigabe erfolgreich geöffnet. Ursache belegt: neue Ad-hoc-CDHash-Identität benötigt Freigabe; securityd konnte den Dialog zuvor wegen inDarkWake (-25337) nicht anzeigen. Kein Code-/Signaturumbau nötig.
