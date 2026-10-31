@@ -5735,3 +5735,8 @@ Einziger abschließender V7-Testkandidat aus `6d195c4` erfolgreich gebaut und au
 - Bewusst bestätigter V4→V7-Assistent ohne Terminal oder Pfadangabe.
 - Reale Wartungsphasen, getrennte Abschlussprüfung, sichere Fehleranzeige und Neustart.
 - Bereits migrierte V7-Bestände werden nicht erneut migriert; V4-Erstanlage bleibt erhalten.
+
+
+## 0.5.1 / Build 406 – vorläufig, unveröffentlicht
+
+Versionsquelle für die lokale Kandidatenqualifikation gemäß bestehender fortlaufender Pilot-Buildkonvention angehoben. Keine Releasefreigabe oder Veröffentlichung.
