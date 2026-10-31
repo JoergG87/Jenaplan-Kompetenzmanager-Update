@@ -1,5 +1,12 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+## Dokumentationsrevision 0.5.0 / Build 405 - 31.10.2026
+
+- Bestehende Benutzer-, Installations-, Sicherheits-, Backup-, Support- und Releasequellen gegen Produktcode `38f6e8c5c2d9` geprüft und überarbeitet. V4-Bestandsbetrieb und ausdrückliche V4→V7-Wartung sowie V7-Support-Resetgrenze getrennt.
+- Handbuch um Unterrichtszeiten, Stammgruppen-/kombinierte Stunden, A-/B-Wochen, Einzelwochenkorrekturen, Fachpflanzen und aktuelle Bedienung ergänzt; synthetische Qt-Abbildungen erneuert.
+- Acht PDFs samt bestehendem Dokumentdesign, eingebettete Erste Schritte/Installationsanleitung und vorhandene Drittanbieterhinweise revidiert. Separater Dokumentationskandidat mit neuem Inventar und Hashbindung; alter qualifizierter Kandidat unverändert archiviert. Konkrete Paket-/PDF-Ergebnisse und verbleibende Gates im Revisionsbericht, keine vorweggenommene Freigabe.
+- Keine Produktfunktion, kein Datenmodell, keine Versionsanhebung und keine Produktinstallation geändert. Keine Veröffentlichung, kein Push/Tag und kein öffentlicher Appcastwechsel. Fremde Dokumentänderungen bleiben erhalten und außerhalb dieses Commits.
+
 - 31.10.2026: tatsächliche synthetische 404→405-Keychain-/Updateprüfung einschließlich Migration, Datenintegrität, vollständigem V7-Restore und sicherer 404-Schemaablehnung abgeschlossen. Unveränderte Releaseassets; GO für separate Veröffentlichungsfreigabe. Dokumentierte Testharness-Bereinigung ohne Produktänderung.
 
 - Lokaler Produktkandidat 0.5.0 / Build 405 aus `38f6e8c5c2d9` vollständig gebaut: finale Suite 3544 Tests / 120 Unterprüfungen bestanden, 104 unveränderte Skips; elf Paketgates, nativer Produkt-V4→V7-Pfad und vollständiger V7-Worker-/Restart-/Restore bestanden. Signaturen und Prüfsummen verifiziert. Gesamtempfehlung bleibt NO-GO bis zur manuellen macOS-Keychainfreigabe und vollständigen Build-404-Updateprüfung; keine Veröffentlichung. Abschlussbericht unter `release/output/0.5.0-build405-38f6e8c5c2d9/`.

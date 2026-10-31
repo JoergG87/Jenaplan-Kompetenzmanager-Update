@@ -1,16 +1,16 @@
 # Jenaplan-Kompetenzmanager - Benutzerhandbuch
 
-## V7-Pilotupdate 0.5.0 / Build 405
+## V7-Pilotupdate {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 Nach der bewussten Wartungsumstellung stehen A-/B-Wochen mit manuellen Ausnahmen, globale Unterrichtszeitvorlagen, Stammgruppenstunden und kombinierte Fächer zur Verfügung. Eine Beobachtung aus einer kombinierten Stunde verlangt eine eindeutige Fachwahl. Fachpflanzen zeigen den vorhandenen Kompetenzstand; Kalender, Eingabefelder und Kompetenzansicht wurden verbessert. Die Wochenumschaltung ist deutlich schneller.
 
-Die Installation des Updates allein verändert das Schema nicht. Die Pilotbetreuung führt den ausdrücklich beschriebenen Wartungsweg aus den Release Notes aus. Vorhandene Zugangsdaten und Daten bleiben erhalten. Vor jedem Schemawechsel wird ein verschlüsseltes Vollbackup unabhängig geprüft; bei Problemen hält die Wartung kontrolliert an. Nach der Umstellung verwenden Backup und Restore den V7-Vertrag. Eine Rückkehr zum V4-Backup verliert spätere Änderungen.
+Die Installation des Updates allein verändert das Schema nicht. Die Pilotbetreuung führt den ausdrücklich beschriebenen Wartungsweg aus der Installationsanleitung aus. Im qualifizierten Updateablauf bleiben vorhandene Zugangsdaten und Daten erhalten. Vor jedem Schemawechsel wird ein verschlüsseltes Vollbackup unabhängig geprüft; bei Problemen hält die Wartung kontrolliert an. Nach der Umstellung verwenden Backup und Restore den V7-Vertrag. Eine Rückkehr zu einem älteren V4-Backup kann Änderungen seit dessen Erstellung verlieren.
 
 ## 1. Titel und Versionsstand
 
 - Produktversion: {{PILOT_VERSION}}
 - Pilotbuild: {{PILOT_BUILD}}
-- Dokumentstand: 30. Oktober 2026
+- Dokumentstand: 31. Oktober 2026
 - Plattform: macOS auf Apple Silicon (arm64), ab macOS 13
 - Status: Mac-Pilotversion
 
@@ -78,10 +78,9 @@ dürfen dabei nicht unterbrochen werden.
 ### Version und Build prüfen
 
 Öffnen Sie unten in der Seitenleiste Über die App. Dort stehen Produktversion
-und Build. Ein später zur Pilotprüfung übergebenes Artefakt muss Version
-{{PILOT_VERSION}} und Build {{PILOT_BUILD}} anzeigen. Ein DMG, eine Prüfsumme
-oder ein Commit werden erst durch den späteren sauberen Build belegt; dieses
-Handbuch behauptet kein bereits erzeugtes Build-Artefakt.
+und Build. Für dieses Pilotupdate müssen Version {{PILOT_VERSION}} und Build
+{{PILOT_BUILD}} angezeigt werden. Die freigegebenen Paketbytes und ihre
+Prüfsummen sind im jeweiligen Releaseinventar und Manifest festgehalten.
 
 ![Version und Build](screenshots/23_about_version.png)
 
@@ -92,6 +91,30 @@ persönlichen lokalen App-Bereich und getrennt vom App-Bundle gespeichert. Beim
 Start werden vorhandene Fachdaten nicht durch Beispiel- oder Pilotdaten
 ersetzt. Der genaue Speicherort muss im Schulalltag nicht manuell verändert
 werden.
+
+### Update von 0.4.4 / Build 404
+
+Erstellen und prüfen Sie vor dem Update eine vollständige verschlüsselte
+Sicherung. Halten Sie Ihr bisheriges Passwort und die sicher verwahrten
+Recovery-Codes bereit. Das neue App-Paket ersetzt keine fehlenden lokalen
+Schlüssel. Die bisherige geschützte Installation und ihr macOS-Benutzerkonto
+müssen erhalten bleiben.
+
+Build {{PILOT_BUILD}} kann einen intakten V4-Bestand zunächst unverändert
+öffnen. Erst die bewusst gestartete, betreute Wartung stellt ihn auf V7 um.
+Währenddessen die App geschlossen lassen, keine zweite Version starten und
+den Wartungsabschluss abwarten. Danach Build {{PILOT_BUILD}} regulär öffnen,
+mit dem bisherigen Passwort anmelden und Kinder, Beobachtungen, Dokumente und
+Stundenplan prüfen. Anschließend ein neues V7-Backup erstellen und prüfen.
+Die genauen Schritte und Stoppfälle stehen in der Installations- und
+Backupanleitung.
+
+> [!WARNUNG]
+> Build 404 kann eine V7-Datenbank nicht öffnen. Eine Rückkehr ist kein
+> einfaches Neuinstallieren der alten App: Sie erfordert eine geeignete
+> vollständige V4-Sicherung und die technische Betreuung. Spätere Änderungen
+> können dabei verloren gehen. Einzelne Datenbank- oder Schlüsseldateien nicht
+> manuell austauschen.
 
 ## 5. Anmeldung, Sperre und Unterstützung
 
@@ -106,8 +129,10 @@ getrennt vom Mac auf. Der optionale Anzeigename dient nur der lokalen Begrüßun
 
 ### Anmelden und entsperren
 
-Bei jedem normalen Start und nach einer Sperre wird das lokale Passwort
-eingegeben. Enter löst die sichtbare Hauptaktion aus. Ein falsches oder
+Ohne aktivierte gespeicherte Geräteanmeldung geben Sie beim normalen Start
+das lokale Passwort ein. Nach einer Sperre verwenden Sie das Passwort oder
+eine verfügbare angebotene Geräteanmeldung. Enter löst die sichtbare
+Hauptaktion aus. Ein falsches oder
 fehlendes Credential entsperrt die App nicht; die Fachoberfläche bleibt
 geschlossen. Verwenden Sie bei einem verlorenen Passwort zuerst Recovery-Code
 verwenden.
@@ -140,10 +165,10 @@ Gespeicherte Anmeldung widerrufen, eine Passwortänderung und Recovery entfernen
 die Komfortanmeldung. Unter Passwort ändern setzen Sie
 nach der Bestätigung des bisherigen Passworts ein neues lokales Passwort.
 
-### Support-Reset
+### Support-Reset und seine Grenzen
 
-Support-Reset ist ausschließlich auf der ursprünglichen, technisch intakten
-Installation möglich. Vor dem Zurücksetzen prüft die App den vorhandenen
+Der betreute Support-Reset ist im implementierten V4-Pfad ausschließlich auf
+der ursprünglichen, technisch intakten Installation möglich. Vor dem Zurücksetzen prüft die App den vorhandenen
 geschützten Datenbestand vollständig und erzeugt und verifiziert ein neues
 verschlüsseltes Safety-Backup. Erst danach werden Passwort, Recovery-Codes und
 gespeicherte Anmeldungen zurückgesetzt; beim nächsten Start müssen ein neues
@@ -152,6 +177,12 @@ keinen Zugriff auf Fachdaten. Ein Reset-Code ersetzt den geschützten
 Installationsschlüssel nicht: Fehlt dieser oder ist der lokale Bestand nicht
 vollständig prüfbar, findet kein Reset statt. Gerätewechsel werden dadurch
 nicht ermöglicht.
+
+Nach der V7-Umstellung ist dieser Support-Reset nicht verfügbar. Verwenden
+Sie bei vergessenem Passwort zuerst einen noch gültigen Recovery-Code. Ist
+dies nicht möglich, die Betreuung einschalten; keine Zurücksetzung oder
+Dateireparatur auf eigene Faust versuchen. Passwort, Recovery-Codes und
+Schlüssel nie ungeschützt an den Support senden.
 
 <!-- pagebreak -->
 
@@ -162,13 +193,18 @@ Nach der Anmeldung führt die Seitenleiste zu vier Bereichen:
 - Heute: Dashboard für Unterricht und Dokumentationsüberblick.
 - Schüler: Stammgruppen, Kurse, Kursverbünde und Schülerprofile.
 - Stammdaten: Stammgruppen, Kurse und Kursverbünde.
-- Einstellungen: Stundenplan, Datensicherung, Sicherheit und weitere lokale
+- Einstellungen: Stundenplan, Unterrichtszeiten nach der V7-Umstellung,
+  Datensicherung, Sicherheit und weitere lokale
   Einstellungen.
 
 Erste Schritte erklärt in fünf kurzen, nicht blockierenden Schritten den
 sicheren Start und kann übersprungen oder später in den Einstellungen erneut
 geöffnet werden. Die Ansicht legt keine Kinder, Beobachtungen oder Sicherungen
 automatisch an.
+
+Auch eine frische Installation von Build {{PILOT_BUILD}} legt zunächst einen
+geschützten V4-Bestand an. Die erweiterten Stundenplanfunktionen werden erst
+durch die bewusst gestartete betreute V4→V7-Wartung verfügbar.
 
 Für den frischen Pilotbestand gehen Sie in dieser Reihenfolge vor:
 
@@ -192,6 +228,22 @@ zusätzlich ruhige Kontextfarben; die Beschriftung bleibt immer maßgeblich.
 Escape und Abbrechen beenden eine Auswahl oder Rückfrage sicher, ohne
 versehentlich Daten zu erzeugen oder zu verwerfen.
 
+### Kalender, Eingabefelder und Markierungen
+
+Datumsfelder können direkt bearbeitet oder über das Kalendersymbol geöffnet
+werden. Im Kalender wechseln die Pfeile den Monat; Monat und Jahr stehen im
+Kopf. Wählen Sie den gewünschten Tag. Zulässige Datumsgrenzen bleiben auch bei
+direkter Eingabe wirksam. Eine Auswahl allein speichert noch keine
+Beobachtung, keinen Bericht und keine Stundenplanregel.
+
+Zeitfelder zeigen Stunden und Minuten; markieren Sie den gewünschten Teil und
+geben Sie den Wert ein oder verwenden Sie die Pfeile. Zahlenfelder lassen
+sich ebenso direkt eingeben oder schrittweise ändern. Mit Tab gelangen Sie
+zum nächsten Feld. Textmarkierungen und ausgewählte Listenzeilen sind hell
+petrol hinterlegt; der Fokusrahmen zeigt, welches Element Tastatureingaben
+erhält. Eine markierte Zeile oder ein Katalogfilter ist noch keine gespeicherte
+fachliche Bewertung.
+
 ## 7. Dashboard und Stundenplan
 
 Das Dashboard Heute bündelt die aktuelle oder nächste Stunde, Stundenplan heute,
@@ -201,22 +253,162 @@ Unterrichtsalltag übersichtlich, ohne für jeden Eintrag einzeln nachzuladen.
 
 ![Dashboard](screenshots/01_dashboard.png)
 
-Über + Beobachtung bereiten Sie eine Beobachtung für die hervorgehobene Stunde
-vor. Fach und Ziel bleiben vorgefüllt, können vor dem Speichern aber geprüft und
-angepasst werden. Ohne Stundenplan erklärt die App den nächsten sinnvollen
-Schritt.
+Über + Beobachtung bereiten Sie eine Beobachtung für die hervorgehobene
+Fachstunde vor. Bei genau einem Fach werden Fach und Unterrichtsziel
+vorbereitet. Bei kombinierten Fächern wählen Sie zuerst ausdrücklich das
+konkrete Fach. Prüfen und ergänzen Sie die Eingaben vor dem Speichern. Eine
+organisatorische Stammgruppenstunde hat kein Kompetenzfach; sie löst keine
+automatische fachliche Beobachtung aus. Ohne Stundenplan erklärt die App den
+nächsten sinnvollen Schritt.
 
 ### Stundenplan pflegen
 
 1. Einstellungen und dann Stundenplan öffnen.
-2. Wochentag wählen und Stunde hinzufügen oder Bearbeiten wählen.
-3. Zeit, Fach, Zielart, Ziel und bei Bedarf Raum eintragen.
-4. Speichern; die App weist auf ungültige Zeiten und Überschneidungen hin.
+2. Die gewünschte Kalenderwoche und den Wochentag wählen.
+3. Stunde hinzufügen oder bei einer vorhandenen Stunde Bearbeiten wählen.
+4. Nach der V7-Umstellung Gültigkeit und Stundenart festlegen. Zeiten, Fächer,
+   Zielart, Ziel und bei Bedarf Raum/Ort prüfen.
+5. Speichern; die App weist auf ungültige Zeiten und Überschneidungen hin.
 
 Ein deaktivierter Eintrag bleibt sichtbar und kann wieder aktiviert werden.
 Gelöschte Stunden lassen sich nicht über die Oberfläche wiederherstellen.
 
 ![Stundenplan](screenshots/13_timetable_settings.png)
+
+Die folgenden erweiterten Einstellungen benötigen den bewusst umgestellten
+V7-Bestand. Wird Build {{PILOT_BUILD}} noch mit V4 verwendet, fehlen diese
+Felder absichtlich. Die Programmversion allein schaltet sie nicht frei.
+
+### Globale Unterrichtszeiten festlegen
+
+Unter Einstellungen > Unterrichtszeiten legen Sie die Zeiten Ihrer Schule
+fest. Wählen Sie Neue Unterrichtsstunde hinzufügen, tragen Sie
+Unterrichtsstunde, Beginn und Ende ein und wählen Sie Unterrichtszeit
+speichern. Die Nummer muss positiv sein, Beginn vor Ende liegen. Es werden
+keine schulischen Beispielzeiten verbindlich vorgegeben.
+
+Wählen Sie zum Ändern eine bereits gespeicherte Stunde aus der Liste und
+speichern Sie die geänderten Zeiten. Ihre Nummer bleibt beim Bearbeiten fest.
+Gespeicherte Zeiten neu laden verwirft ungespeicherte Eingaben und lädt den
+aktuellen Stand. Eine bereits vorhandene Nummer lässt sich nicht versehentlich
+als neue Vorlage überschreiben.
+
+![Unterrichtszeiten bearbeiten](screenshots/26_lesson_time_templates.png)
+
+### Zeitvorschläge übernehmen oder individuell anpassen
+
+Im Dialog Stunde anlegen beziehungsweise Stundenplaneintrag bearbeiten beginnt
+die Auswahl Unterrichtsstunde mit Zeiten individuell festlegen. Wählen Sie
+eine gespeicherte Unterrichtsstunde und klicken Sie ausdrücklich auf Zeiten
+übernehmen. Erst diese Aktion kopiert Beginn und Ende in die Stunde. Beide
+Felder bleiben anschließend frei änderbar. Speichern übernimmt die geprüften
+Werte in den Stundenplan.
+
+Zum nachträglichen Ändern öffnen Sie die konkrete Stunde über Bearbeiten.
+Ändern Sie Beginn und Ende direkt oder übernehmen Sie bewusst eine Vorlage.
+Eine spätere Änderung der globalen Unterrichtszeit verändert keine bereits
+gespeicherte Stunde. Auch beim erneuten Öffnen wird keine Vorlage automatisch
+angewendet.
+
+### Stammgruppenstunden ohne Kompetenzfach
+
+Eine organisatorische Stunde, zum Beispiel der morgendliche Sitzkreis, kann
+unter Stundenart als Stammgruppenstunde angelegt werden. Legen Sie Zeit und
+Gültigkeit fest und wählen Sie unter Ziel die bestehende Stammgruppe. Die
+Zielart ist dabei Stammgruppe; die Fachauswahl ist deaktiviert. Es wird kein
+Kompetenzfach gespeichert.
+
+![Organisatorische Stammgruppenstunde](screenshots/28_homeroom_session.png)
+
+Der Stundenplan benennt sie als Stammgruppenstunde. Bearbeiten, Deaktivieren
+und Löschen erfolgen wie bei anderen Einträgen. Löschen entfernt den Eintrag;
+für ein vorübergehendes Aussetzen können Sie Eintrag aktiv abwählen.
+
+Fachunterricht mit Zielart Stammgruppe ist etwas anderes: Er enthält mindestens
+ein Unterrichtsfach und kann fachbezogene Beobachtungen vorbereiten. Die
+organisatorische Stammgruppenstunde dient nur der Unterrichtsorganisation.
+Beobachtungen erfassen Sie bei Bedarf gesondert im passenden fachlichen oder
+überfachlichen Kontext.
+
+### Kombinierter Fachunterricht
+
+Wählen Sie Stundenart Fachunterricht und markieren Sie unter Fächer mehrere
+passende Unterrichtsfächer, zum Beispiel Deutsch und Mathematik. Dazu kommen
+Zeiten, Gültigkeit und das Unterrichtsziel. Beide Fachnamen bleiben im
+Stundenplan sichtbar; die Kombination ist kein zusätzliches Fach im Katalog.
+
+![Deutsch und Mathematik in einer Stunde](screenshots/27_combined_subjects.png)
+
+Wenn Sie vom Dashboard eine Beobachtung zu dieser Stunde beginnen, wählen Sie
+zuerst das konkrete Fach. Ein Abbruch dieser Fachwahl erzeugt keine
+Beobachtung. Die gewählte Zuordnung gibt den Kontext für die weitere Eingabe
+vor. Eine Stunde mit zwei Fächern bewertet weder automatisch beide Fächer noch
+verdoppelt sie eine Bewertung. Jede fachliche Bewertung wird weiterhin bewusst
+über konkrete Kompetenzen dokumentiert.
+
+### A-/B-Rhythmus einrichten
+
+1. Unter Einstellungen > Stundenplan Wochenregeln … öffnen.
+2. Bei Referenzwoche ein Datum innerhalb einer bekannten A- oder B-Woche
+   wählen. Die App ordnet es dem Montag dieser Kalenderwoche zu.
+3. Daneben A oder B auswählen und Referenz speichern wählen.
+
+Diese Referenz bestimmt den Grundrhythmus vorwärts und rückwärts. Auf jede
+A-Woche folgt eine B-Woche und umgekehrt, auch über einen Jahreswechsel.
+Die Statuszeile zeigt Kalenderwoche, Jahr und die gültige Zuordnung.
+Ohne eingerichtete Referenz können Sie Stunden für Jede Woche pflegen;
+Nur A-Woche und Nur B-Woche benötigen den eingerichteten Rhythmus.
+
+Im Stundeneditor bedeutet Gültigkeit:
+
+- Jede Woche: Der Eintrag gilt in A- und B-Wochen.
+- Nur A-Woche: Der Eintrag erscheint für A-Wochen.
+- Nur B-Woche: Der Eintrag erscheint für B-Wochen.
+
+Eine A- und eine B-Stunde können denselben Zeitbereich belegen, weil sie nicht
+gleichzeitig gelten. Überschneidungen innerhalb derselben wirksamen Woche
+werden weiterhin geprüft.
+
+### Wochen ansehen und im Kalender navigieren
+
+Die kleinen Pfeile neben dem Datum wechseln jeweils eine Kalenderwoche.
+Über das Datum oder seinen Kalender wählen Sie gezielt eine andere Woche;
+Heute führt zur aktuellen Kalenderwoche zurück. Der Wochentag bleibt über die
+Tabs Montag bis Freitag auswählbar.
+
+Gültige Woche zeigt den tatsächlich wirksamen Stundenplan. A-Woche ansehen und
+B-Woche ansehen sind nur Vorschauen. Eine abweichende Vorschau steht in der
+Statuszeile ausdrücklich als Vorschau ohne Änderung. Dadurch wird weder der
+Rhythmus gespeichert noch eine Woche dauerhaft umgestellt. Die
+Dashboardanzeige Heute richtet sich weiterhin nach dem tatsächlichen Datum.
+
+### Eine einzelne Woche korrigieren
+
+Wählen Sie zuerst die betreffende Kalenderwoche. Öffnen Sie Wochenregeln … und
+wählen Sie unter Nur diese Kalenderwoche ändern die Aktion Diese Woche auf A
+setzen oder Diese Woche auf B setzen. Diese dauerhafte Einzelkorrektur wird
+als manuell angezeigt. Mit Wochenkorrektur zurücknehmen gilt für genau diese
+Woche wieder der Grundrhythmus. Die Rücknahme ist nur bei vorhandener Korrektur
+verfügbar.
+
+![Referenzwoche und manuelle Wochenkorrektur](screenshots/29_week_rules.png)
+
+> [!HINWEIS]
+> Der Rhythmus läuft nach Kalenderwochen auch während der Ferien weiter.
+> Ferien pausieren den Wechsel nicht. Eine Einzelwochenkorrektur verändert
+> weder die Referenz noch den Grundrhythmus der folgenden Wochen. Soll der
+> Stundenplan nach Ferien anders beginnen, korrigieren Sie die betroffene
+> Woche bewusst; wählen Sie eine neue Referenz nur, wenn der gesamte
+> Grundrhythmus geändert werden soll.
+
+### Eine Stundenplanänderung ist nicht sichtbar
+
+Prüfen Sie die angezeigte Kalenderwoche, den Wochentag und die Auswahl Gültige
+Woche beziehungsweise A-/B-Vorschau. Prüfen Sie dann beim Eintrag Gültigkeit
+und Eintrag aktiv. Eine geänderte Zeitvorlage verändert bestehende Einträge
+nicht. Öffnen Sie die betreffende Stunde und speichern Sie deren Zeiten
+ausdrücklich. Bleibt die Anzeige widersprüchlich, die Betreuung einschalten;
+keine Datenbankdateien bearbeiten.
 
 ## 8. Beobachtungen und Anhänge
 
@@ -277,6 +469,15 @@ Im Kompetenz-Cockpit führen Fachkarten über Kompetenzbereich und Thema zur
 einzelnen Kompetenz. Filter für Fach und Dokumentationszustand helfen bei der
 Orientierung. Historische Katalogbezüge bleiben lesbar, können aber nicht
 unbemerkt neu ausgewählt werden.
+
+Öffnen Sie Bereiche und Themen über ihre beschrifteten Aufklappschaltflächen.
+Bei langen Listen bleibt der Katalog scrollbar; die Such- und Fachfilter
+begrenzen die sichtbare Auswahl. Im Beobachtungsdialog sind Bereich und Thema
+nur die Gliederung. Wählen und bewerten Sie die konkrete Kompetenz; ein
+aufgeklappter Bereich ist noch keine Kompetenzzuordnung. Die lokale Navigation
+im Schülerprofil wechselt zwischen Überblick, Beobachtungen, Kompetenzen,
+Bericht und Dateien. Ein Fachfilter ändert weder das Fachprofil des Kindes noch
+vorhandene Bewertungen.
 
 ![Kompetenz-Cockpit](screenshots/05_student_profile_competency_development.png)
 
@@ -341,9 +542,51 @@ Evidenz aus einem aktuell nicht primären Fach wird dadurch nicht gelöscht und
 bleibt in den dafür vorgesehenen historischen beziehungsweise ergänzenden
 Kontexten lesbar.
 
-Die Übersicht zeigt dokumentierte Ereignisse und Mengen neutral. Sie berechnet
-keine Stärke, Schwäche, Punktzahl, Entwicklungstendenz oder pädagogische
-Priorität. Die Lehrkraft deutet die Beobachtungen fachlich selbst.
+Die Übersicht zeigt dokumentierte Ereignisse und Mengen neutral. Sie vergibt
+keine Schulnote, Stärke, Schwäche oder pädagogische Priorität. Die Lehrkraft
+deutet die Beobachtungen fachlich selbst.
+
+### Fachpflanzen und Dokumentationsumfang unterscheiden
+
+Im Profilbereich Bericht zeigt die Entwicklungsübersicht kleine Pflanzen in
+den Fach-Chips. Sie fassen den durchschnittlichen Entwicklungsstand der
+aktuell bewerteten Kompetenzen dieses Faches in einer der vier vorhandenen
+Pflanzenstufen zusammen. Der Hinweis an der Pflanze nennt ausdrücklich
+Durchschnitt der aktuellen bewerteten Kompetenzen und keine Schulnote.
+
+![Fachpflanzen in der Entwicklungsübersicht](screenshots/30_subject_plants.png)
+
+Die Beispielansicht enthält weiterhin gültige Kompetenzstände aus früheren
+Schuljahren. Daher können Pflanzen sichtbar sein, obwohl die daneben stehenden
+Zähler für Beobachtungen im aktuellen Schuljahr noch null zeigen.
+
+Jede aktive aktuelle Katalogkompetenz zählt dabei höchstens einmal. Ein
+sicher zugeordneter bestätigter Stand hat Vorrang, auch wenn neuere
+Beobachtungen vorliegen. Ohne einen verwendbaren bestätigten Stand kann der
+vorhandene Vorschlag aus Beobachtungen einfließen. Die Fachpflanze bestätigt
+diesen Vorschlag nicht. Historische, inaktive oder nicht mehr sicher
+zuordenbare Kompetenzen sowie Kompetenzen ohne verwendbaren Stand fließen
+nicht in den Durchschnitt ein.
+
+Aktuell bezieht sich hier auf den gültigen Katalog und den verwendbaren
+Kompetenzstand, nicht auf eine Beschränkung der Bewertung auf dieses Schuljahr.
+
+Ohne bewertete Kompetenzen erscheint ein neutraler Strich mit dem Hinweis
+Keine bewerteten Kompetenzen. Das bedeutet keine niedrige Bewertung. Der
+Durchschnitt bezieht sich ausschließlich auf die vorhandenen verwendbaren
+Stände, nicht auf alle Kompetenzen des Faches.
+
+Die daneben sichtbaren Anzahlen und Segmente beschreiben dagegen den
+Dokumentationsumfang: Wie viel wurde schon beobachtet oder bestätigt, wie viel
+ist noch ohne Dokumentation? Ein größerer bearbeiteter Anteil bedeutet nicht
+automatisch einen höheren Kompetenzstand. Eine Fachpflanze und ein
+Dokumentationsbalken beantworten deshalb unterschiedliche Fragen.
+
+### Kompetenzübersicht als PDF exportieren
+
+Im Schülerprofil unter Kompetenzen wählen Sie Kompetenzen als PDF exportieren. Das PDF enthält immer alle aktuellen Fächer und überfachlichen Bereiche. Fachfilter, Suche und eingeklappte Themen begrenzen die Ausgabe nicht. Nach der Bestätigung können Sie im normalen macOS-Speicherdialog Dateiname und Zielordner frei wählen. Nach erfolgreicher Speicherung erscheint sieben Sekunden lang die grüne Rückmeldung „PDF gespeichert: …“. Eine vorhandene Datei wird nicht überschrieben.
+
+Die vier Pflanzen zeigen den Entwicklungsstand von ersten Erfahrungen bis sicherer eigenständiger Anwendung. Das Elternblatt enthält keine internen Bestätigungsdaten. Fehlen Entwicklungsstände, öffnet sich zunächst „Entwicklungsstände ergänzen“. Wählen Sie dort für jede offene Kompetenz eine Stufe. „Auswahl speichern und weiter“ speichert die bewusst gewählten Stände im Schülerprofil; anschließend können Sie das PDF speichern. Abbrechen im Ergänzungsdialog speichert nichts. Ein späterer Abbruch der Dateiauswahl lässt die zuvor ausdrücklich gespeicherten Stände bestehen. Das Schuljahr beschreibt die aktuelle Fachauswahl; Bestätigungen können aus früheren Jahren stammen. Die Ausgabe enthält Name und Entwicklungsstände und ist außerhalb der App unverschlüsselt. Bewahren Sie sie entsprechend geschützt auf. Sie ist eine aktuelle Übersicht und keine finalisierte Bericht- oder LEG-Revision.
 
 ## 10. Lernentwicklungsberichte
 
@@ -494,8 +737,10 @@ Vorbereitungsbereich. Die Wiederherstellung ersetzt den aktiven fachlichen
 Bestand erst nach dieser Prüfung und Ihrer Bestätigung. Zuvor erstellt die App
 ein Sicherheitsbackup. Dann übergibt sie die Arbeit an einen separaten
 Restore-Worker, beendet sich vollständig und startet kontrolliert neu. Bei
-einem Fehler wird der Austausch abgebrochen oder auf den sicheren Ausgangsstand
-zurückgesetzt. Es bleibt kein kleines Restfenster der alten App offen.
+einem Fehler hält die App kontrolliert an oder verwendet den dafür geprüften
+Rücksetzpfad. Ist der Zustand nicht eindeutig prüfbar, bleibt der Zugang
+gesperrt und die Betreuung ist erforderlich. Es bleibt kein kleines Restfenster
+der alten App offen.
 
 ![Neustarthinweis vor der Wiederherstellung](screenshots/22_restore_neustart.png)
 
@@ -511,6 +756,12 @@ Recovery-Codes, gespeicherte Anmeldung oder Touch-ID-Einstellung. Diese
 Sicherheitsdaten bleiben getrennt. Die Wiederherstellung benötigt den
 passenden bestehenden Installationsschlüssel; auf einem anderen Gerät ist der
 Container nicht freigegeben.
+
+V4- und V7-Sicherungen haben getrennte, exakt geprüfte Verträge. Eine
+V4-Sicherung wird nicht direkt in einen aktiven V7-Bestand eingespielt und beim
+Restore nicht automatisch auf V7 umgestellt. Für die betreute Rückkehr zu V4
+gelten die Hinweise in der Installations- und Backupanleitung; spätere
+Änderungen können dabei verloren gehen.
 
 ## 13. Stammdaten
 
@@ -529,8 +780,8 @@ auch wenn ein aktueller Katalogbezug später nicht mehr auswählbar ist.
 Der frische Pilot startet mit dem aktuellen Schuljahr `2026/27` vom 01.08.2026
 bis 31.07.2027. Schüler, Gruppen, Kurse und Beobachtungen legt die Lehrkraft
 selbst an. Vorhandene ältere lokale Daten- oder Testbestände werden nicht
-automatisch übernommen. Für den kommenden Pilot gibt es keine produktiven
-Altdaten, die migriert werden müssten.
+automatisch übernommen. Ein vorhandener V4-Produktbestand wird nur über den ausdrücklich
+betreuten V4→V7-Wartungsweg umgestellt.
 
 Fachprofile werden pro Schüler und Schuljahr geführt. Änderungen für ein
 historisches Schuljahr sind nicht Teil der normalen nachträglichen Pflege.
@@ -552,7 +803,8 @@ historisches Schuljahr sind nicht Teil der normalen nachträglichen Pflege.
 ### Während einer Stunde dokumentieren
 
 1. Heute öffnen und die aktuelle oder nächste Stunde prüfen.
-2. + Beobachtung und beim passenden Kind Beobachten wählen.
+2. Bei einer kombinierten Stunde zunächst das konkrete Fach wählen, dann die
+   Beobachtung für das passende Kind öffnen.
 3. Vorbelegung, Kontext, Kompetenz und Notiz prüfen.
 4. Bewusst speichern und Rückmeldung abwarten.
 
@@ -584,8 +836,9 @@ historisches Schuljahr sind nicht Teil der normalen nachträglichen Pflege.
 
 > [!HINWEIS]
 > Backup und Restore verwenden das verschlüsselte, installationsgebundene
-> `.jkmebackup`. Bestehende ältere lokale Daten- und Testbestände werden nicht
-> migriert. Build-, Geräte- und Realweltabnahme bleiben gesonderte Gates.
+> `.jkmebackup`. V4 wird nur durch die ausdrücklich gestartete Wartung auf V7
+> umgestellt. Allgemeine Geräteportabilität und Wiederherstellung verlorener
+> lokaler Schlüssel sind damit nicht verbunden.
 
 Finale verwaltete Bericht-/LEG-Artefakte liegen verschlüsselt in der App und
 öffnen ausschließlich über den sicheren In-App-Viewer. Export, Drucken und
@@ -609,7 +862,8 @@ Nicht produktiv aktiviert oder freigegeben sind:
 
 - automatische Migration bestehender älterer Fachdaten;
 - Gerätewechsel und Wiederherstellung des Installationsschlüssels;
-- automatische Produktmigration und physisches Löschen alter Daten;
+- physisches Löschen alter Daten über eine allgemeine Lösch-/Aufbewahrungsautomatik;
+- Support-Reset nach der V7-Umstellung;
 - Windows oder ein DPAPI-Pfad;
 - Developer-ID-Signierung und Apple-Notarisierung;
 - ein öffentlicher Stable-Release oder Stable-Appcast.
@@ -647,9 +901,10 @@ keine echten Schülerdaten, Entwicklerpfade, Testroots, Secrets oder
 historische HTML-Oberflächen. Screenshots sind Bedienhilfen; maßgeblich bleiben
 die beschriebenen Produktverträge.
 
-
-## Kompetenzübersicht als PDF exportieren
-
-Im Schülerprofil unter Kompetenzen klickst du auf Kompetenzen als PDF exportieren. Das PDF enthält immer alle aktuellen Fächer und überfachlichen Bereiche. Fachfilter, Suche und eingeklappte Themen begrenzen die Ausgabe nicht. Nach der Bestätigung kannst du im normalen macOS-Speicherdialog Dateiname und Zielordner frei wählen. Nach erfolgreicher Speicherung erscheint sieben Sekunden lang die grüne Rückmeldung „PDF gespeichert: …“. Eine vorhandene Datei wird nicht überschrieben.
-
-Die vier Pflanzen zeigen den Entwicklungsstand von ersten Erfahrungen bis sicherer eigenständiger Anwendung. Das Elternblatt enthält keine internen Bestätigungsdaten. Fehlen Entwicklungsstände, öffnet sich zunächst „Entwicklungsstände ergänzen“. Wähle dort für jede offene Kompetenz eine Stufe. „Auswahl speichern und weiter“ speichert die bewusst gewählten Stände im Schülerprofil; anschließend kannst du das PDF speichern. Abbrechen im Ergänzungsdialog speichert nichts. Ein späterer Abbruch der Dateiauswahl lässt die zuvor ausdrücklich gespeicherten Stände bestehen. Das Schuljahr beschreibt die aktuelle Fachauswahl; Bestätigungen können aus früheren Jahren stammen. Die Ausgabe enthält Name und Entwicklungsstände und ist außerhalb der App unverschlüsselt. Bewahre sie entsprechend geschützt auf. Sie ist eine aktuelle Übersicht und keine finalisierte Bericht- oder LEG-Revision.
+Die Aufnahmen verwenden die aktuellen Produktwidgets mit einem bewusst
+reduzierten synthetischen Katalog. Angezeigte Namen, Anzahlen und Datumswerte
+sind Beispiele. Der vollständige Produktkatalog umfasst 331 Kompetenzen; die
+kleineren Zähler in den Abbildungen beschreiben nur den Screenshotbestand.
+Die Fachübersicht ist als Ausschnitt des tatsächlichen Widgets aufgenommen.
+Die Aufnahmen belegen die Bedienoberfläche, keine Schlüsselbund-,
+Verschlüsselungs- oder Wiederherstellungsprüfung.

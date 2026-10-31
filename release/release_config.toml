@@ -35,6 +35,16 @@ documentation_sources = [
   "docs/PILOT_BACKUP.md",
   "docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md",
   "docs/RELEASE_NOTES.md",
+  "docs/PILOT_INSTALLATION_MACOS.md",
+  "docs/SUPPORT_RESET_OPERATIONS.md",
+  "docs/SUPPORT_ASSISTANT_OPERATIONS.md",
+  "docs/DATA_LIFECYCLE.md",
+  "docs/PILOT_DOCUMENT_INVENTORY.md",
+  "packaging/THIRD_PARTY_NOTICES_SECURITY_0.3.0.md",
+  "packaging/THIRD_PARTY_NOTICES_SQLCIPHER_4_17_MACOS.md",
+  "packaging/licenses/sqlcipher-4.17.0/LICENSE.md",
+  "packaging/licenses/sqlcipher-4.17.0/SQLITE_LICENSE.md",
+  "packaging/licenses/sqlcipher3-0.6.2/LICENSE",
 ]
 
 package_gates = [

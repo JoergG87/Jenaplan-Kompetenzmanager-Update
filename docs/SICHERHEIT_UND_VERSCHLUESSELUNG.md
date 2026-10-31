@@ -1,269 +1,243 @@
 # Sicherheit und Verschlüsselung
 
-## Produkt-V7 ab 0.5.0 / Build 405
+Stand: 31. Oktober 2026
+Geltung: Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}, macOS arm64
 
-Die bewusste Wartungsumstellung prüft den vorhandenen Final-V4-Bestand und vorhandene Schlüssel, erstellt und verifiziert ein verschlüsseltes Vollbackup und führt die bestehende SQLCipher-Transaktion auf das exakt registrierte V7 aus. Kein normaler Start führt diese Migration aus. V7 besitzt passende Produkt-Runtime-, Backup- und Restorestrategien; der ursprüngliche Installations-/Schlüsselkontext bleibt erhalten. Historische V4-spezifische Abläufe gelten weiter für noch nicht umgestellte Installationen. Keine Schlüsselrotation, keine automatische Rückmigration und kein Main-Einzeldateiaustausch.
+Dieses Dokument erklärt die Sicherheitsfunktionen des Build-405-Produktcodes.
+Die Veröffentlichung von 0.5.0/405 benötigt eine gesonderte Freigabe des finalen
+Artefaktstands. Die technische Qualifikation ersetzt keine schulische
+Datenschutz- oder Betriebsfreigabe.
 
-Stand: 14. August 2026
-Geltung: Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
-Status: Vorbereiteter Final-V4-Pilotstand; noch kein finales App-Bundle oder
-Releaseartefakt
+## 1. Lokal arbeiten und den Mac schützen
 
-Dieses Dokument beschreibt den tatsächlich aktiven committed Schutzstand und
-die noch offene Build-/Realweltabnahme. Es ist keine
-Datenschutzfreigabe, keine Rechtsberatung und keine Aussage
-„DSGVO-konform“ oder „vollständig sicher“.
+Der Jenaplan-Kompetenzmanager speichert Fachdaten lokal, getrennt vom
+App-Bundle. Er synchronisiert keine Schülerdaten mit einer Cloud und bindet
+keine KI-Dienste ein. Die Prüfung auf App-Updates ist davon getrennt: Sie
+verwendet den bestehenden Pilotkanal und benötigt eine Netzwerkverbindung.
 
-## 1. Überblick
+Schülerdaten, Beobachtungen, Dokumente, Berichte und Lernentwicklungsgespräche
+sind schutzbedürftig. Verwenden Sie ein schulisch freigegebenes Gerät, ein
+persönliches macOS-Benutzerkonto und die Gerätesperre. FileVault und weitere
+Schutzmaßnahmen richten sich nach den Vorgaben der Schule. Die App ersetzt
+diese Maßnahmen nicht.
 
-Der Jenaplan-Kompetenzmanager ist eine lokale Desktop-App für macOS auf Apple
-Silicon (arm64). Er überträgt keine fachlichen Daten in eine Cloud und bindet
-keine KI-Dienste ein. Schülerdaten, Beobachtungen, Anhänge, Berichte,
-Lernentwicklungsgespräche und PDF-Ausgaben haben deshalb einen hohen
-Schutzbedarf.
+## 2. Passwort, App-Sperre und Recovery-Codes
 
-Die angezeigte Version und der Build folgen der zentralen Produktversion. Diese
-Reviewausgabe ist kein bereits verteiltes oder freigegebenes Release. Es gibt
-noch keinen Nachweis für
-Developer ID oder Notarisierung, keine Windows-Freigabe, keinen Stable-Release
-und keinen Stable-Appcast. Ein konkretes DMG, seine Prüfsumme und der
-zugehörige Buildcommit werden ausschließlich aus einem späteren sauberen Build
-als Artefakte nachgewiesen.
+Das lokale App-Passwort schützt den Zugang. Bei der ersten Einrichtung werden
+Passwortbestätigung und das gesonderte Sichern der Recovery-Codes verlangt.
+Passwortwechsel und eine Wiederherstellung mit Recovery-Code sind in der App
+vorhanden. Fehlversuche können eine zeitweilige Sperre auslösen; warten Sie die
+angezeigte Zeit ab.
 
-## 2. Heute aktiv geschützt
+Optional stehen eine Geräteanmeldung über den macOS-Schlüsselbund und Touch ID
+zur Verfügung. Die App zeigt an, wenn Touch ID nicht eingerichtet, nicht
+verfügbar oder vorübergehend gesperrt ist. Die Passwortanmeldung bleibt die
+Alternative; sie kann einen fehlenden Datenschlüssel nicht ersetzen.
 
-Im normalen Produktpfad sind folgende Schutzfunktionen aktiv:
+Die App sperrt nach der eingestellten Inaktivitätszeit oder nach Ruhezustand.
+Mit `Jetzt sperren` ist eine sofortige Sperre möglich. Auch bei einer
+Geräteanmeldung bleibt diese Sperre bestehen. Die App-Sperre und die
+Datenverschlüsselung erfüllen unterschiedliche Aufgaben.
 
 > [!SICHERHEIT]
-> - lokales Passwort mit erster Passwortanlage, Bestätigung und
->   Passwortänderung;
-> - Recovery-Codes als erster Wiederherstellungsweg;
-> - optionales Gerätecredential im macOS-Schlüsselbund für die Komfortanmeldung;
-> - optionales Touch ID bei erfüllten Voraussetzungen;
-> - sichtbare Gründe, wenn Touch ID nicht eingerichtet, nicht verfügbar oder
->   vorübergehend gesperrt ist;
-> - immer verfügbarer Passwort-Fallback;
-> - automatische App-Sperre nach Inaktivität oder Ruhezustand sowie
->   Jetzt sperren;
-> - Support-Reset im Cipher-Modus nur auf der ursprünglichen intakten
->   Installation, nach vollständiger lokaler Prüfung und verifiziertem
->   Safety-`.jkmebackup`;
-> - exakt SQLCipher 4.17/CommonCrypto für die frische Final-V4-Datenbank und
->   den Dokument-Companion;
-> - verschlüsselte Managed-Document-Container für Anhänge, allgemeine
->   Schülerdokumente sowie finale Bericht-/LEG-PDFs;
-> - getrennte lokale Runtime-Bereiche, restriktive Dateirechte und kein
->   fachlicher Nutzer- oder Supportzugriff vor erfolgreicher Anmeldung; die
->   einzige Ausnahme ist der inhaltsfreie technische Support-Reset-Preflight
->   mit zwingendem Safety-Backup.
+> Recovery-Codes sind ein Wiederherstellungsweg für das lokale Konto, keine
+> Datenbankschlüssel. Ein verwendeter Code wird verbraucht. Bewahren Sie die
+> Codes getrennt vom Mac an einem geschützten Ort auf und geben Sie sie nicht
+> an den Support weiter. Bei Verlust des App-Passworts zuerst
+> `Recovery-Code verwenden` im Anmeldedialog wählen.
 
-Die App-Sperre schützt zusätzlich die Oberfläche vor unbefugter Nutzung im
-laufenden Alltag. Sie ersetzt nicht die separate Datenverschlüsselung. Backup
-und Restore verwenden im Cipher-Produktmodus ausschließlich `.jkmebackup` und
-bleiben auf dieselbe Installation gebunden.
+## 3. Verschlüsselte Daten und Dokumente
 
-Der Support-Reset fällt weder auf ZIP-v1 noch auf eine Klartext-Sicherung
-zurück. Er ersetzt ausschließlich Authentifizierungs- und Recovery-Zustände;
-DMK und Fachdaten-Schlüssel bleiben bestehen. Recovery-Codes bleiben der
-vorgesehene erste Wiederherstellungsweg für das lokale Konto. Fehlt der
-installationsgebundene DMK oder ist der lokale Final-V4-Bestand nicht
-vollständig prüfbar, wird kein Reset durchgeführt.
+Die fachliche Hauptdatenbank und der Dokument-Companion werden mit SQLCipher
+verschlüsselt geöffnet. Der verbindliche macOS-Provider ist das Python-Binding
+`sqlcipher3` in Version `0.6.2+jkm.sqlcipher4170.1` mit SQLCipher
+`4.17.0 community`, SQLite `3.53.3` und CommonCrypto. Eine fehlende oder andere
+Engine sowie Standard-SQLite sind im Produktpfad kein Ersatz; der Start hält an.
 
-### Signierung und Updates
+Build 405 kann eine vollständige, noch nicht umgestellte Final-V4-Installation
+und eine vollständig umgestellte V7-Installation öffnen. Final V4 und V7
+haben getrennte exakte Schemaidentitäten. V7 wird ausschließlich
+über den bewussten Wartungsvorgang aktiviert. Ein normaler App-Start migriert
+nicht. Unbekannte oder unvollständige Schemata werden nicht still übernommen.
+Es gibt keine automatische Übernahme alter Klartext-, V3- oder Testdaten.
 
-Der aktuelle interne Pilotvertrag verwendet ad-hoc signierte, nicht
-notarisierte Artefakte. Das ersetzt weder Developer ID noch Apple-
-Notarisierung. Es ist kein öffentlicher Updatekanal aktiv.
+Anhänge, allgemeine Schülerdokumente und finale Bericht-/LEG-PDFs liegen als
+verschlüsselte Managed Documents vor. Der Companion registriert die
+Dokumentgenerationen; beim Lesen werden Inhalt und Zuordnungen geprüft.
+Finale Bericht- und LEG-PDFs öffnen im schreibgeschützten In-App-Viewer mit
+mehrseitiger Anzeige, Scrollen und Zoom. Dieser finale Artefaktpfad bietet keine
+OS-Öffnung, Export-, Druck- oder Teilenfunktion.
 
-## 3. Aktuelle Datenhaltung
+Der gesonderte Kompetenzübersicht-Export für Eltern ist eine andere,
+ausdrücklich angebotene Funktion. Ein bewusst exportiertes PDF liegt außerhalb
+des verschlüsselten Managed-Document-Speichers. Schützen Sie die Ausgabedatei
+und ihren Übertragungsweg nach Schulvorgabe. Ebenso bleiben ursprünglich
+importierte Dateien an ihrem bisherigen Speicherort außerhalb des App-Schutzes.
 
-Die App hält ihre Daten lokal und getrennt vom App-Bundle:
+## 4. Schlüsselbund und Datenschlüssel
 
-- Die fachliche Final-V4-SQLCipher-Datenbank enthält den fachlichen Bestand.
-- Ein keyed SQLCipher-Companion registriert verschlüsselte
-  Managed-Document-Container im lokalen App-Datenbereich.
-- Der `ManagedDocumentStore` ist der zentrale Produktpfad für
-  Beobachtungsanhänge, allgemeine Schülerdokumente sowie finale Bericht- und
-  LEG-Artefakte. Fachliche Dokument-ID und physische Storage-Generation sind
-  getrennt.
-- Ein separater Security Store enthält Anmelde- und Security-Metadaten.
-- Der lokale Backupbereich enthält ausschließlich `.jkmebackup`; Restore nutzt
-  vollständige keyed Prüfung, neues Staging, Sicherheitsbackup,
-  Worker-Handoff, kontrollierten Austausch, Rollback und Restart.
-Finale verschlüsselte Bericht- und LEG-PDF-Artefakte öffnen über denselben
-sicheren read-only In-App-Viewer. Python verifiziert und liefert die PDF-Bytes
-nur für die flüchtige QtPdf-Anzeige im Speicher. Der Viewer unterstützt
-mehrseitige Anzeige, Scrollen, Zoom, Schließen und erneutes Öffnen. Es gibt im
-aktuellen finalen Artefaktpfad keine Klartextdatei, OS-Öffnung, Download,
-Export-, Druck- oder Teilenfunktion.
+Das App-Passwort ist nicht der Datenbankschlüssel. Ein davon getrennter Data
+Master Key (DMK) wird im macOS-Schlüsselbund geschützt. Ein zufälliger
+Database-Key wird in einer mit dem DMK geschützten Schlüsselhülle aufbewahrt
+und öffnet Haupt- und Companion-Datenbank. Dokumente besitzen eigene zufällige
+Schlüssel; Backups verwenden eine getrennte Schlüsseldomäne.
 
-Dieses Dokument nennt absichtlich keine Entwicklerpfade, Secrets, Keychain-
-Einträge oder konkrete lokale Kennungen. Technische Betreuung soll nur die
-zuständige lokale Datenablage nach der jeweils freigegebenen
-Installationsanleitung verwalten.
-
-## 4. Verschlüsselungsstatus
-
-Die früheren Security- und Verschlüsselungsfoundations sind heute in den
-normalen neuen Pilotstart integriert. Nach erfolgreicher Authentifizierung
-werden die frische Final-V4-SQLCipher-Runtime, der keyed Companion und die
-verschlüsselten Dokumentcontainer aktiv geöffnet:
-
-> [!HINWEIS]
-> - Verbindlich sind Binding `0.6.2+jkm.sqlcipher4170.1`, SQLCipher
->   `4.17.0 community`, SQLite `3.53.3` und CommonCrypto.
-> - Eine andere oder fehlende Engine sowie Standard-SQLite blockieren den
->   Start fail-closed.
-> - Bestehende Klartext-, V3- und alte Testbestände werden nicht automatisch
->   migriert. Für den kommenden Pilot gibt es keine produktiven Altdaten, die
->   übernommen werden müssten.
-> - Bestehende Klartextdokumente werden nicht still in verschlüsselte
->   Container überführt.
-> - Cipher-Backup/-Restore verwenden `.jkmebackup`; der alte ZIP-v1-Pfad bleibt
->   produktiv gesperrt.
-
-Es gibt absichtlich keine Produktmigration. Reale Keychain-, UI-, Build-,
-Paket- und Restore-Abnahme bleiben gesonderte Freigabegates.
-
-## 5. Schlüsselarchitektur in verständlicher Form
-
-Die aktive Anmeldung und die Datenverschlüsselung haben unterschiedliche
-Aufgaben.
-
-- Das lokale Passwort authentifiziert die Lehrkraft; es ist nicht der
-  Datenbankschlüssel.
-- Der Data Master Key (DMK) liegt als separates Secret im macOS-Schlüsselbund.
-- Ein zufälliger Database-Key liegt nur in einem mit dem DMK authentisierten
-  Envelope und öffnet Haupt- sowie Companion-Datenbank.
-- Dokumente erhalten getrennte zufällige Document-Keys; `.jkmebackup` verwendet
-  die getrennte Backup-Key-Domäne.
-- Passwortwechsel und Support-Reset ändern das Passwort und die
-  Anmeldeinformationen, ersetzen aber nicht den DMK.
-- Schlüssel, Passwörter, Recovery-Codes und vollständige Reset-Codes gehören
-  weder in Logs noch in fachliche Backups.
-
-Diese Architektur ist absichtlich nur bis zu der Tiefe beschrieben, die für
-schulische technische Betreuung erforderlich ist. Kryptografische Formate,
-Schlüsselhüllen, Ableitungen, Authentisierung und
-Migrationszustandsautomaten sind in den bestehenden technischen ADRs,
-insbesondere ADR-075 bis ADR-093 und ADR-088, dokumentiert. Dieses Dokument
-dupliziert diese Details nicht.
-
-## 6. Backup und Restore
-
-Backup und Restore sind im Cipher-Produktmodus auf `.jkmebackup` aktiviert.
-Das Backup umfasst die keyed Final-V4-Datenbank, den keyed Companion,
-notwendige Keyset-/Envelope-Metadaten und alle registrierten verschlüsselten
-Dokumentgenerationen. Es enthält weder DMK noch App-Passwort, Recovery-Codes,
-Touch-ID- oder Gerätecredentials.
-
-Vor der Übernahme werden Container, Manifest, Final V4, Companion,
-Schlüsselmetadaten, Bindungen und Dokumentgenerationen vollständig in einem
-neuen Restore-Staging geprüft. Erst `RESTORE_READY` erlaubt die bewusste
-Bestätigung. Danach folgen verschlüsseltes Sicherheitsbackup, separater
-Restore-Worker, kontrollierter Austausch, Reopen/Neustart und Rollback bei
-Fehlern. ZIP-v1 darf den Cipherbestand nie öffnen.
-
-Der Restore ist installationsgebunden und benötigt den passenden bestehenden
-DMK der Installation. Es gibt keinen Geräteübertragungs-, DMK-Recovery- oder
-Klartextkonvertierungspfad.
-
-### Grenzen
+Passwortwechsel, Auth-Recovery und der für V4 zulässige Support-Reset erzeugen
+keinen neuen DMK. Bei der V4→V7-Umstellung bleiben vorhandenes Konto,
+App-Passwort und ursprünglicher Schlüsselkontext bestehen. Die vorhandenen
+Datenschlüssel werden nicht rotiert.
 
 > [!WARNUNG]
-> ZIP-v1 darf nicht auf den Cipherbestand angewendet werden. `.jkmebackup`
-> ersetzt weder DMK-Recovery noch einen Gerätewechselpfad; beide bleiben offen.
+> Bei einer bestehenden Installation führt ein fehlender oder nicht
+> zugänglicher Schlüssel zum sicheren Halt. Die App legt dafür keinen
+> Ersatzschlüssel und keinen leeren Ersatzbestand an. Ein korrektes Passwort,
+> ein Recovery-Code oder ein Support-Reset-Code kann einen verlorenen DMK
+> nicht wiederherstellen.
 
-## 7. Bedrohungsmodell
+Wenn macOS nach Zugriff auf den Schlüsselbund fragt, prüfen Sie die anfragende
+App und geben Sie ausschließlich die bewusst installierte Anwendung frei.
+Entsperren Sie einen gesperrten eigenen Schlüsselbund über den vorgesehenen
+macOS-Weg. Bleibt der Zugriff verweigert, wenden Sie sich an die Betreuung.
+Löschen Sie keine Schlüsselbundeinträge und ändern Sie keine globalen
+Sicherheits- oder Zugriffsrechte als Reparaturversuch.
 
-### Gegen welche Risiken dieser Stand schützt
+## 5. Kontrollierter Start und Fehlerverhalten
 
-Die aktivierte lokale Datenverschlüsselung verbessert insbesondere den Schutz
-gegen:
+Vor einer normalen Sitzung prüft die App den vorhandenen Installationsbestand,
+Zustandsbelege und erforderliche Schlüssel. Nach Anmeldung folgen die exakte
+Schema-, Integritäts- und Dokumentprüfung. Bei V7 wird zusätzlich der
+installationsgebundene authentisierte Abschlussbeleg der Migration geprüft.
+Ein isoliert kopierter Main-Datenbankstand genügt nicht.
 
-- kopierte Datendateien;
-- kopierte Final-V4-, Companion- und Dokumentcontainerdateien;
-- verlorene Geräte;
-- manipulierte oder beschädigte Artefakte;
-- unvollständige oder widersprüchliche Cipher-Runtimezustände beim Startup.
+Fehlende Dateien, beschädigte Daten, widersprüchliche Zuordnungen, unvollständige
+Upgrades sowie unbekannte oder unzulässige Begleitdateien können den Start
+blockieren. Die Meldung ist eine Schutzentscheidung und keine Aufforderung,
+Dateien zu entfernen. Manche kontrollierten Restorezustände können über den
+vorhandenen Recoveryablauf wieder geprüft werden; eine automatische Reparatur
+beliebiger beschädigter Bestände ist nicht implementiert.
 
-Passwort, App-Sperre, Schlüsselbund, Touch ID und lokale Dateirechte ergänzen
-diesen Schutz. Backup, Restore, Gerätewechsel und DMK-Recovery sind dadurch
-nicht gelöst.
+Bei einem Starthalt Meldung und technische Kennung ohne personenbezogene
+Inhalte festhalten, die App schließen und die Betreuung hinzuziehen. Keine
+Datenbank mit Fremdwerkzeugen öffnen, keine WAL-/SHM-/Journaldateien löschen,
+keine Einzeldateien austauschen und keine Neuinitialisierung erzwingen.
 
-### Was nicht vollständig abgedeckt ist
+## 6. Backup und Wiederherstellung
 
-Weder der aktuelle noch ein später verschlüsselter lokaler Produktpfad schützt
-vollständig gegen:
+Unter `Einstellungen > Datensicherung` erstellt die App ausschließlich
+verschlüsselte und authentisierte `.jkmebackup`-Dateien. Das Vollbackup enthält
+Hauptdatenbank, Companion, registrierte verschlüsselte Dokumentgenerationen
+sowie notwendige Keyset- und Schlüsselhüllen-Metadaten. App-Passwort,
+Recovery-Codes, Touch-ID-/Gerätecredentials und DMK sind nicht enthalten.
 
-- Malware unter demselben macOS-Benutzerkonto;
-- Speicheranalyse eines laufenden Prozesses;
-- Keylogger;
-- Screenshots;
-- hochprivilegierte lokale Angreifer;
-- eine garantierte physische Löschung von SSD-Daten.
+V4 und V7 haben unterschiedliche exakte Schema- und Restoreverträge. Die
+laufende Installation sichert ihren jeweiligen zugelassenen Stand. Eine
+vorhandene Sicherung lässt sich mit `Backup prüfen …` unabhängig vom
+Erstellungslauf vollständig prüfen. Diese Prüfung verändert den aktiven
+Fachbestand nicht.
 
-Ein verlorenes Gerät bleibt trotz aktiver lokaler Verschlüsselung ein
-meldepflichtiger Sicherheitsvorfall.
-
-## 8. Verantwortlichkeiten der Schule
-
-Schule, technische Betreuung und Lehrkräfte tragen gemeinsam Verantwortung für
-den sicheren Betrieb:
-
-- Nur schulisch freigegebene Geräte und sichere lokale Benutzerkonten einsetzen.
-- macOS-Gerätesperre sowie FileVault nach Schulvorgabe aktivieren.
-- Keine gemeinsamen Benutzerkonten verwenden.
-- Externe Backups regelmäßig erstellen, prüfen und nach Schulvorgabe
-  aufbewahren.
-- Keine Schülerdaten in Screenshots, Testdaten, Tickets oder frei zugängliche
-  Ablagen übernehmen.
-- Finale PDFs ausschließlich über den vorgesehenen sicheren In-App-Viewer
-  öffnen; es gibt in diesem Produktvertrag keine Export-, Druck- oder
-  Teilenfunktion.
-
-Technische Betreuung unterstützt bei Installationsfreigabe, Recovery und
-Sicherungsstrategie. Sie kennt nicht automatisch das Lehrkraftpasswort und
-erhält durch einen Support-Reset keinen Zugang zu den fachlichen Daten.
-
-## 9. Plattform- und Releasegrenzen
-
-Für Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}} gilt:
-
-- noch kein freigegebenes oder verteiltes Buildartefakt;
-- Developer-ID-Signierung nicht nachgewiesen;
-- nicht als notarisiert freigegeben;
-- Apple Developer ID und Notarisierung offen;
-- macOS arm64 als Zielplattform;
-- Windows ungeprüft, kein DPAPI-Produktpfad;
-- GitHub-Pre-Release/Pilot, keine Stable-Freigabe;
-- kein Stable-Appcast und kein automatischer Pilotrollout.
+Restore verlangt Prüfung, Vorschau und bewusste Bestätigung. Der vorbereitete
+Bestand wird vollständig geprüft, ein verschlüsseltes Sicherheitsbackup des
+aktuellen Bestands erstellt und ein separater Worker übernimmt den Austausch
+nach vollständiger App-Beendigung. Anschließend folgen kontrollierter Neustart,
+Prüfung und erneute Anmeldung. Bei Fehlern nutzt die App ihren vorhandenen
+Rollback-/Recoveryvertrag oder hält mit erhaltenen Belegen an; dies ist keine
+allgemeine Verlustfreiheitsgarantie.
 
 > [!WARNUNG]
-> Gatekeeper-Hinweise werden ausschließlich über den kontrollierten macOS-Weg
-> für die konkrete interne App freigegeben. Gatekeeper darf nicht global
-> deaktiviert werden.
+> `.jkmebackup` bleibt an die ursprüngliche geschützte Installation und den
+> passenden vorhandenen Schlüsselkontext gebunden. Es ist kein allgemeiner
+> Gerätewechselweg und ersetzt keine DMK-Recovery. Ein verlorener Mac oder
+> Schlüssel ist durch eine Backupdatei allein nicht abgesichert.
 
-## 10. Offene Schritte
+Die Schrittfolge und Fehlerfälle stehen in `Backup und Wiederherstellung`.
+Keine historischen `.jkmbackup`-/ZIP-v1- oder Klartextwerkzeuge auf den
+verschlüsselten Produktbestand anwenden.
 
-Folgende Arbeiten sind bewusst nicht mit diesem Dokumentationsstand
-abgeschlossen:
+## 7. Update von 404 auf 405 und Rückkehrgrenze
 
-- reale Pilot-, Bundle-, Keychain- und Restore-Abnahme der Verschlüsselung;
-- Gerätewechsel- und DMK-Recovery;
-- Windows- und DPAPI-Implementierung samt echter E2E-Abnahme;
-- Apple Developer ID, Notarisierung und die zugehörigen
-  Gatekeeper-Nachweise;
-- reale Power-Loss-Abnahme auf Zielhardware;
-- Freigabe eines öffentlichen Stable-Release.
+Vor dem Update ein vollständiges `.jkmebackup` erstellen, gesondert prüfen und
+nach Schulvorgabe geschützt aufbewahren. Das App-Update und die
+Datenumstellung sind getrennte Vorgänge. Ein normaler Start von 405 lässt den
+vorhandenen V4-Stand unverändert.
 
-Bis zu diesen Nachweisen ist der technische Produktpfad nicht als gebautes,
-vollständig sicheres, für den Pilot freigegebenes oder datenschutzrechtlich
-freigegebenes Artefakt zu verstehen.
+Die technische Betreuung startet die bewusste V4→V7-Wartung ausdrücklich.
+Dabei werden vorhandene Quelle und Schlüssel geprüft, ein verschlüsseltes
+V4-Vollbackup erstellt und unabhängig neu geprüft, laufende Datenbankzugriffe
+beendet und die SQLCipher-Transaktion ausgeführt. Eine frisch gestartete Abschlussprüfung prüft
+den Zielbestand erneut und erzeugt den gebundenen Abschlussbeleg. Danach
+startet die normale App mit vorhandener Anmeldung.
 
-### Bei Verdacht oder Datenverlust
+Bei einem Abbruch nicht denselben Migrationsaufruf blind wiederholen. Bestand
+und Quellbackup erhalten; die Betreuung muss den Zustand prüfen und gegebenenfalls
+den vorhandenen Abschlussprüfungsweg verwenden. Während der Wartung keine
+zweite App oder alte Version starten.
 
-1. Verlust eines Geräts, unerwartete Passwort- oder Reset-Ereignisse und
-   Verdacht auf Manipulation unverzüglich melden.
-2. Datenbereiche nicht manuell verschieben, löschen oder mit Fremdwerkzeugen
-   bearbeiten, solange ein Backup oder Restore läuft.
+> [!WARNUNG]
+> Build 404 kann eine V7-Datenbank nicht öffnen. Eine Rückkehr zu V4 verlangt
+> eine geeignete vollständige V4-Sicherung und einen betreuten vollständigen
+> Rückfall im ursprünglichen Schlüsselkontext. Die Installation von 404 allein
+> ist kein Downgrade. Änderungen seit dem V4-Sicherungszeitpunkt können bei
+> einer Rückkehr zu diesem Backup verloren gehen.
+
+Ein V4-Backup nicht direkt in eine aktive V7-Installation einspielen. Der
+Build-405-Produktpfad bietet keinen allgemeinen Rückmigrationsassistenten.
+
+## 8. Grenzen des Support-Resets
+
+Recovery-Codes sind für V4 und V7 der erste Kontowiederherstellungsweg. Für
+eine noch nicht umgestellte V4-Installation existiert ein betreuter
+Support-Reset ausschließlich bei intaktem ursprünglichem Bestand, zugänglichem
+DMK, vollständiger lokaler V4-Prüfung und erfolgreich erzeugtem und verifiziertem
+Safety-`.jkmebackup`. Er setzt nur Anmelde- und Recoveryzustände zurück und
+gibt dem Support keinen Zugriff auf Schülerdaten.
+
+Für V7 ist dieser V4-spezifische Support-Reset nicht verfügbar. Auch wenn eine
+allgemeine Wiederherstellungsoberfläche sichtbar ist, ergibt sich daraus kein
+V7-Resetweg. Ohne nutzbaren Recovery-Code ist die Pilotbetreuung erforderlich;
+ein Mastercode, ein Schlüsselersatz und eine Datenentschlüsselung durch den
+Support sind nicht implementiert.
+
+## 9. Löschen und Aufbewahren
+
+Das Entfernen einer Beobachtung ist ein Soft Delete: Die Beobachtung wird aus
+aktiven Ansichten genommen, historische Rating-Zuordnungen bleiben erhalten.
+Auch das Entfernen eines verwalteten Dokuments bedeutet keine garantierte
+physische Löschung seiner Datei. Frühere Dokumentgenerationen, verschlüsselte
+Backups und Restore-/Upgradebelege können weiterhin vorhanden sein.
+
+Build 405 bietet keine automatische schulrechtliche Aufbewahrungsfrist und
+keine garantierte sichere SSD-Löschung. Die App automatisch zu deinstallieren
+oder nur das App-Bundle zu löschen beseitigt den getrennten Datenbereich und
+vorhandene Backups nicht. Die Schule legt Aufbewahrung und eine betreute
+vollständige Datenentsorgung fest. Nicht eigenständig technische Belege oder
+Dateien zur vermeintlichen Bereinigung entfernen.
+
+## 10. Nachweise, Einschränkungen und zukünftige Möglichkeiten
+
+Die oben beschriebenen Funktionen sind im Produktcode des Build 405 vorhanden.
+Am Paketquellstand `38f6e8c5c2d9` wurden mit synthetischen Daten insbesondere
+V4→V7, vorhandene Anmeldung, Schlüsselbundkontinuität 404→405,
+Datenerhaltung, V7-Backup sowie Worker-/Restart-/Restore geprüft. Der
+Build-404-Ablehnungsfall auf V7 ist nachgewiesen. Diese Ergebnisse beschreiben
+den geprüften Kandidaten und seine geprüften Fälle; sie ersetzen keine Prüfung
+neu gebauter oder geänderter Paketbytes.
+
+Die Paketstrategie ist weiterhin Ad-hoc-Signierung. Daraus folgen keine
+Developer-ID-, Apple-Notarisierungs-, Hardware- oder Sicherheitszertifikate.
+Der Pilotkanal besteht; die Veröffentlichung von 405 und die öffentliche
+Rückprüfung der ausgelieferten Artefakte sind gesonderte Schritte. Eine
+Stable-Freigabe liegt damit nicht vor.
+
+Nicht implementiert oder nicht allgemein nachgewiesen sind portable
+Backup-Recovery, Ersatz eines verlorenen DMK, automatische Rückmigration,
+Windows-/DPAPI-Produktbetrieb und allgemeine Wiederherstellung nach beliebigen
+Abbrüchen oder Stromausfällen. Eine mögliche spätere Erweiterung ist keine
+heute verfügbare Funktion.
+
+Die Verschlüsselung verbessert den Schutz kopierter Datendateien. Sie bietet
+keinen vollständigen Schutz gegen Malware im angemeldeten macOS-Konto,
+Keylogger, Screenshots, Speicheranalyse oder hochprivilegierte Angreifer.
+Verlust eines Geräts oder Verdacht auf Datenabfluss unverzüglich nach dem
+schulischen Meldeweg melden. Keine Passwörter, Schlüssel, Recovery-Codes,
+Reset-Codes oder vollständigen personenbezogenen Daten ungeschützt an den
+Support senden.

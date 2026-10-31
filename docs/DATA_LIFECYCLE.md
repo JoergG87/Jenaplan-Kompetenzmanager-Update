@@ -1,5 +1,13 @@
 # Data Lifecycle
 
+## Geltungsbereich für Build 405 - Dokumentationsrevision 31.10.2026
+
+Aktuell sind die oben zeitlich eingeordneten Produkt-V7-Verträge sowie die nachfolgenden Produkt-V4-Verträge jeweils für die exakt zugelassene Runtime maßgeblich: normaler 405-Start erhält V4; nur die ausdrücklich gestartete Wartung migriert V4 nach V7. Frische Installationen beginnen weiterhin in V4. V7-Backup/Restore ist eine eigene exakte Strategie im vorhandenen verschlüsselten Container, kein V4-Fallback. Historische Abschnitte mit ausschließlich V4 oder synthetisch-only beschreiben den damaligen Stand und verbieten keine später ausdrücklich integrierte Produkt-V7-Strategie.
+
+Vor Umstellung ist ein vollständiges verschlüsseltes V4-Backup unabhängig zu prüfen. Regulärer Start nimmt eine unvollständige Wartung nicht automatisch wieder auf. Schlüssel, Datenbank, Companion, Dokumentcontainer und Abschlussbelege bleiben bei unklaren Zuständen erhalten. Rückkehr zu V4 erfordert eine geeignete vollständige V4-Sicherung im ursprünglichen Schlüsselkontext; spätere V7-Änderungen gehen dabei verloren. Build 404 kann V7 nicht öffnen. Kein manueller Main-Einzeldateiaustausch und keine Schlüsselneuanlage als Reparatur. Support Reset ist im Produkt nur für vollständig prüfbares V4 verfügbar, nicht für V7.
+
+Löschen und Aufbewahren bleiben funktionsbezogen: das Entfernen einer Beobachtung ist Soft Delete; Archivieren eines Kindes ist keine vollständige Datenvernichtung. Entfernte Verknüpfungen und alte Sicherungen können Inhalte weiter enthalten. Es gibt keine pauschale automatische Löschfrist, sichere Löschgarantie oder allgemeine Produktfunktion zur vollständigen Vernichtung aller Kopien. Schulische Aufbewahrungs-/Löschvorgaben und der kontrollierte Umgang mit exportierten Dateien/Sicherungen bleiben organisatorische Verantwortung. Bedienwege und genaue Grenzen stehen in `PILOT_BACKUP.md` und `SICHERHEIT_UND_VERSCHLUESSELUNG.md`; es wird kein neuer Schreibprozess eingeführt.
+
 ## Release 405: Wartungsabschluss – 30.10.2026
 
 Nach erfolgreicher SQLCipher-Transaktion sind alle Main-/Companionverbindungen und der Wartungslock geschlossen. execve ersetzt das eigene Wartungsabbild durch --complete-v7-migration; kein lebender wartender Elternprozess, keine Lock-/Descriptorübergabe. Das neue Abbild lädt Existing-only-Keys erneut, erwirbt den normalen Runtime-Lock und prüft den vollständigen Zielbestand vor dem Abschlussbeleg und Appneustart. Fehlgeschlagenes exec oder Abschluss hält mit erhaltenem V4-Vollbackup an; keine stille Fortsetzung oder neue Writerfreigabe.

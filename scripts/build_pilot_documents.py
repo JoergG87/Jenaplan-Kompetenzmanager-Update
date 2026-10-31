@@ -109,6 +109,8 @@ class PilotDocTemplate(BaseDocTemplate):
         self.short_title = short_title
         self.header_on_first_page = header_on_first_page
         self.current_chapter = ""
+        self.page_chapter = ""
+        self.page_heading_seen = False
         frame = Frame(
             self.leftMargin,
             self.bottomMargin,
@@ -117,11 +119,15 @@ class PilotDocTemplate(BaseDocTemplate):
             id="body",
         )
         self.addPageTemplates(
-            PageTemplate(id="pilot", frames=(frame,), onPage=self._page)
+            PageTemplate(id="pilot", frames=(frame,), onPageEnd=self._page)
         )
 
     def beforeDocument(self) -> None:
         self.current_chapter = ""
+
+    def beforePage(self) -> None:
+        self.page_chapter = self.current_chapter
+        self.page_heading_seen = False
 
     def _page(self, canvas, doc) -> None:  # type: ignore[no-untyped-def]
         canvas.saveState()
@@ -129,7 +135,7 @@ class PilotDocTemplate(BaseDocTemplate):
             canvas.setFont("PilotSans", 8)
             canvas.setFillColor(MUTED)
             canvas.drawString(MARGIN_X, PAGE_HEIGHT - 12 * mm, self.short_title)
-            chapter = self.current_chapter
+            chapter = self.page_chapter
             if chapter:
                 canvas.drawRightString(
                     PAGE_WIDTH - MARGIN_X,
@@ -162,6 +168,9 @@ class PilotDocTemplate(BaseDocTemplate):
         if isinstance(flowable, Paragraph) and flowable.style.name == "PilotH1":
             text = flowable.getPlainText()
             self.current_chapter = text
+            if not self.page_heading_seen:
+                self.page_chapter = text
+                self.page_heading_seen = True
             key = f"heading-{self.seq.nextf('heading')}"
             self.canv.bookmarkPage(key)
             self.canv.addOutlineEntry(text, key, level=0, closed=False)
@@ -498,21 +507,24 @@ def _image_block(
         "16_passwortanlage.png": 72 * mm,
         "17_sicherheit_touch_id.png": 76 * mm,
         "20_backup.png": 72 * mm,
-        "21_restore_vorschau.png": 72 * mm,
+        "21_restore_vorschau.png": 108 * mm,
         "22_restore_neustart.png": 45 * mm,
         "23_about_build_302.png": 62 * mm,
+        "27_combined_subjects.png": 210 * mm,
+        "28_homeroom_session.png": 210 * mm,
     }
     max_height = image_height_limits.get(image_path.name, 94 * mm)
     scale = min(max_width / width, max_height / height)
     image = Image(str(image_path), width=width * scale, height=height * scale)
     frame = Table(
-        [[image]],
+        [[image], [Paragraph(_inline(caption), styles["caption"])]],
         colWidths=[max_width],
         hAlign="CENTER",
+        splitByRow=0,
         style=TableStyle(
             (
-                ("BACKGROUND", (0, 0), (-1, -1), SCREEN_PANEL),
-                ("BOX", (0, 0), (-1, -1), 0.5, LINE),
+                ("BACKGROUND", (0, 0), (-1, 0), SCREEN_PANEL),
+                ("BOX", (0, 0), (-1, 0), 0.5, LINE),
                 ("LEFTPADDING", (0, 0), (-1, -1), 5),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 5),
                 ("TOPPADDING", (0, 0), (-1, -1), 5),
@@ -525,7 +537,6 @@ def _image_block(
         [
             Spacer(1, 2),
             frame,
-            Paragraph(_inline(caption), styles["caption"]),
         ]
     )
 
@@ -915,7 +926,7 @@ def main() -> int:
     parser.add_argument("--version", required=True)
     parser.add_argument("--build-version", required=True)
     parser.add_argument("--pilot-commit", default="", help=argparse.SUPPRESS)
-    parser.add_argument("--document-date", default="30. Oktober 2026")
+    parser.add_argument("--document-date", default="31. Oktober 2026")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--manual-only", action="store_true")
     parser.add_argument("--manual-output", type=Path)
@@ -963,7 +974,7 @@ def main() -> int:
                 "Benutzerhandbuch",
                 "Sicher orientieren, dokumentieren und Berichte vorbereiten",
                 "Lehrkräfte, Stammdatenpflege und technische Betreuung",
-                "Interner, nicht öffentlicher Pilotstand",
+                "Pilotkandidat; Veröffentlichung separat freizugeben",
                 include_toc=True,
             ),
             manual_output,
@@ -1000,7 +1011,7 @@ def main() -> int:
                         "Installation",
                         "Schritt für Schritt zum ersten Start",
                         "Lehrkräfte und schulische technische Betreuung",
-                        "Hilfe zum vorgesehenen internen Stand",
+                        "Anleitung für den macOS-Pilotkandidaten",
                     ),
                     args.output_dir / installation_name,
                 ),
@@ -1059,7 +1070,7 @@ def main() -> int:
                         "Sicherheit",
                         "Schutzstand, Grenzen und Verantwortlichkeiten",
                         "Lehrkräfte, technische Betreuung und Releaseverantwortliche",
-                        "Interne Pilot- und Releasevorbereitung, kein öffentlicher Release",
+                        "Schutzstand des macOS-Pilotkandidaten; keine Sicherheitszertifizierung",
                         include_toc=True,
                     ),
                     args.output_dir

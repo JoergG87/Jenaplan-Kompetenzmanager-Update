@@ -725,7 +725,11 @@ class ReleasePilot:
             ) as archive:
                 for source_name in self.config["documentation_sources"]:
                     source = workspace / source_name
-                    archive.write(source, arcname=Path(source_name).name)
+                    archive.write(source, arcname=source_name)
+                # Preserve the Markdown sources' relative image references.
+                screenshots = workspace / "docs" / "user_manual" / "screenshots"
+                for screenshot in sorted(screenshots.glob("*.png")):
+                    archive.write(screenshot, arcname=screenshot.relative_to(workspace))
                 for pdf in sorted(dist_root.glob("*.pdf")):
                     archive.write(pdf, arcname=pdf.name)
             release_notes = artifacts_root / "GITHUB_RELEASE_NOTES.md"

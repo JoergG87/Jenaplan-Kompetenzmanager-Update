@@ -2,30 +2,43 @@
 
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
-Status: inhaltlich finaler Reviewstand vor der Versionsanhebung. Der separate
-Support-Assistent bleibt technisch unverändert und ist kein Bestandteil eines
-Lehrkraft- oder Pilotpakets.
+Stand: 31. Oktober 2026
+Status: unveränderte separate Supportanwendung; kein Bestandteil des normalen
+Lehrkraftpakets oder des Build-405-App-Updates. Eine eigene Paketübergabe
+benötigt ihre konkreten Paketnachweise.
 
-Der Support-Assistent beschreibt die getrennte signierte Reset-Code-
-Foundation. Im aktuellen Final-V4-Produktpfad kann ein gültiger
-Support-Reset ausschließlich auf der ursprünglichen intakten lokalen
-Installation ausgeführt werden: aktiver Produktroot, aktueller Security Store,
-vorhandener zugänglicher installationsgebundener DMK, vollständiges Final V4,
-Companion, Schlüsselmetadaten und Managed Documents. Die Produkt-App prüft
-diesen Bestand pre-auth read-only und erzeugt und verifiziert ein neues
-`.jkmebackup`, bevor sie Authentifizierungszustand mutiert. Es gibt keinen
-ZIP-v1- oder Klartextfallback.
+## Produktgrenze in Build 405
 
-Recovery-Codes bleiben der erste vorgesehene Kontowiederherstellungsweg. Ein
-Reset-Code würde weder den geschützten DMK noch Datenbank- oder
-Dokumentschlüssel ersetzen. Fehlt der ursprüngliche DMK oder das ursprüngliche
-Gerät, ist dieser Recoveryweg blockiert; er ist keine portable
+Der Assistent beschreibt die getrennte signierte Reset-Code-Foundation.
+Ein von ihm erzeugter Code ist nur eine technische Auth-Recovery-Freigabe.
+Die lokale Produkt-App entscheidet weiterhin über dessen Zulässigkeit.
+
+Für eine noch nicht umgestellte Final-V4-Installation kann ein gültiger
+Support-Reset ausschließlich bei vollständig verfügbarer ursprünglicher
+Installation ausgeführt werden: aktiver Produktroot, aktueller Security
+Store, vorhandener zugänglicher installationsgebundener DMK, vollständiges
+Final V4, Companion, Schlüsselmetadaten und Managed Documents. Die Produkt-App
+prüft diesen Bestand pre-auth read-only und erzeugt und verifiziert ein neues
+Safety-`.jkmebackup`, bevor sie Authentifizierungszustand mutiert. Es gibt
+keinen ZIP-v1- oder Klartextfallback.
+
+Für V7 besitzt Build 405 keinen passenden Support-Resetadapter. Der Assistent
+macht seinen Code dadurch nicht zu einem V7-Reset und darf nicht zum Umgehen
+dieser Grenze eingesetzt werden. Die V4→V7- und Restorequalifikation belegt
+keine V7-Auth-Recovery über Support Reset.
+
+Recovery-Codes bleiben für V4 und V7 der erste Kontowiederherstellungsweg.
+Ein Reset-Code ersetzt weder den geschützten DMK noch Datenbank- oder
+Dokumentschlüssel. Fehlt der ursprüngliche DMK oder das ursprüngliche Gerät,
+ist dieser Recoveryweg blockiert; er ist keine portable
 Backup-Wiederherstellung.
 
 Der Assistent erzeugt ausschließlich den technischen Reset-Code. Er erhält
-niemals Passwort, DMK, Database-Key, Schülerdaten, Dokumente oder
-Backupinhalt. Final-V4-Preflight, Safety-Backup und Auth-Reset laufen
+niemals Passwort, Recovery-Codes, DMK, Database-Key, Schülerdaten, Dokumente
+oder Backupinhalt. Final-V4-Preflight, Safety-Backup und Auth-Reset laufen
 ausschließlich lokal in der Produkt-App; der Assistent entschlüsselt nichts.
+Anfrage und erzeugten Code nur über den vereinbarten geschützten Supportweg
+übermitteln, niemals ungeschützt in öffentliche Tickets oder Chats übernehmen.
 
 ## Zweck und Grenze
 
@@ -85,7 +98,9 @@ die Support-App, diese Anleitung, Versionsangaben und Prüfsummen. Es enthält
 keine Produkt-App, Datenbank, Dokumente, Backups, Runtime-Daten, Requests,
 Tokens, privaten Schlüssel oder Passphrase.
 
-Der Final-V4-Produktpfad ändert weder Assistent, JKM-SR1 noch Requestdatei,
-Registry oder Support-Audit. Vor Pilotübergabe bleiben Paket, Prüfsummen,
-synthetische Anfrage, reale Keychain-/Code-Signing-Grenze,
-Developer-ID-Signierung und Notarisierung separat zu prüfen.
+Build 405 ändert weder Assistent, JKM-SR1, Requestdatei, Registry noch
+Support-Audit. Vor einer gesonderten Supportpaket-Übergabe sind die konkreten
+Paketbytes, Prüfsummen, Signatur, ein Geheimnisscan und eine synthetische
+Anfrage zu prüfen. Die Schlüsselverwaltung ist vom normalen App-Update und von
+der Sparkle-Updatesignierung getrennt. Dieses Dokument behauptet keine
+Developer-ID- oder Apple-Notarisierungsfreigabe des Supportpakets.

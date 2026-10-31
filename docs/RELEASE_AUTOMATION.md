@@ -1,5 +1,11 @@
 # Pilot-Releaseautomation
 
+## Dokumentationsrevision 405 - 31.10.2026
+
+Bestands-HEAD `b19225b0a1fe51e1ac122d471a66b881307c0edb`, Produktquelle `38f6e8c5c2d9bb149fdd166a09397d41462d0df6`. GitHub-Releases und Repository-Appcast read-only geprüft: öffentlich weiterhin 404, kein405-Release. Dokumentation ist nicht nur ZIP-Inhalt: Erste-Schritte-PDF und zwei Drittanbieterhinweise sind App-Ressourcen, Installations-PDF zusätzlich DMG-Inhalt. Deshalb keine ZIP-only-Freigabe und kein stilles Überschreiben des gehashten Kandidaten.
+
+Der ursprüngliche Kandidat bleibt unverändert unter `release/output/0.5.0-build405-38f6e8c5c2d9/`. Die getrennte Revision unter `release/output/0.5.0-build405-docrevision-20261031/` bindet acht PDFs, vollständige Dokumentations-ZIP, kontrolliert neu versiegeltes App-/DMG-Paket und geänderte Hashes. Produktcode und Abhängigkeiten bleiben unverändert; Bytevergleich und Signatur-/Ressourcenprüfung bestimmen die übertragbaren bisherigen Nachweise. Neue App-/DMG-Bytes benötigen eigene Paketgates; alte Sparkle-Signaturen gelten nur für alte Bytes. Es erfolgt keine Änderung des öffentlichen oder bisherigen lokal signierten Feeds. Ergebnis, offene neue Signatur-/Updategates und abschließende Empfehlung stehen im dortigen Revisionsbericht. Keine Veröffentlichung ohne erneuten PO-Auftrag zum endgültigen Artefaktstand.
+
 ## Updateabschluss 405 – 31.10.2026 – GO
 
 Tatsächliche synthetische 404→405-Keychainkontinuität nach manueller OS-Freigabe, bestehende Anmeldung, ausdrückliche V4→V7-Migration, vollständige Datenerhaltung, V7-Neustart/Schreibvorgänge und vollständiger Worker-/Restart-/Restore bestanden. Build 404 verweigert V7 mit final_v4_sqlcipher_schema_incompatible, regulärer Exit 4; Screenshot gesichert. Testharness-bedingte leere Metadaten-Sidecars ausschließlich im synthetischen Root durch SQLite geschlossen, beide Metadaten-DBs bytegleich; Produktguard unverändert. Keine offenen bestätigten P0/P1. Releaseassets unverändert, keine neue Suite oder Paketbau notwendig. Maßgeblicher Bericht: `release/output/0.5.0-build405-38f6e8c5c2d9/UPDATE_REPORT_20261031.md`. GO für separate PO-Veröffentlichungsfreigabe; öffentliche Feed-/Auslieferungsprüfung verbleibt im Veröffentlichungsauftrag. Kein Push/Tag/Release/Appcastupdate.

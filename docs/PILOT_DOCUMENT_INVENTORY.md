@@ -1,44 +1,82 @@
 # Pilot-Dokumentinventar
 
-Stand: 14. August 2026
+Stand: 31. Oktober 2026 - 0.5.0 / Build 405, Produktcode `38f6e8c5c2d9`.
+Build 405 ist bei der Bestandsaufnahme unveröffentlicht; öffentlich ist
+weiterhin 0.4.4 / Build 404. Historische Unterlagen bleiben erhalten.
 
-Dieses Inventar trennt aktuelle wartbare Pilotquellen von historischen
-Releasebelegen. Aktuelle Review-PDFs werden ausschließlich mit
-`scripts/build_pilot_documents.py --named-for-build --extended-guides` aus den
-folgenden Quellen erzeugt.
+## Wartbare Quellen und tatsächliche Auslieferung
 
-| Quelle | Generator | PDF-Profil | Zielgruppe | Klassifikation |
-|---|---|---|---|---|
-| `docs/user_manual/USER_MANUAL_SOURCE.md` | `scripts/build_pilot_documents.py` | `Benutzerhandbuch` | Lehrkräfte, Stammdatenpflege, technische Betreuung | aktuell |
-| `docs/PILOT_INSTALLATION_LEHRKRAFT.md` | derselbe | `Installationsanleitung` | Lehrkräfte, technische Betreuung | aktuell |
-| `docs/PILOT_FIRST_STEPS.md` | derselbe | `Erste-Schritte` | Lehrkräfte | aktuell |
-| `docs/PILOT_QUICKSTART_LEHRKRAEFTE.md` | derselbe | `Schnellstart-Lehrkraefte` | Lehrkräfte | aktuell |
-| `docs/PILOT_BACKUP.md` | derselbe | `Backup-und-Wiederherstellung` | Lehrkräfte, technische Betreuung | aktuell |
-| `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md` | derselbe, `--extended-guides` | `Sicherheit-und-Verschluesselung` | Lehrkräfte, technische Betreuung, Releaseverantwortliche | aktuell |
-| `docs/SUPPORT_RESET_OPERATIONS.md` | derselbe, `--extended-guides` | `Support-Reset-Betriebsanleitung` | technische Betreuung | aktuell intern |
-| `docs/RELEASE_NOTES.md` | derselbe, `--extended-guides` | `Release-Notes` | Lehrkräfte, technische Betreuung | aktueller Reviewstand |
-| `docs/PILOT_INSTALLATION_MACOS.md` | kein PDF | - | technische Pilotvorbereitung | aktuell |
-| `docs/SUPPORT_ASSISTANT_OPERATIONS.md` | separates Supportpaket | `SUPPORT_ANLEITUNG.md` | Supportbetrieb | aktuell intern |
-| `scripts/build_laura_pilot_package.py` (eingebettete README) | historischer Laura-Paketbuilder | `README.txt` | frühere Pilotübergabe | historisch; im Final-V4-Buildpfad gesperrt |
-| `docs/SECURITY_RELEASE_0_3_0.md` | kein aktuelles PDF | - | Releasehistorie | historischer Build-303-Beleg |
-| `docs/user_manual/*Build-302*.pdf` | frühere Generatorläufe | acht Build-302-PDFs | historische Nachvollziehbarkeit | historisch, nicht übergeben |
-| `docs/lehrplan/quellen/*.pdf` | externe Primärquellen | Lehrplan-PDFs | Katalogarbeit | historisch/referenziell, kein Pilotpaket |
+Alle acht PDF-Profile erzeugt `scripts/build_pilot_documents.py` mit
+`--named-for-build --extended-guides`. Version und Build werden zentral
+eingesetzt. Das bestehende A4-Design bleibt erhalten.
 
-## Platzhalter und Screenshots
+| Quelle | PDF-Profil / Zielgruppe | Auslieferung und Öffnung |
+|---|---|---|
+| `docs/user_manual/USER_MANUAL_SOURCE.md` | Benutzerhandbuch / Lehrkräfte und Betreuung | Dokumentations-ZIP; kein eingebettetes App-Handbuch |
+| `docs/PILOT_INSTALLATION_LEHRKRAFT.md` | Installationsanleitung / Lehrkräfte | Dokumentations-ZIP; im DMG zusätzlich `Installationsanleitung.pdf` |
+| `docs/PILOT_FIRST_STEPS.md` | Erste-Schritte / Lehrkräfte | Dokumentations-ZIP und `Contents/Resources/pilot_guides/` im signierten App-Bundle; kein Produkt-PDF-Öffner verbunden (`Erste Schritte` öffnet die Qt-Orientierung) |
+| `docs/PILOT_QUICKSTART_LEHRKRAEFTE.md` | Schnellstart-Lehrkraefte / Lehrkräfte | Dokumentations-ZIP |
+| `docs/PILOT_BACKUP.md` | Backup-und-Wiederherstellung / Lehrkräfte und Betreuung | Dokumentations-ZIP |
+| `docs/SICHERHEIT_UND_VERSCHLUESSELUNG.md` | Sicherheit-und-Verschluesselung / Lehrkräfte und Betreuung | Dokumentations-ZIP |
+| `docs/SUPPORT_RESET_OPERATIONS.md` | Support-Reset-Betriebsanleitung / Betreuung | Dokumentations-ZIP; V4-Resetgrenzen und V7-Sperre ausdrücklich erklärt |
+| `docs/RELEASE_NOTES.md` | Release-Notes / alle Pilotbeteiligten | Dokumentations-ZIP; Quelle für gesonderte Release-/Updatehinweise |
+| `docs/PILOT_INSTALLATION_MACOS.md` | kein weiteres PDF / technische Betreuung | Markdown in Dokumentations-ZIP; vertiefte Installations-, Wartungs- und Fehlerbehebung |
+| `docs/SUPPORT_ASSISTANT_OPERATIONS.md` | kein weiteres PDF / Support | Markdown in Dokumentations-ZIP; getrenntes Supportwerkzeug, keine Schlüssel im Lehrkraftpaket |
+| `docs/DATA_LIFECYCLE.md` | kein weiteres PDF / technische Betreuung | Technischer Vertrag in Dokumentations-ZIP; aktuelle Einordnung vor erhaltenen historischen Abschnitten |
+| `docs/PILOT_DOCUMENT_INVENTORY.md` | dieses Inventar / Betreuung und Release | Markdown in Dokumentations-ZIP |
+| `packaging/THIRD_PARTY_NOTICES_SECURITY_0.3.0.md` | vorhandener Dateiname bleibt Packaging-Vertrag | App-Bundle `third_party_licenses/` und Dokumentations-ZIP; aktuelle Build-405-Komponenten |
+| `packaging/THIRD_PARTY_NOTICES_SQLCIPHER_4_17_MACOS.md` | Datenbankprovider und Lizenztexte | App-Bundle `third_party_licenses/` und Dokumentations-ZIP |
+| `packaging/licenses/sqlcipher-4.17.0/` und `packaging/licenses/sqlcipher3-0.6.2/LICENSE` | Originaltexte / Betreuung | Originaltexte in Dokumentations-ZIP; Binding-/SQLCipher-/SQLite-Texte auch in Bundle-Distributionsmetadaten |
+| `scripts/backup_macos_pilot.sh` | historische Backup-Hilfsdatei | bleibt erhalten; im Cipher-Produktpfad ausdrücklich gesperrt, kein empfohlenes Backupverfahren |
 
-Alle acht aktuellen PDF-Quellen verwenden `{{PILOT_VERSION}}` und
-`{{PILOT_BUILD}}`; der Generator löst beide Werte aus der zentral vorgegebenen
-Version auf. `scripts/capture_user_manual_screenshots.py` erzeugt alle im
-Handbuch und Backupguide verwendeten Qt-Abbildungen aus einem temporären,
-synthetischen Datenbestand. Die aktuelle PDF-Erzeugung bindet keine
-historische HTML-Oberfläche, Klartext-/Altbackupabbildung oder echte
-Schülerdaten ein.
+Das Standard-Buildskript erzeugte beim bisherigen Kandidaten fünf PDFs;
+Sicherheit, Support Reset und Release Notes waren nur Markdown in der ZIP
+oder im Review verfügbar. Das revidierte Release-Set enthält alle acht PDFs.
+Technische Ergänzungen bleiben in vorhandenen Quellen, ohne paralleles Handbuch.
 
-Die aktuelle Standardschiene des macOS-Builds erzeugt fünf Lehrkraft-PDFs.
-Das vollständige Reviewset dieses Auftrags umfasst zusätzlich Sicherheit,
-Support Reset und Release Notes. Reviewoutputs liegen unter einem eindeutigen
-`/private/tmp`-Evidencepfad und sind keine final versionierten
-Releaseartefakte. Historische Build-302-PDFs werden nicht überschrieben.
-Der alte Laura-Testdatenpaketpfad mit ZIP-v1/`.jkmbackup` wird vom aktuellen
-Final-V4-Build bereits bei der Argumentprüfung abgewiesen und gehört weder zum
-Reviewset noch zu einer heutigen Pilotübergabe.
+## Paketbindung und Gültigkeit alter Nachweise
+
+Die Revision betrifft auch zwei eingebettete Lizenzhinweise sowie das
+Erste-Schritte-PDF; außerdem ändert sich das Installations-PDF im DMG.
+Eine reine ZIP-Erneuerung würde widersprüchliche Unterlagen ausliefern.
+Der gehashte Ausgangskandidat unter
+`release/output/0.5.0-build405-38f6e8c5c2d9/` bleibt unverändert.
+
+Die neue Dokumentationsrevision liegt getrennt unter
+`release/output/0.5.0-build405-docrevision-20261031/`. Ein daraus erstelltes
+App-/DMG-Paket benötigt neue Ressourcenversiegelung, Signaturprüfung,
+DMG-Integrität, eingebetteten Dokumentvergleich und neue Hash-/Manifestbindung.
+Code- und native Ressourcenidentität müssen vor Übernahme unveränderter
+Produktprüfungen belegt sein. Alte Paket-, Signatur- und Sparkle-Nachweise
+gelten nicht automatisch für geänderte Bytes; offene Prüfungen bleiben offen.
+Keine Veröffentlichung oder Änderung des öffentlichen Appcasts ist enthalten.
+
+## Screenshots, Generatoren und PDF-Abnahme
+
+`scripts/capture_user_manual_screenshots.py` erzeugt die verwendeten Qt-Bilder
+mit ausschließlich synthetischem temporärem Bestand und aktuellen
+V7-Projektionen. Unterrichtszeiten, Stammgruppen-/Mehrfachfachstunden,
+A-/B-Wochen mit Einzelwochenkorrektur und Fachpflanzen erhalten gezielte
+Abbildungen. Produktinstallation und vorhandene Schlüssel werden nicht geöffnet.
+Die fachliche Oberfläche entspricht dem freigegebenen Code; die synthetische
+Fixture ist kein Beleg für Paket-, Verschlüsselungs- oder Releasegates.
+
+Abnahme umfasst die tatsächlich generierten PDF-Seiten, Textvollständigkeit,
+Versionsangaben, Bildverweise, Links und visuelle Kontrolle von Umbruch,
+Tabellen, Schrift und Lesbarkeit. Ergebnisse und Seitenzahlen stehen im
+Revisionsbericht und in den zugehörigen Prüfdateien im neuen Kandidatenordner.
+
+## Ausgeschlossene historische Unterlagen
+
+| Bestand | Einordnung |
+|---|---|
+| `docs/user_manual/*Build-302*.pdf` | acht PDFs: historisch, nicht übergeben; unverändert und nicht in der Build-405-ZIP |
+| `docs/SECURITY_RELEASE_0_3_0.md` | historischer Build-303-Nachweis, keine aktuelle Bedienanleitung |
+| `docs/ENCRYPTION_AND_SUPPORT_RESET_PREANALYSIS.md` | historische Voranalyse, kein aktueller Funktionsvertrag |
+| `docs/LAURA_PILOTTEST.md`, `docs/laura_pilottest_feedback.csv`, `scripts/build_laura_pilot_package.py` | frühere Testübergabe; alter portabler Laura-Testdatenpfad im Cipher-Produktbuild gesperrt |
+| `docs/lehrplan/quellen/*.pdf` | fachliche externe Referenzen; kein Installations-/Lehrkraftpaket |
+| `legacy/excel/` | archivierter Referenz-/Exportpfad; kein Bestandteil dieses Auftrags |
+
+Historische Technikabschnitte dokumentieren ihren damaligen Stand. Sie werden
+nicht rückwirkend auf V7 umgeschrieben und ersetzen die aktuellen
+Build-405-Anleitungen nicht.
