@@ -3,6 +3,17 @@
     <channel>
         <title>Jenaplan-Kompetenzmanager</title>
         <item>
+            <title>0.5.1</title>
+            <pubDate>Sun, 01 Nov 2026 00:55:21 +0100</pubDate>
+            <sparkle:minimumUpdateVersion>201</sparkle:minimumUpdateVersion>
+            <sparkle:version>406</sparkle:version>
+            <sparkle:shortVersionString>0.5.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <sparkle:releaseNotesLink sparkle:edSignature="DtOvOg6HcxDWhaz1u3Ct+P5V6AqMd4dgGJQ+frdaD/rXN4tLczzs4+3zxJpDim49Ln9PPNI88E2Sblm24igcAA==" sparkle:length="7701">https://joergg87.github.io/Jenaplan-Kompetenzmanager-Update/pilot/Jenaplan-Kompetenzmanager-0.5.1-macOS-arm64.html</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/JoergG87/Jenaplan-Kompetenzmanager-Update/releases/download/v0.5.1-build406/Jenaplan-Kompetenzmanager-0.5.1-macOS-arm64.dmg" length="206285374" type="application/octet-stream" sparkle:edSignature="ZqVX7jL0xGkTWTYRllWrAu91XQ1onhX49LDXHaHwwaLMRwv/ydcXsQvgarmZAVJmtme+/appjxAxIruZ5e4xDg==" />
+        </item>
+        <item>
             <title>0.5.0</title>
             <pubDate>Sat, 31 Oct 2026 16:22:04 +0100</pubDate>
             <sparkle:minimumUpdateVersion>201</sparkle:minimumUpdateVersion>
@@ -60,6 +71,6 @@
     </channel>
 </rss>
 <!-- sparkle-signatures:
-edSignature: 8Zggvgj8iiGUjiUeSSGN5MofAaMYfnfAwDH3iJbLzxFtGRL2PZoAZUibYyaqTh9evpH9+XF/RR2j0Ocr1+fQDg==
-length: 5892
+edSignature: Penwv/puHun+Nn8LqaAFIthcdcxE/7qlwr8DDBy88jefUXbqd1UqZKnwxdekpOj7wZNlTSLiZx7cDLDZU5apBg==
+length: 7029
 -->
