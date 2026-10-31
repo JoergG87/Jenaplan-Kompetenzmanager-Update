@@ -5,7 +5,7 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 > [!HINWEIS]
 > Mac-Pilotversion {{PILOT_VERSION}} / Build {{PILOT_BUILD}}.
 
-1. Bei einem Update zuerst in Build 404 ein vollständiges verschlüsseltes
+1. Bei einem Update zuerst in Build 404 oder 405 ein vollständiges verschlüsseltes
    Backup erstellen und prüfen. App vollständig beenden, DMG öffnen, App
    nach `Programme` ziehen und von dort starten.
 2. Bei frischer Installation ein App-Passwort festlegen und die zehn
@@ -20,7 +20,9 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
    `Überblick` die Karte `Fächer für die Dokumentation` mit `Aufklappen` öffnen.
    `Für dieses Kind individuell festlegen` wählen, Unterrichtsfächer markieren
    und `Speichern` wählen.
-7. V7 durch die Pilotbetreuung bewusst aktivieren lassen. Danach bei Bedarf
+7. Im angebotenen Migrationsassistenten die Hinweise lesen, Zustimmung setzen
+   und `Aktualisierung starten` wählen. Nach dem Neustart mit bisherigem
+   Passwort anmelden. Bei Neuinstallation erfolgt das Angebot beim Folgestart. Danach bei Bedarf
    unter `Einstellungen > Unterrichtszeiten` Zeitvorlagen und unter
    `Stundenplan` Stunden sowie A-/B-Wochen einrichten. Der Stundenplan ist
    keine Startvoraussetzung.
@@ -33,11 +35,12 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 ## V7 und Updategrenze
 
-Das App-Update allein migriert keine Daten; eine frische Installation startet
-ebenfalls in V4. Erst die betreute Wartung aktiviert V7 mit vollständigem
-geprüftem Quellbackup und kontrolliertem Neustart. Mit dem bisherigen
-Passwort anmelden und die Daten prüfen. Bei einem Fehler Bestand und
-Quellbackup erhalten und die Betreuung hinzuziehen.
+Das App-Update allein migriert keine Daten. Build 406 erkennt Final V4 und bietet
+den Assistenten an. Erst Ihre Zustimmung startet geprüfte verschlüsselte Sicherung
+und kontrollierte Umstellung. `Später` verschiebt sie. Neuinstallationen beginnen
+in V4; das Angebot folgt beim nächsten Start. Ein V7-Bestand wird nicht erneut
+umgestellt. Bei Fehlern Bestand und Sicherung erhalten, den personenfreien
+Supporthinweis notieren und die Pilotbetreuung kontaktieren.
 
 Build 404 kann V7 nicht öffnen. Eine Rückkehr erfordert ein geeignetes
 vollständiges V4-Backup im ursprünglichen Schlüsselkontext und kann spätere

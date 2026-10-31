@@ -5765,3 +5765,22 @@ Wheelnotice und aktuelle Distributionsnotice getrennt: historisch hashgebundener
 ### Build 406 – finale Qualifikation 01.11.2026
 
 Konkrete Notice-/Wheel- und Restoreinventar-Gates abgeschlossen. Finale Produktsuite 3571/120 bestanden, 104 bestehende Skips. Native 404→406-/405→406-Assistenten, V7-Wiederstart und leere Einrichtung vom PO bedient und bestätigt; Daten, Dokumente, Schlüssel, Vollbackups und echter Restore unabhängig im finalen Paket verifiziert. Direkte V7-Erstanlage bleibt begründete vorhandene UX-Einschränkung gemäß Auftragsausnahme; kein neuer First-Run-Vertrag. Build406 als Releasekandidat qualifiziert, keine Veröffentlichung. Nachweise in docs/RELEASE_AUTOMATION.md und lokalem FINAL406_GATE_REPORT.md.
+
+
+## Build 406 – Veröffentlichungsvorbereitung 01.11.2026
+
+PO-Auftrag: keine Veröffentlichung, keine Fachfunktionen. Drei historische
+Sprint-11-Smokes gezielt reproduziert: historischer Defaultprovider erwartet
+Binding 0.6.2 / SQLCipher 4.12, installiert ist das qualifizierte 4.17-Binding.
+Alle drei scheitern vor den jeweiligen Manipulationsprüfungen mit
+`sqlcipher_binding_version_incompatible`. Produktkomposition übergibt explizit
+4.17; historische Module sind im Produktspec ausgeschlossen. Kein Produktfix,
+keine neuen Skips oder gelockerten Prüfungen. Einzelbelege und Releaseabschluss
+unter `release/output/406-publication-preparation/`.
+
+Acht bestehende Dokumentprofile gezielt auf Assistent, V4-Erstanlage,
+404/405→406, Passwortkontinuität, Backup/Restore und Rückkehrgrenze nachgeführt.
+Synthetische Qt-Dialogabbildungen ergänzt. Eingebettete PDFs benötigen neuen
+Pipelinekandidaten und erneute betroffene Paketgates. Build 405 und bisheriger
+406-Kandidat bleiben unverändert. Remoteprüfung lesend: 405 veröffentlicht,
+406-Tag/Release nicht vorhanden, Stable-Verzeichnis nicht vorhanden.

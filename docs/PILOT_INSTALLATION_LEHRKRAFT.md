@@ -26,7 +26,7 @@ Eine Datensicherung ersetzt nicht den Zugang zum lokalen Datenschlüssel.
    prüfen.
 
 Für die normale Benutzung werden Python, Terminal und Repository nicht
-benötigt. Den besonderen V7-Wartungsstart führt die Pilotbetreuung durch.
+benötigt. Die Datenumstellung wird durch den integrierten Assistenten begleitet.
 
 ## 3. Gatekeeper kontrolliert freigeben
 
@@ -61,41 +61,30 @@ Automatisch vorhanden sind:
 Schüler, Stammgruppen, Kurse, Kursverbünde, Beobachtungen, Bestätigungen,
 Berichts-/LEG-Entwürfe, Testdokumente, Beispielbestände und Testbackups werden
 nicht angelegt. Ein Katalogimport oder Beispielbestand ist nicht nötig.
-Die V7-Funktionen werden auch bei einer Neuinstallation erst bewusst nach
-abgeschlossenem First Run durch die Pilotbetreuung aktiviert.
+Der Migrationsassistent wird nach abgeschlossener Einrichtung beim folgenden
+Programmstart angeboten. Eine direkte V7-Erstanlage erfolgt nicht.
 
 Bei einem Update mit dem bisherigen Passwort anmelden. Kein neues Konto,
 keinen neuen Datenordner und keinen neuen Datenschlüssel anlegen.
 
-## 5. Update von 0.4.4 / Build 404 auf V7
+## 5. Update von Build 404 oder 405 auf Build 406
 
-1. Vor dem App-Update in Build 404 unter `Einstellungen > Datensicherung`
-   `Backup erstellen` wählen und die verschlüsselte `.jkmebackup` mit
-   `Backup prüfen …` prüfen. Die V4-Sicherung geschützt erhalten.
-2. Build 405 wie oben installieren, bestehende Anmeldung und vorhandene Daten
-   prüfen und die App vollständig beenden.
-3. Mit der Pilotbetreuung den ausdrücklich vorgesehenen Wartungsstart für
-   V4→V7 durchführen. Das Ersetzen der App und der gewöhnliche Start
-   migrieren keine Daten. Der genaue betreute Aufruf steht in der technischen
-   macOS-Installationsanleitung und den Release Notes.
-4. Die Wartung prüft den vorhandenen Schlüsselkontext und V4-Bestand,
-   erstellt ein vollständiges verschlüsseltes
-   Quellbackup, prüft es unabhängig und stellt transaktional um. Währenddessen keine zweite App
-   starten und keine Dateien austauschen.
-5. Nach dem kontrollierten Neustart mit dem bisherigen Passwort anmelden.
-   Kinder, Beobachtungen, Kompetenzstände, Dokumente, Stundenplan und
-   Berichts-/LEG-Stände prüfen. Danach ein neues V7-Backup erstellen und
-   prüfen; die V4-Sicherung weiterhin aufbewahren.
+Vor dem Update unter `Einstellungen > Datensicherung` ein vollständiges verschlüsseltes `.jkmebackup` erstellen und mit `Backup prüfen …` prüfen. Nach Veröffentlichung wird Build 406 über die vorhandene Updateprüfung des Pilotkanals angeboten. Die manuelle Installation aus dem freigegebenen DMG bleibt möglich.
+
+Nach dem Update über den bestehenden Pilotkanal erkennt Build 406 einen vorhandenen Final-V4-Bestand automatisch. Melden Sie sich mit Ihrem bisherigen Passwort an. Der Dialog `Datenbestand aktualisieren` erklärt Sicherung, Umstellung und Rückkehrgrenze. Lesen Sie die Hinweise, setzen Sie `Ich möchte die Aktualisierung jetzt starten.` und wählen Sie `Aktualisierung starten`. Mit `Später` verschieben Sie die Umstellung; es wird nichts migriert.
+
+Die App erstellt eine vollständige verschlüsselte V4-Sicherung und prüft sie unabhängig. Erst danach folgt die kontrollierte Umstellung nach V7. Lassen Sie den Mac eingeschaltet und starten Sie keine zweite App. Die Anzeige nennt die tatsächlichen Phasen; es gibt keine Prozentprognose. Nach vollständiger Zielprüfung startet die App regulär neu. Melden Sie sich mit dem bisherigen Passwort an und prüfen Sie Ihre Daten. Bereits vollständig aktualisierte V7-Bestände werden nicht erneut migriert.
+
+Bei einem Fehler bleiben Bestand, Sicherungen und Wartungsbelege erhalten. Notieren Sie Version/Build, Zeitpunkt, Handlung und den personenfreien Supporthinweis. Wenden Sie sich an die Pilotbetreuung; senden Sie keine Passwörter, Recovery-Codes, Schlüssel oder Schülerdaten ungeschützt. Nur wenn die App `Abschluss prüfen` anbietet, kann dieser bewusst bestätigt werden. Keine Dateien löschen, keinen neuen Bestand anlegen und keine alte App als Reparatur starten. Terminalbefehle sind für Lehrkräfte nicht erforderlich.
+
+![Migrationsassistent: bewusste Zustimmung](user_manual/screenshots/31_migration_consent.png)
+
+Synthetische Abbildung der aktuellen Build-406-Oberfläche.
+
+Nach dem Neustart Kinder, Beobachtungen, Kompetenzstände, Dokumente, Stundenplan und Berichts-/LEG-Stände prüfen. Ein neues V7-Backup erstellen und prüfen; die V4-Sicherung erhalten.
 
 > [!WARNUNG]
-> Build 404 kann V7 nicht öffnen. Die alte App neu zu installieren ist kein
-> Downgrade. Eine betreute Rückkehr erfordert eine geeignete vollständige
-> V4-Sicherung im ursprünglichen Schlüsselkontext; spätere Änderungen können
-> verloren gehen. Keine einzelnen Datenbank- oder Schlüsseldateien kopieren.
-
-Bei einem Wartungsfehler vorhandenen Bestand, Quellbackup und Fehlercode
-erhalten und die Pilotbetreuung hinzuziehen. Ein sicherer Halt ist keine
-Aufforderung zu Reset, Neuinitialisierung oder Schlüsselneuanlage.
+> Build 404 kann V7 nicht öffnen. Eine Rückkehr benötigt eine vollständige V4-Sicherung im ursprünglichen Schlüsselkontext und technische Betreuung. Änderungen seit der Sicherung können verloren gehen; keine Einzeldateien zurückkopieren.
 
 ## 6. Backup, Restore und Unterstützung
 
@@ -137,12 +126,3 @@ macOS-Installationsanleitung sowie in der Backup-Anleitung.
 Die bewusste separate Kompetenzübersicht als PDF ist eine eigene
 Exportfunktion. Eine ausgegebene Datei muss außerhalb der App geschützt
 aufbewahrt werden.
-
-
-## Datenbestand nach einem Programmupdate aktualisieren
-
-Nach dem Programmupdate melden Sie sich wie gewohnt an. Bei einem älteren Datenbestand erscheint „Datenbestand aktualisieren“. Lesen Sie die Hinweise, setzen Sie die Zustimmung und wählen Sie „Aktualisierung starten“. Eine vollständige verschlüsselte Sicherung wird automatisch erstellt und unabhängig geprüft. Lassen Sie den Mac währenddessen eingeschaltet. Die Anwendung startet nach erfolgreicher Prüfung neu; melden Sie sich mit Ihrem bisherigen Passwort an.
-
-Mit „Später“ bleibt der bisherige Datenbestand erhalten. Bereits aktualisierte Daten werden nicht erneut umgestellt. Neue Installationen beginnen weiterhin mit dem bisherigen Initialisierungspfad und erhalten beim folgenden Programmstart dasselbe Angebot.
-
-Bei einem Fehler bleiben Daten, Sicherung und Wartungsbelege erhalten. Wiederholen Sie den Vorgang nicht unkontrolliert. Wenn die Anwendung einen Abschluss anbietet, kann dieser bewusst gestartet werden; dabei werden die gespeicherten Daten erneut vollständig geprüft. Andernfalls wenden Sie sich an die Pilotbetreuung. Es sind keine Terminalbefehle, Pfadangaben oder manuellen Dateikopien erforderlich. Build 404 kann aktualisierte V7-Daten nicht öffnen.

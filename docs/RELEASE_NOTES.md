@@ -2,7 +2,11 @@
 
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
-## Neu in diesem Update
+## Neu in Build 406
+
+- Integrierter Migrationsassistent: automatische Erkennung von Final V4, bewusste Zustimmung, unabhängig geprüftes verschlüsseltes Vollbackup, kontrollierte V7-Umstellung und regulärer Neustart mit bisherigem Passwort. Bereits abgeschlossene V7-Bestände werden nicht erneut migriert.
+
+## Bereits mit Build 405 eingeführte Verbesserungen
 
 - A-/B-Wochen mit Referenzwoche, Wochenvorschau und bewussten, wieder entfernbaren Einzelwochenkorrekturen. Der Wechsel läuft auch während der Ferien nach Kalenderwochen weiter; eine Korrektur verschiebt den Grundrhythmus nicht.
 - Globale Unterrichtszeiten unter `Einstellungen > Unterrichtszeiten` als Vorschläge für neue Stunden. Individuelle Zeiten sind möglich; bestehende Stunden werden bei einer späteren Vorlagenänderung nicht rückwirkend verändert.
@@ -17,37 +21,22 @@ Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz bleiben unabhängig von der Unterrichtsfachwahl immer verfügbar. Die individuelle Fachauswahl priorisiert die Dokumentation; sie löscht keine historischen Bewertungen. Beobachtungen, Kompetenz-Cockpit, Berichte und LEG verwenden weiterhin den offiziellen Entwicklungsbuchkatalog mit 331 Kompetenzen.
 
-## Bewusste Umstellung von Build 404
+## Update von Build 404 und 405
 
-Vor dem Update in Build 404 unter `Einstellungen > Datensicherung` ein
-vollständiges verschlüsseltes `.jkmebackup` erstellen und mit
-`Backup prüfen …` prüfen. Die V4-Sicherung geschützt erhalten. Nach dem
-App-Update Version/Build, bestehende Anmeldung und vorhandenen Bestand
-kontrollieren und die App vor der Wartung vollständig beenden.
+Vor dem Update ein vollständiges verschlüsseltes `.jkmebackup` erstellen und prüfen. Build 406 wird nach gesonderter Veröffentlichungsfreigabe über den bestehenden Pilotkanal bereitgestellt.
 
-Das Ersetzen des App-Bundles führt keine automatische Datenmigration aus. Eine vorhandene Final-V4-Installation bleibt beim gewöhnlichen Start V4. V7 wird ausschließlich über den ausdrücklich gestarteten Wartungsweg aktiviert, nachdem die App vollständig beendet wurde:
+Nach dem Update über den bestehenden Pilotkanal erkennt Build 406 einen vorhandenen Final-V4-Bestand automatisch. Melden Sie sich mit Ihrem bisherigen Passwort an. Der Dialog `Datenbestand aktualisieren` erklärt Sicherung, Umstellung und Rückkehrgrenze. Lesen Sie die Hinweise, setzen Sie `Ich möchte die Aktualisierung jetzt starten.` und wählen Sie `Aktualisierung starten`. Mit `Später` verschieben Sie die Umstellung; es wird nichts migriert.
 
-```sh
-JKM_APP="/Applications/Jenaplan-Kompetenzmanager.app"
-"$JKM_APP/Contents/MacOS/Jenaplan-Kompetenzmanager" \
-  --migrate-v4-to-v7 \
-  --runtime-root "<bestehender kanonischer Datenroot>"
-```
+Die App erstellt eine vollständige verschlüsselte V4-Sicherung und prüft sie unabhängig. Erst danach folgt die kontrollierte Umstellung nach V7. Lassen Sie den Mac eingeschaltet und starten Sie keine zweite App. Die Anzeige nennt die tatsächlichen Phasen; es gibt keine Prozentprognose. Nach vollständiger Zielprüfung startet die App regulär neu. Melden Sie sich mit dem bisherigen Passwort an und prüfen Sie Ihre Daten. Bereits vollständig aktualisierte V7-Bestände werden nicht erneut migriert.
 
-Dieser Wartungsweg prüft vorhandene Installation, Schlüssel und exaktes Quellschema, erstellt ein verschlüsseltes Vollbackup, verifiziert es unabhängig und führt die bestehende transaktionale V4→V7-Migration aus. Danach prüft die frisch gestartete Abschlussprüfung den vollständigen Zielbestand und den vorhandenen Dokumentbestand erneut. Erst nach bestätigtem Abschluss startet die App normal neu. Die Anmeldung verwendet das bestehende Passwort. Es wird kein neuer Fachbestand angelegt; die vorhandenen Daten werden übernommen. Die Datenschlüssel werden weder neu angelegt noch rotiert.
-
-Die Wartung sollte mit Unterstützung der Pilotbetreuung ausgeführt werden. Platzhalter im Befehl müssen durch den tatsächlichen bestehenden Datenroot ersetzt werden. Keine Test-/Seed-/Resetbefehle für einen Produktbestand verwenden. Während
-der Wartung keine zweite App starten und keine Dateien austauschen. Nach
-dem Neustart vorhandene Kinder, Beobachtungen, Kompetenzstände, Dokumente,
-Stundenplan und Berichts-/LEG-Stände prüfen. Ein neues V7-Backup erstellen
-und prüfen; die V4-Sicherung weiterhin aufbewahren.
+Bei einem Fehler bleiben Bestand, Sicherungen und Wartungsbelege erhalten. Notieren Sie Version/Build, Zeitpunkt, Handlung und den personenfreien Supporthinweis. Wenden Sie sich an die Pilotbetreuung; senden Sie keine Passwörter, Recovery-Codes, Schlüssel oder Schülerdaten ungeschützt. Nur wenn die App `Abschluss prüfen` anbietet, kann dieser bewusst bestätigt werden. Keine Dateien löschen, keinen neuen Bestand anlegen und keine alte App als Reparatur starten. Terminalbefehle sind für Lehrkräfte nicht erforderlich.
 
 ## Backup, Wiederherstellung und Fehlerfall
 
 - Produktdatenbank und Dokumente bleiben lokal verschlüsselt: SQLCipher 4.17.0, SQLite 3.53.3, CommonCrypto. Standard-SQLite ist kein Fallback.
 - V7 verwendet sein eigenes geprüftes verschlüsseltes `.jkmebackup` im vorhandenen Installations- und Schlüsselkontext. Restore erfolgt mit Safety-Backup, separatem Worker und kontrolliertem Neustart.
 - Bei einem Wartungsfehler hält die App kontrolliert an. Vorhandenen Bestand, Fehlermeldung und Quellbackup erhalten und die Pilotbetreuung hinzuziehen. Kein Löschen von Wartungsbelegen, keine Schlüsselneuanlage und kein Austausch einzelner Datenbankdateien.
-- Nach einer bereits erfolgreich gespeicherten Transaktion ohne vollständigen Wartungsabschluss ist die gesonderte erneute Abschlussprüfung `--complete-v7-migration` möglich; sie ist kein automatisches Fortsetzen und prüft den vollständigen Zielbestand erneut.
+- Ein angebotener Abschluss wird bewusst über `Abschluss prüfen` gestartet und prüft den vollständigen Zielbestand erneut. Technische Wartungsaufrufe stehen ausschließlich in der Supportanleitung.
 - Eine Rückkehr zu Build 404 erfordert die vollständige geprüfte V4-Sicherung im ursprünglichen Schlüsselkontext. Build 404 darf V7 nicht öffnen. Alle Änderungen nach dem V4-Sicherungszeitpunkt gingen bei dieser Rückkehr verloren; kein automatischer Downgrade.
 
 Nach der V7-Umstellung ist der betreute Support Reset nicht verfügbar,
@@ -78,4 +67,4 @@ Backupinhalte ungeschützt an den Support senden.
 
 Dieses Update bleibt im bestehenden macOS-arm64-Pilotkanal ab macOS 13. Stable ist deaktiviert. Der bestehende Pilotweg verwendet eine Ad-hoc-Codesignatur und eine getrennte Sparkle-Vertrauensprüfung für die Updateauslieferung. Der endgültige öffentliche Auslieferungsstand muss nach gesonderter Veröffentlichungsfreigabe geprüft werden. Eine Developer-ID-Signatur, Notarisierung oder Gatekeeper-Freigabe wird damit nicht behauptet. Die manuelle Erstinstallation kann weiterhin die dokumentierte macOS-Freigabe erfordern.
 
-Eine Neuinstallation beginnt weiterhin mit einem leeren Final-V4-Bestand, Schuljahr 2026/27 und dem offiziellen Katalog mit 331 Kompetenzen. Auch hier erfolgt die V7-Aktivierung bewusst über den Wartungsweg. Es werden keine Beispielkinder oder Testdaten angelegt.
+Eine Neuinstallation beginnt weiterhin mit einem leeren Final-V4-Bestand, Schuljahr 2026/27 und dem offiziellen Katalog mit 331 Kompetenzen. Nach abgeschlossener Einrichtung wird der Migrationsassistent beim folgenden Programmstart angeboten; keine direkte V7-Erstanlage. Es werden keine Beispielkinder oder Testdaten angelegt.

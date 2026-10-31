@@ -1,10 +1,10 @@
 # Sicherheit und Verschlüsselung
 
-Stand: 31. Oktober 2026
+Stand: 1. November 2026
 Geltung: Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}, macOS arm64
 
-Dieses Dokument erklärt die Sicherheitsfunktionen des Build-405-Produktcodes.
-Die Veröffentlichung von 0.5.0/405 benötigt eine gesonderte Freigabe des finalen
+Dieses Dokument erklärt die Sicherheitsfunktionen des Build-406-Produktcodes.
+Die Veröffentlichung von 0.5.1/406 benötigt eine gesonderte Freigabe des finalen
 Artefaktstands. Die technische Qualifikation ersetzt keine schulische
 Datenschutz- oder Betriebsfreigabe.
 
@@ -54,11 +54,11 @@ verschlüsselt geöffnet. Der verbindliche macOS-Provider ist das Python-Binding
 `4.17.0 community`, SQLite `3.53.3` und CommonCrypto. Eine fehlende oder andere
 Engine sowie Standard-SQLite sind im Produktpfad kein Ersatz; der Start hält an.
 
-Build 405 kann eine vollständige, noch nicht umgestellte Final-V4-Installation
+Build 406 kann eine vollständige, noch nicht umgestellte Final-V4-Installation
 und eine vollständig umgestellte V7-Installation öffnen. Final V4 und V7
 haben getrennte exakte Schemaidentitäten. V7 wird ausschließlich
-über den bewussten Wartungsvorgang aktiviert. Ein normaler App-Start migriert
-nicht. Unbekannte oder unvollständige Schemata werden nicht still übernommen.
+über den bewusst bestätigten Migrationsassistenten aktiviert. Ein normaler
+App-Start erkennt Final V4 und bietet die Umstellung an, migriert aber nicht ohne Zustimmung. Unbekannte oder unvollständige Schemata werden nicht still übernommen.
 Es gibt keine automatische Übernahme alter Klartext-, V3- oder Testdaten.
 
 Anhänge, allgemeine Schülerdokumente und finale Bericht-/LEG-PDFs liegen als
@@ -153,24 +153,17 @@ Die Schrittfolge und Fehlerfälle stehen in `Backup und Wiederherstellung`.
 Keine historischen `.jkmbackup`-/ZIP-v1- oder Klartextwerkzeuge auf den
 verschlüsselten Produktbestand anwenden.
 
-## 7. Update von 404 auf 405 und Rückkehrgrenze
+## 7. Update von 404 oder 405 auf 406 und Rückkehrgrenze
 
-Vor dem Update ein vollständiges `.jkmebackup` erstellen, gesondert prüfen und
-nach Schulvorgabe geschützt aufbewahren. Das App-Update und die
-Datenumstellung sind getrennte Vorgänge. Ein normaler Start von 405 lässt den
-vorhandenen V4-Stand unverändert.
+Vor dem Update ein vollständiges verschlüsseltes `.jkmebackup` erstellen und prüfen.
 
-Die technische Betreuung startet die bewusste V4→V7-Wartung ausdrücklich.
-Dabei werden vorhandene Quelle und Schlüssel geprüft, ein verschlüsseltes
-V4-Vollbackup erstellt und unabhängig neu geprüft, laufende Datenbankzugriffe
-beendet und die SQLCipher-Transaktion ausgeführt. Eine frisch gestartete Abschlussprüfung prüft
-den Zielbestand erneut und erzeugt den gebundenen Abschlussbeleg. Danach
-startet die normale App mit vorhandener Anmeldung.
+Nach dem Update über den bestehenden Pilotkanal erkennt Build 406 einen vorhandenen Final-V4-Bestand automatisch. Melden Sie sich mit Ihrem bisherigen Passwort an. Der Dialog `Datenbestand aktualisieren` erklärt Sicherung, Umstellung und Rückkehrgrenze. Lesen Sie die Hinweise, setzen Sie `Ich möchte die Aktualisierung jetzt starten.` und wählen Sie `Aktualisierung starten`. Mit `Später` verschieben Sie die Umstellung; es wird nichts migriert.
 
-Bei einem Abbruch nicht denselben Migrationsaufruf blind wiederholen. Bestand
-und Quellbackup erhalten; die Betreuung muss den Zustand prüfen und gegebenenfalls
-den vorhandenen Abschlussprüfungsweg verwenden. Während der Wartung keine
-zweite App oder alte Version starten.
+Die App erstellt eine vollständige verschlüsselte V4-Sicherung und prüft sie unabhängig. Erst danach folgt die kontrollierte Umstellung nach V7. Lassen Sie den Mac eingeschaltet und starten Sie keine zweite App. Die Anzeige nennt die tatsächlichen Phasen; es gibt keine Prozentprognose. Nach vollständiger Zielprüfung startet die App regulär neu. Melden Sie sich mit dem bisherigen Passwort an und prüfen Sie Ihre Daten. Bereits vollständig aktualisierte V7-Bestände werden nicht erneut migriert.
+
+Bei einem Fehler bleiben Bestand, Sicherungen und Wartungsbelege erhalten. Notieren Sie Version/Build, Zeitpunkt, Handlung und den personenfreien Supporthinweis. Wenden Sie sich an die Pilotbetreuung; senden Sie keine Passwörter, Recovery-Codes, Schlüssel oder Schülerdaten ungeschützt. Nur wenn die App `Abschluss prüfen` anbietet, kann dieser bewusst bestätigt werden. Keine Dateien löschen, keinen neuen Bestand anlegen und keine alte App als Reparatur starten. Terminalbefehle sind für Lehrkräfte nicht erforderlich.
+
+Eine Neuinstallation legt zunächst einen leeren verschlüsselten Final-V4-Bestand an. Nach abgeschlossener Einrichtung wird der Assistent beim folgenden Programmstart angeboten. Es gibt keine direkte V7-Erstanlage.
 
 > [!WARNUNG]
 > Build 404 kann eine V7-Datenbank nicht öffnen. Eine Rückkehr zu V4 verlangt
@@ -180,7 +173,7 @@ zweite App oder alte Version starten.
 > einer Rückkehr zu diesem Backup verloren gehen.
 
 Ein V4-Backup nicht direkt in eine aktive V7-Installation einspielen. Der
-Build-405-Produktpfad bietet keinen allgemeinen Rückmigrationsassistenten.
+Build-406-Produktpfad bietet keinen allgemeinen Rückmigrationsassistenten.
 
 ## 8. Grenzen des Support-Resets
 
@@ -205,7 +198,7 @@ Auch das Entfernen eines verwalteten Dokuments bedeutet keine garantierte
 physische Löschung seiner Datei. Frühere Dokumentgenerationen, verschlüsselte
 Backups und Restore-/Upgradebelege können weiterhin vorhanden sein.
 
-Build 405 bietet keine automatische schulrechtliche Aufbewahrungsfrist und
+Build 406 bietet keine automatische schulrechtliche Aufbewahrungsfrist und
 keine garantierte sichere SSD-Löschung. Die App automatisch zu deinstallieren
 oder nur das App-Bundle zu löschen beseitigt den getrennten Datenbereich und
 vorhandene Backups nicht. Die Schule legt Aufbewahrung und eine betreute
@@ -214,17 +207,11 @@ Dateien zur vermeintlichen Bereinigung entfernen.
 
 ## 10. Nachweise, Einschränkungen und zukünftige Möglichkeiten
 
-Die oben beschriebenen Funktionen sind im Produktcode des Build 405 vorhanden.
-Am Paketquellstand `38f6e8c5c2d9` wurden mit synthetischen Daten insbesondere
-V4→V7, vorhandene Anmeldung, Schlüsselbundkontinuität 404→405,
-Datenerhaltung, V7-Backup sowie Worker-/Restart-/Restore geprüft. Der
-Build-404-Ablehnungsfall auf V7 ist nachgewiesen. Diese Ergebnisse beschreiben
-den geprüften Kandidaten und seine geprüften Fälle; sie ersetzen keine Prüfung
-neu gebauter oder geänderter Paketbytes.
+Die Funktionen entsprechen Build 406. Am Paketquellstand `ddaee98` wurden mit ausschließlich synthetischen Installationen native 404→406 und 405→406, V7-Neustart, Datenerhaltung, vorhandene Schlüssel und Passwörter sowie vollständiges Backup/Restore mit Worker geprüft. Die native Bedienung wurde vom PO bestätigt und unabhängig technisch verifiziert. Diese Nachweise ersetzen keine Paketprüfung geänderter Bytes.
 
 Die Paketstrategie ist weiterhin Ad-hoc-Signierung. Daraus folgen keine
 Developer-ID-, Apple-Notarisierungs-, Hardware- oder Sicherheitszertifikate.
-Der Pilotkanal besteht; die Veröffentlichung von 405 und die öffentliche
+Der Pilotkanal besteht; die Veröffentlichung von 406 und die öffentliche
 Rückprüfung der ausgelieferten Artefakte sind gesonderte Schritte. Eine
 Stable-Freigabe liegt damit nicht vor.
 

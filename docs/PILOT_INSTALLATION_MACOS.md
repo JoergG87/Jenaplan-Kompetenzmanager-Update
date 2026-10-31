@@ -2,19 +2,19 @@
 
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
-Diese Anleitung beschreibt den lokalen Build-405-Kandidaten. Die Veröffentlichung
+Diese Anleitung beschreibt den lokalen Build-406-Kandidaten. Die Veröffentlichung
 und die öffentliche Auslieferungsprüfung benötigen einen gesonderten Auftrag.
 Historische Buildnachweise gelten jeweils nur für die dort identifizierten
 Artefakte; geänderte Pakete benötigen neue passende Nachweise.
 
-| Punkt | Build 405 |
+| Punkt | Build 406 |
 |---|---|
 | Architektur | Apple Silicon (arm64) |
 | Mindestplattform | macOS 13 |
 | Installation | Drag-and-drop-DMG |
 | Signatur | Ad-hoc-Codesignatur; keine Developer ID oder Notarisierung |
 | Frischer Start | Leerer verschlüsselter Final-V4-Bestand |
-| V7-Aktivierung | Bewusste betreute Wartung nach abgeschlossenem First Run |
+| V7-Aktivierung | Integrierter Assistent nach bewusster Zustimmung |
 | Updatekanal | Bestehender Pilotkanal; Stable deaktiviert |
 
 ## Installation und erster Start
@@ -28,8 +28,8 @@ Artefakte; geänderte Pakete benötigen neue passende Nachweise.
    prüfen.
 
 Der normale Lehrkraftbetrieb benötigt weder Python noch Repository oder
-Entwicklungsumgebung. Der ausdrückliche V7-Wartungsstart wird durch die
-Pilotbetreuung im Terminal vorgenommen.
+Entwicklungsumgebung. Der integrierte Assistent führt durch die Datenumstellung.
+Der technische Terminalaufruf unten bleibt ausschließlich ein Supportweg.
 
 Der Pilot ist ad-hoc signiert und nicht notarisiert. macOS kann den ersten
 Start blockieren. Den Systemhinweis schließen, im Finder mit Control-Klick
@@ -45,8 +45,9 @@ neues Konto und keinen neuen Datenbereich anlegen.
 
 ## Datenhaltung: Final V4 und V7
 
-Build 405 kann den bestehenden Final-V4-Bestand sowie den bewusst umgestellten
-V7-Bestand öffnen. Ein gewöhnlicher Start stellt Final V4 nicht um. Die
+Build 406 kann den bestehenden Final-V4-Bestand sowie den bewusst umgestellten
+V7-Bestand öffnen. Ein gewöhnlicher Start erkennt Final V4 und bietet den Assistenten an.
+Ohne Zustimmung erfolgt keine Umstellung. Die
 neuen Unterrichtszeitvorlagen, Stammgruppen-/Mehrfachfachstunden und
 A-/B-Wochen benötigen V7.
 
@@ -65,31 +66,33 @@ Beispielschüler, Beispielbeobachtungen und Testbackups bleiben leer.
 Auch ein neuer Bestand wird erst nach abgeschlossenem First Run bewusst auf
 V7 umgestellt.
 
-## Betreutes Update von 0.4.4 / Build 404
+## Update von Build 404 oder 405 auf Build 406
 
 ### Vorbereiten
 
 1. Vorhandenes App-Passwort, sichere Recovery-Codes und Zugang zum ursprünglichen
    macOS-Benutzerkonto sicherstellen. Schlüsselbundobjekte erhalten.
-2. In Build 404 unter `Einstellungen > Datensicherung` mit `Backup erstellen`
+2. In Build 404 oder 405 unter `Einstellungen > Datensicherung` mit `Backup erstellen`
    ein vollständiges verschlüsseltes `.jkmebackup` anlegen und mit
    `Backup prüfen …` prüfen. Den Sicherungszeitpunkt festhalten und die
    Sicherung geschützt aufbewahren.
 3. Genügend freien Speicher für App, Bestand und vollständige Sicherungen
-   bereitstellen. Anschließend die App vollständig beenden und Build 405 wie
+   bereitstellen. Anschließend die App vollständig beenden und Build 406 wie
    oben installieren.
-4. Im gewöhnlichen Build-405-Start die bestehende Anmeldung und den vorhandenen
-   V4-Bestand prüfen. Danach die App wieder vollständig beenden.
+4. Im gewöhnlichen Build-406-Start die bestehende Anmeldung und den vorhandenen
+   Assistenten lesen, Zustimmung setzen und `Aktualisierung starten` wählen.
+   `Später` verschiebt die Umstellung. Nach geprüftem Backup und Migration
+   startet die App neu; das bisherige Passwort bleibt gültig.
 
 Ein extern aufbewahrtes `.jkmebackup` bleibt vom ursprünglichen lokalen
 Schlüsselkontext abhängig. Es ist kein unabhängig auf jedem anderen Mac
 nutzbares Wiederherstellungsmedium.
 
-### V4 bewusst auf V7 umstellen
+### Technischer Wartungsaufruf ausschließlich für die Supportbetreuung
 
 Die Pilotbetreuung ermittelt den bestehenden kanonischen Datenroot. Im
 Standardfall liegt er unter `~/Library/Application Support/Jenaplan-Kompetenzmanager`.
-Für den Wartungsstart ist dessen vollständiger absoluter, aufgelöster Pfad
+Nur für die Supportbetreuung, nicht als normaler Lehrkraftweg: Für den Wartungsstart ist dessen vollständiger absoluter, aufgelöster Pfad
 anzugeben. Nicht auf einen neuen Ordner, eine Datenkopie oder einen
 Testbestand zeigen.
 
@@ -221,7 +224,7 @@ Reset-Hinweise der Oberfläche erweitern diese Grenze nicht.
   die Betreuung klären lassen.
 - **Datenbankschema inkompatibel / alte App nach Migration gestartet:**
   Build unter `Über die App` beziehungsweise anhand der gestarteten Datei
-  prüfen. Eine V7-Installation mit Build 405 starten. Bei Build 404 ist die
+  prüfen. Eine V7-Installation mit Build 406 starten. Bei Build 404 ist die
   V7-Ablehnung erwartet; kein neues Konto, kein Reset und kein Downgrade
   durch bloßen Austausch der App. Bei weiterem sicheren Halt Betreuung
   hinzuziehen.

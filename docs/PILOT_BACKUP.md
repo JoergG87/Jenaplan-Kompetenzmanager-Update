@@ -72,34 +72,17 @@ Das vorhandene App-Konto und sein Passwort werden aus diesem Fachbackup nicht
 zurückgesetzt. V7-Backups verlangen den passenden V7-Restorevertrag; V4-Backups
 sind keine direkt einspielbaren V7-Sicherungen.
 
-## Update von 0.4.4/404 auf 0.5.0/405
+## Update von Build 404 oder 405 auf 0.5.1 / Build 406
 
-Das App-Update und die V4→V7-Datenumstellung sind getrennte Vorgänge.
+Vor dem Update eine vollständige verschlüsselte `.jkmebackup` erstellen und gesondert prüfen. Die Sicherung geschützt erhalten.
 
-1. In der bestehenden Installation ein vollständiges V4-`.jkmebackup`
-   erstellen und mit `Backup prüfen …` gesondert verifizieren. Vorhandene
-   Zugangsdaten und Recovery-Codes geschützt verfügbar halten.
-2. Die freigegebene Build-405-App nach Installationsanleitung übernehmen.
-   Keine Daten- oder Schlüsseldateien ersetzen. Der normale 405-Start lässt
-   einen vorhandenen V4-Bestand unverändert.
-3. Die ausdrücklich vereinbarte V4→V7-Wartung durch die technische Betreuung
-   ausführen lassen. Währenddessen alle normalen App-Instanzen geschlossen
-   halten, den Mac nicht ausschalten und keine alte App starten.
-4. Die Wartung prüft Quelle und vorhandene Schlüssel, erstellt ein weiteres
-   vollständiges verschlüsseltes V4-Quellbackup und prüft es unabhängig erneut.
-   Erst danach folgen die Datenbanktransaktion und die erneute vollständige
-   Zielprüfung mit frischem Programmabbild. Das Quellbackup bleibt erhalten.
-5. Nach kontrolliertem Neustart mit dem bestehenden Passwort anmelden.
-   Kinder, Zuordnungen, Beobachtungen, Bewertungen, Dokumente, Berichte/LEG
-   und Stundenplan prüfen. Bestehende Stunden gelten zunächst für beide
-   Wochen; der A-/B-Rhythmus muss bewusst eingerichtet werden.
-6. Anschließend ein neues V7-`.jkmebackup` erstellen und gesondert prüfen.
-   Das ältere vollständige V4-Backup geschützt als Rückfallquelle behalten.
+Nach dem Update über den bestehenden Pilotkanal erkennt Build 406 einen vorhandenen Final-V4-Bestand automatisch. Melden Sie sich mit Ihrem bisherigen Passwort an. Der Dialog `Datenbestand aktualisieren` erklärt Sicherung, Umstellung und Rückkehrgrenze. Lesen Sie die Hinweise, setzen Sie `Ich möchte die Aktualisierung jetzt starten.` und wählen Sie `Aktualisierung starten`. Mit `Später` verschieben Sie die Umstellung; es wird nichts migriert.
 
-Der Wartungseinstieg und die Abschlussprüfung sind in der technischen
-macOS-Installationsanleitung beschrieben. Es gibt keinen automatischen
-Migrationsschritt beim normalen Start und keinen Migrationsknopf im
-Stundenplan.
+Die App erstellt eine vollständige verschlüsselte V4-Sicherung und prüft sie unabhängig. Erst danach folgt die kontrollierte Umstellung nach V7. Lassen Sie den Mac eingeschaltet und starten Sie keine zweite App. Die Anzeige nennt die tatsächlichen Phasen; es gibt keine Prozentprognose. Nach vollständiger Zielprüfung startet die App regulär neu. Melden Sie sich mit dem bisherigen Passwort an und prüfen Sie Ihre Daten. Bereits vollständig aktualisierte V7-Bestände werden nicht erneut migriert.
+
+Bei einem Fehler bleiben Bestand, Sicherungen und Wartungsbelege erhalten. Notieren Sie Version/Build, Zeitpunkt, Handlung und den personenfreien Supporthinweis. Wenden Sie sich an die Pilotbetreuung; senden Sie keine Passwörter, Recovery-Codes, Schlüssel oder Schülerdaten ungeschützt. Nur wenn die App `Abschluss prüfen` anbietet, kann dieser bewusst bestätigt werden. Keine Dateien löschen, keinen neuen Bestand anlegen und keine alte App als Reparatur starten. Terminalbefehle sind für Lehrkräfte nicht erforderlich.
+
+Nach erfolgreichem Neustart Kinder, Zuordnungen, Beobachtungen, Bewertungen, Dokumente, Berichte/LEG und Stundenplan prüfen. Ein neues V7-Backup erstellen und prüfen. Die vollständige V4-Quellsicherung bleibt Rückfallquelle. V4- und V7-Backups sind nicht austauschbar. Der technische Wartungsaufruf ist ausschließlich in der macOS-Supportanleitung beschrieben.
 
 > [!WARNUNG]
 > Build 404 kann eine V7-Datenbank nicht öffnen. Ein Downgrade ist nicht durch

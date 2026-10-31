@@ -2,9 +2,9 @@
 
 ## V7-Pilotupdate {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
-Nach der bewussten Wartungsumstellung stehen A-/B-Wochen mit manuellen Ausnahmen, globale Unterrichtszeitvorlagen, Stammgruppenstunden und kombinierte Fächer zur Verfügung. Eine Beobachtung aus einer kombinierten Stunde verlangt eine eindeutige Fachwahl. Fachpflanzen zeigen den vorhandenen Kompetenzstand; Kalender, Eingabefelder und Kompetenzansicht wurden verbessert. Die Wochenumschaltung ist deutlich schneller.
+Nach der bewusst bestätigten Umstellung im Migrationsassistenten stehen A-/B-Wochen mit manuellen Ausnahmen, globale Unterrichtszeitvorlagen, Stammgruppenstunden und kombinierte Fächer zur Verfügung. Eine Beobachtung aus einer kombinierten Stunde verlangt eine eindeutige Fachwahl. Fachpflanzen zeigen den vorhandenen Kompetenzstand; Kalender, Eingabefelder und Kompetenzansicht wurden verbessert. Die Wochenumschaltung ist deutlich schneller.
 
-Die Installation des Updates allein verändert das Schema nicht. Die Pilotbetreuung führt den ausdrücklich beschriebenen Wartungsweg aus der Installationsanleitung aus. Im qualifizierten Updateablauf bleiben vorhandene Zugangsdaten und Daten erhalten. Vor jedem Schemawechsel wird ein verschlüsseltes Vollbackup unabhängig geprüft; bei Problemen hält die Wartung kontrolliert an. Nach der Umstellung verwenden Backup und Restore den V7-Vertrag. Eine Rückkehr zu einem älteren V4-Backup kann Änderungen seit dessen Erstellung verlieren.
+Die Installation des Updates allein verändert das Schema nicht. Build 406 erkennt Final V4 automatisch und bietet nach der bisherigen Anmeldung den Migrationsassistenten an. Erst Ihre Zustimmung startet die Umstellung. Im qualifizierten Updateablauf bleiben vorhandene Zugangsdaten und Daten erhalten. Vor jedem Schemawechsel wird ein verschlüsseltes Vollbackup unabhängig geprüft; bei Problemen hält die Wartung kontrolliert an. Nach der Umstellung verwenden Backup und Restore den V7-Vertrag. Eine Rückkehr zu einem älteren V4-Backup kann Änderungen seit dessen Erstellung verlieren.
 
 ## 1. Titel und Versionsstand
 
@@ -92,7 +92,7 @@ Start werden vorhandene Fachdaten nicht durch Beispiel- oder Pilotdaten
 ersetzt. Der genaue Speicherort muss im Schulalltag nicht manuell verändert
 werden.
 
-### Update von 0.4.4 / Build 404
+### Update von Build 404 oder 405 auf Build 406
 
 Erstellen und prüfen Sie vor dem Update eine vollständige verschlüsselte
 Sicherung. Halten Sie Ihr bisheriges Passwort und die sicher verwahrten
@@ -100,14 +100,19 @@ Recovery-Codes bereit. Das neue App-Paket ersetzt keine fehlenden lokalen
 Schlüssel. Die bisherige geschützte Installation und ihr macOS-Benutzerkonto
 müssen erhalten bleiben.
 
-Build {{PILOT_BUILD}} kann einen intakten V4-Bestand zunächst unverändert
-öffnen. Erst die bewusst gestartete, betreute Wartung stellt ihn auf V7 um.
-Währenddessen die App geschlossen lassen, keine zweite Version starten und
-den Wartungsabschluss abwarten. Danach Build {{PILOT_BUILD}} regulär öffnen,
-mit dem bisherigen Passwort anmelden und Kinder, Beobachtungen, Dokumente und
-Stundenplan prüfen. Anschließend ein neues V7-Backup erstellen und prüfen.
-Die genauen Schritte und Stoppfälle stehen in der Installations- und
-Backupanleitung.
+Nach dem Update über den bestehenden Pilotkanal erkennt Build 406 einen vorhandenen Final-V4-Bestand automatisch. Melden Sie sich mit Ihrem bisherigen Passwort an. Der Dialog `Datenbestand aktualisieren` erklärt Sicherung, Umstellung und Rückkehrgrenze. Lesen Sie die Hinweise, setzen Sie `Ich möchte die Aktualisierung jetzt starten.` und wählen Sie `Aktualisierung starten`. Mit `Später` verschieben Sie die Umstellung; es wird nichts migriert.
+
+Die App erstellt eine vollständige verschlüsselte V4-Sicherung und prüft sie unabhängig. Erst danach folgt die kontrollierte Umstellung nach V7. Lassen Sie den Mac eingeschaltet und starten Sie keine zweite App. Die Anzeige nennt die tatsächlichen Phasen; es gibt keine Prozentprognose. Nach vollständiger Zielprüfung startet die App regulär neu. Melden Sie sich mit dem bisherigen Passwort an und prüfen Sie Ihre Daten. Bereits vollständig aktualisierte V7-Bestände werden nicht erneut migriert.
+
+Bei einem Fehler bleiben Bestand, Sicherungen und Wartungsbelege erhalten. Notieren Sie Version/Build, Zeitpunkt, Handlung und den personenfreien Supporthinweis. Wenden Sie sich an die Pilotbetreuung; senden Sie keine Passwörter, Recovery-Codes, Schlüssel oder Schülerdaten ungeschützt. Nur wenn die App `Abschluss prüfen` anbietet, kann dieser bewusst bestätigt werden. Keine Dateien löschen, keinen neuen Bestand anlegen und keine alte App als Reparatur starten. Terminalbefehle sind für Lehrkräfte nicht erforderlich.
+
+Eine Neuinstallation legt zunächst einen leeren verschlüsselten Final-V4-Bestand an. Nach abgeschlossener Einrichtung wird der Assistent beim folgenden Programmstart angeboten. Es gibt keine direkte V7-Erstanlage.
+
+![Datenbestand aktualisieren: Zustimmung vor dem Start](screenshots/31_migration_consent.png)
+
+![Abschluss nach Unterbrechung erneut prüfen](screenshots/32_migration_completion.png)
+
+Die Abbildungen zeigen aktuelle Qt-Dialoge mit synthetischem Kontext. Sie sind keine Aufnahme einer echten Schülerinstallation und kein zusätzlicher Migrationsnachweis.
 
 > [!WARNUNG]
 > Build 404 kann eine V7-Datenbank nicht öffnen. Eine Rückkehr ist kein
@@ -204,7 +209,7 @@ automatisch an.
 
 Auch eine frische Installation von Build {{PILOT_BUILD}} legt zunächst einen
 geschützten V4-Bestand an. Die erweiterten Stundenplanfunktionen werden erst
-durch die bewusst gestartete betreute V4→V7-Wartung verfügbar.
+durch die bewusst bestätigte Umstellung im Migrationsassistenten verfügbar.
 
 Für den frischen Pilotbestand gehen Sie in dieser Reihenfolge vor:
 
@@ -780,8 +785,7 @@ auch wenn ein aktueller Katalogbezug später nicht mehr auswählbar ist.
 Der frische Pilot startet mit dem aktuellen Schuljahr `2026/27` vom 01.08.2026
 bis 31.07.2027. Schüler, Gruppen, Kurse und Beobachtungen legt die Lehrkraft
 selbst an. Vorhandene ältere lokale Daten- oder Testbestände werden nicht
-automatisch übernommen. Ein vorhandener V4-Produktbestand wird nur über den ausdrücklich
-betreuten V4→V7-Wartungsweg umgestellt.
+automatisch übernommen. Ein vorhandener V4-Produktbestand wird nur über den bewusst bestätigten Migrationsassistenten umgestellt.
 
 Fachprofile werden pro Schüler und Schuljahr geführt. Änderungen für ein
 historisches Schuljahr sind nicht Teil der normalen nachträglichen Pflege.
@@ -836,7 +840,7 @@ historisches Schuljahr sind nicht Teil der normalen nachträglichen Pflege.
 
 > [!HINWEIS]
 > Backup und Restore verwenden das verschlüsselte, installationsgebundene
-> `.jkmebackup`. V4 wird nur durch die ausdrücklich gestartete Wartung auf V7
+> `.jkmebackup`. V4 wird nur durch die bewusst bestätigten Migrationsassistenten auf V7
 > umgestellt. Allgemeine Geräteportabilität und Wiederherstellung verlorener
 > lokaler Schlüssel sind damit nicht verbunden.
 

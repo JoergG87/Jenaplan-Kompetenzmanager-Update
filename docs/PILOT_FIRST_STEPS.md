@@ -12,22 +12,17 @@ Cloud und keine KI-Verarbeitung von Fachdaten. Das App-Passwort schützt den
 Zugang; Fachdaten und verwaltete Dokumente werden im lokalen Produktbereich
 verschlüsselt gespeichert. Recovery-Codes getrennt vom Mac sicher aufbewahren.
 
-## 2. Build 405 und die bewusste V7-Umstellung
+## 2. Build 406 und der Migrationsassistent
 
-Bei einem Update das bisherige Passwort weiterverwenden. Das Ersetzen der
-App migriert keine Daten. Ein gewöhnlicher Start belässt einen bestehenden
-V4-Bestand in V4; auch eine frische Installation beginnt in V4. Die
-Pilotbetreuung aktiviert V7 über den ausdrücklich vorgesehenen Wartungsweg
-nach abgeschlossenem First Run und vollständiger geprüfter V4-Sicherung.
-Die Wartung erstellt zusätzlich ein unabhängig geprüftes verschlüsseltes
-Quellbackup. Anschließend startet die App kontrolliert neu.
+Nach dem Update über den bestehenden Pilotkanal erkennt Build 406 einen vorhandenen Final-V4-Bestand automatisch. Melden Sie sich mit Ihrem bisherigen Passwort an. Der Dialog `Datenbestand aktualisieren` erklärt Sicherung, Umstellung und Rückkehrgrenze. Lesen Sie die Hinweise, setzen Sie `Ich möchte die Aktualisierung jetzt starten.` und wählen Sie `Aktualisierung starten`. Mit `Später` verschieben Sie die Umstellung; es wird nichts migriert.
 
-Mit dem bisherigen Passwort anmelden, vorhandene Daten und Dokumente prüfen
-und ein neues V7-Backup erstellen und prüfen. Bei einer Fehlermeldung Bestand
-und Quellbackup erhalten und die Betreuung hinzuziehen. Keine Einzeldateien
-kopieren, Schlüssel neu erzeugen oder die alte App als Reparatur starten.
-Build 404 kann V7 nicht öffnen. Eine betreute Rückkehr zu V4 benötigt eine
-vollständige V4-Sicherung und kann spätere Änderungen verlieren.
+Die App erstellt eine vollständige verschlüsselte V4-Sicherung und prüft sie unabhängig. Erst danach folgt die kontrollierte Umstellung nach V7. Lassen Sie den Mac eingeschaltet und starten Sie keine zweite App. Die Anzeige nennt die tatsächlichen Phasen; es gibt keine Prozentprognose. Nach vollständiger Zielprüfung startet die App regulär neu. Melden Sie sich mit dem bisherigen Passwort an und prüfen Sie Ihre Daten. Bereits vollständig aktualisierte V7-Bestände werden nicht erneut migriert.
+
+Bei einem Fehler bleiben Bestand, Sicherungen und Wartungsbelege erhalten. Notieren Sie Version/Build, Zeitpunkt, Handlung und den personenfreien Supporthinweis. Wenden Sie sich an die Pilotbetreuung; senden Sie keine Passwörter, Recovery-Codes, Schlüssel oder Schülerdaten ungeschützt. Nur wenn die App `Abschluss prüfen` anbietet, kann dieser bewusst bestätigt werden. Keine Dateien löschen, keinen neuen Bestand anlegen und keine alte App als Reparatur starten. Terminalbefehle sind für Lehrkräfte nicht erforderlich.
+
+Eine Neuinstallation legt zunächst einen leeren verschlüsselten Final-V4-Bestand an. Nach abgeschlossener Einrichtung wird der Assistent beim folgenden Programmstart angeboten. Es gibt keine direkte V7-Erstanlage.
+
+Build 404 kann V7 nicht öffnen. Eine betreute Rückkehr benötigt eine vollständige V4-Sicherung im ursprünglichen Schlüsselkontext; spätere Änderungen können verloren gehen.
 
 ## 3. Vorbereitete Arbeitsgrundlage
 

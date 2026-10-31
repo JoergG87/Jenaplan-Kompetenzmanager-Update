@@ -510,7 +510,16 @@ def capture(output: Path) -> tuple[Path, ...]:
             )
         )
 
+    from src.desktop_app.product_migration_dialog import ProductMigrationDialog
+    for completing, name in ((False, "31_migration_consent.png"),
+                             (True, "32_migration_completion.png")):
+        dialog = ProductMigrationDialog(completing=completing)
+        dialog.consent.setChecked(True)
+        captured.append(_capture(dialog, output, name, width=680, height=600))
+
     expected = {
+        "31_migration_consent.png",
+        "32_migration_completion.png",
         "01_dashboard.png",
         "02_observation_dialog.png",
         "04_student_profile_overview.png",

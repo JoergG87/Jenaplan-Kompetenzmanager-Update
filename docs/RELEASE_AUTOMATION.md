@@ -999,3 +999,22 @@ Paketquelle `ddaee98594ec4d20bb092898ff282000260f1c9f` sauber gebaut; Notice-/Wh
 Direkte V7-Erstanlage ist ohne neuen First-Run-/Restartvertrag nicht aus vorhandenem Initialisierer verfügbar; gemäß Auftragsausnahme bleibt die begründete UX-Einschränkung V4-Erstanlage mit geführtem Folgestartübergang. Kein neues Schema und keine Architekturausweitung. Frühere offene UI-Gates sind durch diese spätere Abnahme geschlossen. Vollständiger Bericht einschließlich separat protokolliertem fehlgeschlagenem historischen Binding-Zusatzlauf: `release/output/migration-assistant-406/FINAL406_GATE_REPORT.md`.
 
 **BUILD 406 ALS RELEASEKANDIDAT QUALIFIZIERT**. Dauerhaftes DMG: `release/output/0.5.1-build406-ddaee98594ec/Jenaplan-Kompetenzmanager-0.5.1-macOS-arm64.dmg`, SHA256 `cf09b5550dfcd87ccffc19e4754c9b997101e3b1b749f00ecad76d393e65f387`; alle Hashes in `SHA256SUMS-ALL-406.txt`. Keine Veröffentlichung, Push, Tags oder Feedänderung; Build405 und fremde Änderungen erhalten. STOP.
+
+
+## Build 406 – Veröffentlichungsvorbereitung 01.11.2026
+
+PO-Auftrag: keine Veröffentlichung, keine Fachfunktionen. Drei historische
+Sprint-11-Smokes gezielt reproduziert: historischer Defaultprovider erwartet
+Binding 0.6.2 / SQLCipher 4.12, installiert ist das qualifizierte 4.17-Binding.
+Alle drei scheitern vor den jeweiligen Manipulationsprüfungen mit
+`sqlcipher_binding_version_incompatible`. Produktkomposition übergibt explizit
+4.17; historische Module sind im Produktspec ausgeschlossen. Kein Produktfix,
+keine neuen Skips oder gelockerten Prüfungen. Einzelbelege und Releaseabschluss
+unter `release/output/406-publication-preparation/`.
+
+Acht bestehende Dokumentprofile gezielt auf Assistent, V4-Erstanlage,
+404/405→406, Passwortkontinuität, Backup/Restore und Rückkehrgrenze nachgeführt.
+Synthetische Qt-Dialogabbildungen ergänzt. Eingebettete PDFs benötigen neuen
+Pipelinekandidaten und erneute betroffene Paketgates. Build 405 und bisheriger
+406-Kandidat bleiben unverändert. Remoteprüfung lesend: 405 veröffentlicht,
+406-Tag/Release nicht vorhanden, Stable-Verzeichnis nicht vorhanden.

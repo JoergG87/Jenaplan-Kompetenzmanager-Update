@@ -1,8 +1,9 @@
 # Pilot-Dokumentinventar
 
-Stand: 31. Oktober 2026 - 0.5.0 / Build 405, Produktcode `38f6e8c5c2d9`.
-Build 405 ist bei der Bestandsaufnahme unveröffentlicht; öffentlich ist
-weiterhin 0.4.4 / Build 404. Historische Unterlagen bleiben erhalten.
+Stand: 1. November 2026 - 0.5.1 / Build 406. Build 405 ist im Pilotkanal
+veröffentlicht und bleibt unverändert. Produktbasis: `ddaee98`.
+Der neue Dokumentationskandidat wird über die bestehende Pipeline gebaut;
+seine exakte Paketquelle steht im Releasemanifest. Keine Veröffentlichung.
 
 ## Wartbare Quellen und tatsächliche Auslieferung
 
@@ -24,7 +25,7 @@ eingesetzt. Das bestehende A4-Design bleibt erhalten.
 | `docs/SUPPORT_ASSISTANT_OPERATIONS.md` | kein weiteres PDF / Support | Markdown in Dokumentations-ZIP; getrenntes Supportwerkzeug, keine Schlüssel im Lehrkraftpaket |
 | `docs/DATA_LIFECYCLE.md` | kein weiteres PDF / technische Betreuung | Technischer Vertrag in Dokumentations-ZIP; aktuelle Einordnung vor erhaltenen historischen Abschnitten |
 | `docs/PILOT_DOCUMENT_INVENTORY.md` | dieses Inventar / Betreuung und Release | Markdown in Dokumentations-ZIP |
-| `packaging/THIRD_PARTY_NOTICES_SECURITY_0.3.0.md` | vorhandener Dateiname bleibt Packaging-Vertrag | App-Bundle `third_party_licenses/` und Dokumentations-ZIP; aktuelle Build-405-Komponenten |
+| `packaging/THIRD_PARTY_NOTICES_SECURITY_0.3.0.md` | vorhandener Dateiname bleibt Packaging-Vertrag | App-Bundle `third_party_licenses/` und Dokumentations-ZIP; aktuelle Build-406-Komponenten |
 | `packaging/THIRD_PARTY_NOTICES_SQLCIPHER_4_17_MACOS.md` | Datenbankprovider und Lizenztexte | App-Bundle `third_party_licenses/` und Dokumentations-ZIP |
 | `packaging/licenses/sqlcipher-4.17.0/` und `packaging/licenses/sqlcipher3-0.6.2/LICENSE` | Originaltexte / Betreuung | Originaltexte in Dokumentations-ZIP; Binding-/SQLCipher-/SQLite-Texte auch in Bundle-Distributionsmetadaten |
 | `scripts/backup_macos_pilot.sh` | historische Backup-Hilfsdatei | bleibt erhalten; im Cipher-Produktpfad ausdrücklich gesperrt, kein empfohlenes Backupverfahren |
@@ -36,27 +37,24 @@ Technische Ergänzungen bleiben in vorhandenen Quellen, ohne paralleles Handbuch
 
 ## Paketbindung und Gültigkeit alter Nachweise
 
-Die Revision betrifft auch zwei eingebettete Lizenzhinweise sowie das
-Erste-Schritte-PDF; außerdem ändert sich das Installations-PDF im DMG.
-Eine reine ZIP-Erneuerung würde widersprüchliche Unterlagen ausliefern.
-Der gehashte Ausgangskandidat unter
-`release/output/0.5.0-build405-38f6e8c5c2d9/` bleibt unverändert.
+Die Revision betrifft das Erste-Schritte-PDF im App-Bundle und das
+Installations-PDF im DMG. Deshalb wird über `scripts/build_macos_pilot.sh`
+ein neuer Kandidat erzeugt, regulär versiegelt und signiert. Kein signiertes
+Paket wird nachträglich editiert. Der qualifizierte Ausgangskandidat unter
+`release/output/0.5.1-build406-ddaee98594ec/` bleibt unverändert.
 
-Die neue Dokumentationsrevision liegt getrennt unter
-`release/output/0.5.0-build405-docrevision-20261031/`. Ein daraus erstelltes
-App-/DMG-Paket benötigt neue Ressourcenversiegelung, Signaturprüfung,
-DMG-Integrität, eingebetteten Dokumentvergleich und neue Hash-/Manifestbindung.
-Code- und native Ressourcenidentität müssen vor Übernahme unveränderter
-Produktprüfungen belegt sein. Alte Paket-, Signatur- und Sparkle-Nachweise
-gelten nicht automatisch für geänderte Bytes; offene Prüfungen bleiben offen.
-Keine Veröffentlichung oder Änderung des öffentlichen Appcasts ist enthalten.
+Separat veröffentlicht werden nach PO-Freigabe die vier konfigurierten Assets:
+DMG, Dokumentations-ZIP, Prüfsummenliste und Releaseinventar. Die acht PDFs
+liegen vollständig in der ZIP und lokal zusätzlich einzeln vor. Release Notes
+liegen als PDF in der ZIP, als Markdown für GitHub und als signiertes HTML
+für Sparkle vor. Manifest und Signaturbericht binden die endgültigen Bytes.
 
 ## Screenshots, Generatoren und PDF-Abnahme
 
 `scripts/capture_user_manual_screenshots.py` erzeugt die verwendeten Qt-Bilder
 mit ausschließlich synthetischem temporärem Bestand und aktuellen
 V7-Projektionen. Unterrichtszeiten, Stammgruppen-/Mehrfachfachstunden,
-A-/B-Wochen mit Einzelwochenkorrektur und Fachpflanzen erhalten gezielte
+A-/B-Wochen mit Einzelwochenkorrektur, Fachpflanzen und Migrationsdialoge erhalten gezielte
 Abbildungen. Produktinstallation und vorhandene Schlüssel werden nicht geöffnet.
 Die fachliche Oberfläche entspricht dem freigegebenen Code; die synthetische
 Fixture ist kein Beleg für Paket-, Verschlüsselungs- oder Releasegates.
@@ -70,7 +68,7 @@ Revisionsbericht und in den zugehörigen Prüfdateien im neuen Kandidatenordner.
 
 | Bestand | Einordnung |
 |---|---|
-| `docs/user_manual/*Build-302*.pdf` | acht PDFs: historisch, nicht übergeben; unverändert und nicht in der Build-405-ZIP |
+| `docs/user_manual/*Build-302*.pdf` | acht PDFs: historisch, nicht übergeben; unverändert und nicht in der Build-406-ZIP |
 | `docs/SECURITY_RELEASE_0_3_0.md` | historischer Build-303-Nachweis, keine aktuelle Bedienanleitung |
 | `docs/ENCRYPTION_AND_SUPPORT_RESET_PREANALYSIS.md` | historische Voranalyse, kein aktueller Funktionsvertrag |
 | `docs/LAURA_PILOTTEST.md`, `docs/laura_pilottest_feedback.csv`, `scripts/build_laura_pilot_package.py` | frühere Testübergabe; alter portabler Laura-Testdatenpfad im Cipher-Produktbuild gesperrt |
@@ -79,4 +77,4 @@ Revisionsbericht und in den zugehörigen Prüfdateien im neuen Kandidatenordner.
 
 Historische Technikabschnitte dokumentieren ihren damaligen Stand. Sie werden
 nicht rückwirkend auf V7 umgeschrieben und ersetzen die aktuellen
-Build-405-Anleitungen nicht.
+Build-406-Anleitungen nicht.

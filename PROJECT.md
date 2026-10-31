@@ -2010,3 +2010,22 @@ Katalogfix 5e377b1: unbeabsichtigte Opacity-Effekte an Aufklappüberschriften en
 ## Migrationsassistent – Vorbereitung 406
 
 Geführter V4→V7-Einstieg, automatisch gebundener Runtimepfad, ausdrückliche Zustimmung, vorhandene Wartungs-/Abschlussprozesse und reale Fortschrittsphasen. Keine neue Engine oder Schemakante. Paketierte 404/405→406-Keychain-/Sparkleabnahme bleibt ein eigenständiges Kandidatengate.
+
+
+## Build 406 – Veröffentlichungsvorbereitung 01.11.2026
+
+PO-Auftrag: keine Veröffentlichung, keine Fachfunktionen. Drei historische
+Sprint-11-Smokes gezielt reproduziert: historischer Defaultprovider erwartet
+Binding 0.6.2 / SQLCipher 4.12, installiert ist das qualifizierte 4.17-Binding.
+Alle drei scheitern vor den jeweiligen Manipulationsprüfungen mit
+`sqlcipher_binding_version_incompatible`. Produktkomposition übergibt explizit
+4.17; historische Module sind im Produktspec ausgeschlossen. Kein Produktfix,
+keine neuen Skips oder gelockerten Prüfungen. Einzelbelege und Releaseabschluss
+unter `release/output/406-publication-preparation/`.
+
+Acht bestehende Dokumentprofile gezielt auf Assistent, V4-Erstanlage,
+404/405→406, Passwortkontinuität, Backup/Restore und Rückkehrgrenze nachgeführt.
+Synthetische Qt-Dialogabbildungen ergänzt. Eingebettete PDFs benötigen neuen
+Pipelinekandidaten und erneute betroffene Paketgates. Build 405 und bisheriger
+406-Kandidat bleiben unverändert. Remoteprüfung lesend: 405 veröffentlicht,
+406-Tag/Release nicht vorhanden, Stable-Verzeichnis nicht vorhanden.
