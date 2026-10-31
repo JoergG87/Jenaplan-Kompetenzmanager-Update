@@ -5788,3 +5788,36 @@ Pipelinekandidaten und erneute betroffene Paketgates. Build 405 und bisheriger
 Externe Dokumentationsnachführung: Support-Reset-/Assistentenhinweise und Dokumentstand auf 406 aktualisiert; aktuelle synthetische Versionsabbildung ersetzt. Keine Änderung eingebetteter PDFs oder Produktressourcen.
 
 Build-406-Handbuch: expliziter Seitenwechsel vor der Updateanleitung verhindert einen zu engen Umbruch unter der Versionsabbildung. Betrifft ausschließlich die externe Dokumentations-ZIP; DMG unverändert.
+
+
+## Build 406 – finales Auslieferungsset / Schlüsselkontinuität noch offen
+
+Finales Set: `release/output/0.5.1-build406-final-20261101/`.
+Paketquelle `4f478de`, unveränderte qualifizierte Produktbasis `ddaee98`,
+externe Dokumentationsquelle `1bfcfe3`. Acht PDFs / 63 Seiten und 27 aktuelle
+synthetische Abbildungen in vollständiger geprüfter ZIP. Die Handbuchrevision
+ändert nur externe Dokumentation; der neue Pipeline-DMG bleibt bytegleich.
+Elf Paketgates und Restore-Worker-Smoke am neuen DMG bestanden. Alle 211
+Frozen-Projektmodule plus Main sowie 775 Frameworkdateien entsprechen dem
+qualifizierten 406; DMG-App und geprüftes Bundle stimmen in 6196 Einträgen
+überein, eingebettete PDFs bytegleich mit Pipelineausgabe.
+
+Alle vier Veröffentlichungsassets, Sparkle-Notes und ausschließlich lokal
+bereitgestellter Feed sind Ed25519-signiert und unabhängig gegen den
+bestehenden Pilot-Vertrauensschlüssel geprüft. Nativ mit Sparkle bestätigt:
+406 > 404 und 406 > 405, gleiche Bundle-ID/Feed/Public Key. Öffentlicher
+405-Feed kryptografisch geprüft; alte Einträge im lokalen Feed erhalten.
+
+Zusätzliches Pflichtgate des neuen Ad-hoc-Codehashs bleibt offen: vorhandene
+synthetische 404-/405-Schlüsselkontexte warten auf reguläre macOS-Freigabe.
+Zwei enge Bestandsproben liefen in Timeout; neuer Prüfprozess hängt belegt in
+SecItemCopyMatching, securityd protokolliert die angeforderte ACL-Rückfrage.
+Keine Lock-/ACL-Umgehung, Schlüsselkopie oder Rotation. Benutzer um die
+Systemfreigabe gebeten. Keine bestätigte neue P0/P1, aber NO-GO für vollständige
+Veröffentlichungsvorbereitung bis dieses neue Paketgate nachgewiesen ist.
+Die ursprünglichen nativen 404/405→406-Nachweise ersetzen es nicht.
+
+Alle sechs fremden Dokumentänderungen erhalten, Index getrennt gehalten.
+Keine Veröffentlichung, kein Push/Tag/Release/Appcastupdate/Stable-Rollout.
+Bericht und Hashes im finalen Set. Gesonderte ausdrückliche PO-Freigabe und
+öffentliche Auslieferungsprüfung bleiben spätere Veröffentlichungsschritte.
