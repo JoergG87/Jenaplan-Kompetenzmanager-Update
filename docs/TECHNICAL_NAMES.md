@@ -3784,3 +3784,5 @@ Profilperformance 29.10.2026: `reset_competency_cockpit_filters(render=False)` s
 product_migration_dialog.ProductMigrationDialog, ask_product_migration, show_product_migration_success/error sind reine UI-Ports. main._offer_product_migration und _restart_product_migration koordinieren den bestätigten Einstieg. --guided-v7-migration aktiviert ausschließlich die UI des bestehenden Wartungsprozesses; --v7-migration-completed meldet nach regulärem verifiziertem V7-Start Erfolg.
 
 Wartungsports: _perform_maintenance, _restart_maintenance, _run_guided_maintenance und _PHASE_TEXT. _offer_product_migration_completion bietet nur den vorhandenen Abschluss mit expliziter Zustimmung an.
+
+Geführte Workerdiagnose: support_phase enthält ausschließlich initialization oder bekannte _PHASE_TEXT-Schlüssel; support_error ausschließlich freigegebene Klassenbezeichnungen oder other. Keine Exceptiontexte werden übernommen.

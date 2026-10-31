@@ -143,6 +143,6 @@ aufbewahrt werden.
 
 Nach dem Programmupdate melden Sie sich wie gewohnt an. Bei einem älteren Datenbestand erscheint „Datenbestand aktualisieren“. Lesen Sie die Hinweise, setzen Sie die Zustimmung und wählen Sie „Aktualisierung starten“. Eine vollständige verschlüsselte Sicherung wird automatisch erstellt und unabhängig geprüft. Lassen Sie den Mac währenddessen eingeschaltet. Die Anwendung startet nach erfolgreicher Prüfung neu; melden Sie sich mit Ihrem bisherigen Passwort an.
 
-Mit „Später“ bleibt der bisherige Datenbestand erhalten. Bereits aktualisierte Daten werden nicht erneut umgestellt. Neue Installationen beginnen weiterhin mit dem bisherigen Initialisierungspfad und erhalten anschließend dasselbe Angebot.
+Mit „Später“ bleibt der bisherige Datenbestand erhalten. Bereits aktualisierte Daten werden nicht erneut umgestellt. Neue Installationen beginnen weiterhin mit dem bisherigen Initialisierungspfad und erhalten beim folgenden Programmstart dasselbe Angebot.
 
 Bei einem Fehler bleiben Daten, Sicherung und Wartungsbelege erhalten. Wiederholen Sie den Vorgang nicht unkontrolliert. Wenn die Anwendung einen Abschluss anbietet, kann dieser bewusst gestartet werden; dabei werden die gespeicherten Daten erneut vollständig geprüft. Andernfalls wenden Sie sich an die Pilotbetreuung. Es sind keine Terminalbefehle, Pfadangaben oder manuellen Dateikopien erforderlich. Build 404 kann aktualisierte V7-Daten nicht öffnen.

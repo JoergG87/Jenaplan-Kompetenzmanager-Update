@@ -77,14 +77,23 @@ def _run_guided_maintenance(root, *, complete):
         def __init__(self, parent):
             super().__init__(parent)
             self.failed = False
+            self.support_phase = "initialization"
+            self.support_error = "unknown"
 
         def run(self):
             try:
-                _perform_maintenance(root, complete=complete, progress=self.phase.emit)
-            except Exception:
+                _perform_maintenance(root, complete=complete, progress=self.report_phase)
+            except Exception as error:
                 # No exception strings, paths, key material or account content
                 # cross the UI boundary. Existing backup/evidence is untouched.
                 self.failed = True
+                kind = type(error).__name__
+                self.support_error = kind if kind in {"UpgradeError", "RuntimeError", "OSError"} else "other"
+
+        def report_phase(self, phase):
+            if phase in _PHASE_TEXT:
+                self.support_phase = phase
+                self.phase.emit(phase)
 
     class MaintenanceDialog(QDialog):
         def __init__(self):
@@ -143,7 +152,9 @@ def _run_guided_maintenance(root, *, complete):
             self.status.setText("Die Aktualisierung konnte nicht abgeschlossen werden. "
                 "Ihre vorhandenen Daten, Sicherungen und Wartungsbelege bleiben erhalten. "
                 "Bitte wenden Sie sich an die Pilotbetreuung, bevor Sie es erneut versuchen.")
-            self.hint.setText("Supporthinweis: Datenaktualisierung – Abschlussprüfung oder Neustart erforderlich.")
+            self.hint.setText("Supporthinweis: Datenaktualisierung – "
+                + self.worker.support_phase + " / " + self.worker.support_error
+                + ". Abschlussprüfung oder Neustart erforderlich.")
             self.close_button.setVisible(True)
 
     app = QApplication.instance() or QApplication(sys.argv)

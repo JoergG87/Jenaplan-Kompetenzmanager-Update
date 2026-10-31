@@ -5740,3 +5740,8 @@ Einziger abschließender V7-Testkandidat aus `6d195c4` erfolgreich gebaut und au
 ## 0.5.1 / Build 406 – vorläufig, unveröffentlicht
 
 Versionsquelle für die lokale Kandidatenqualifikation gemäß bestehender fortlaufender Pilot-Buildkonvention angehoben. Keine Releasefreigabe oder Veröffentlichung.
+
+
+### Supportdiagnose des Assistenten
+
+Fehleranzeige ergänzt ausschließlich feste Phasen-/Fehlerklassen für die Pilotbetreuung; keine Exceptiontexte, Pfade oder Schlüsselwerte.
