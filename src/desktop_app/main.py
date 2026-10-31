@@ -1283,7 +1283,7 @@ def _run_packaged_smoke(
         documents.validate_restart()
         payload["managed_document_hashes"] = {
             str(path.relative_to(paths.root)): hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in sorted(paths.root.rglob("*.jkmedoc"))
+            for path in sorted(documents.paths.storage_root.glob("*.jkmedoc"))
         }
     if mode in {"restore-worker", "restore-ready", "restore-parent-exit"}:
         backup_result = backup_application.create(

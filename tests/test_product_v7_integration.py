@@ -393,6 +393,11 @@ def test_packaged_v7_write_and_snapshot_use_real_encrypted_product(migrated, cap
             window.curriculum_adapter.list_entries.return_value = ()
             window.windowTitle.return_value = "synthetic"
             window.isVisible.return_value = False
+            # Restore preparation retains encrypted staging copies; they are not
+            # part of the active document inventory being compared across restart.
+            staged_document = paths.final_v4.root / "encrypted-restore-staging" / "synthetic-staged.jkmedoc"
+            staged_document.parent.mkdir()
+            staged_document.write_bytes(b"synthetic staging copy")
             for mode in ("v7-write", "migration-snapshot"):
                 assert _run_packaged_smoke(MagicMock(), window,
                     runtime_paths(paths.final_v4.root), mode=mode,
@@ -403,6 +408,8 @@ def test_packaged_v7_write_and_snapshot_use_real_encrypted_product(migrated, cap
                 assert result["schema_version"] == 7
                 assert dict((name, count) for name, count, digest in result["main_content"])["observations"] > 0
                 assert result["managed_document_hashes"]
+                assert all("encrypted-restore-staging" not in path
+                           for path in result["managed_document_hashes"])
             assert opened.runtime.lesson_time_templates.suggest(1).start_time == "08:00"
 
 

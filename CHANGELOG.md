@@ -5755,3 +5755,8 @@ Versionsprüfung an zentrale Versionsquelle gebunden; frühe Wartungsfehleranzei
 ### Technischer Prüfabschluss 406
 
 Assistent implementiert und synthetisch/nativ teilweise geprüft; finale Paketabnahme und historischer Notice-/Wheelvertrag offen. NO-GO, keine Veröffentlichung. Details in docs/RELEASE_AUTOMATION.md.
+
+
+### Build 406 – konkrete Gatekorrekturen 31.10.2026
+
+Wheelnotice und aktuelle Distributionsnotice getrennt: historisch hashgebundener Wheelinput mit belegter Herkunft bleibt unverändert; alle Lizenzpflichten erhalten. Paketierter Migrationssnapshot inventarisiert ausschließlich aktive Managed Documents, damit verschlüsselte Restore-Stagingkopien nicht fälschlich als zusätzliche Produktdokumente gelten; bestehende Integritätsprüfung unverändert. Veraltete Packaging-Versionsregression auf den bereits gesetzten Stand 0.5.1/406 nachgeführt. Direkte V7-Erstanlage mangels vorhandenem Initialisierungs-/Restartvertrag bewusst nicht erweitert; V4-Onboarding mit geführtem Folgestartübergang bleibt begrenzte UX-Einschränkung. Finale Paket-/Nativequalifikation folgt, keine Veröffentlichung.

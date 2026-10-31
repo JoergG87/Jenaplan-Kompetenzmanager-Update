@@ -2717,3 +2717,11 @@ Gemessene und registrierte Identität: synthetic_v7_timetable_weeks, user_versio
 ## Integrierter Migrationsassistent – Ziel 406
 
 Keine neue Datenquelle: exakte Schemaidentität aus product_schema_identity und bestehender Produkt-Keyruntime; Wartungszustand und Quellvollbackup aus SOURCE_DIRECTORY/COMPLETION. Kein UI-eigener Datenbestand.
+
+
+## SQLCipher-Noticequellen – Korrektur Build 406
+
+| Quelle | Herkunft / Bindung | Verwendung |
+|---|---|---|
+| `packaging/licenses/sqlcipher3-0.6.2/THIRD_PARTY_NOTICE.md` | bytegleich zur Datei aus Commit `0b1a129` und zum qualifizierten Wheelmitglied `sqlcipher3-0.6.2+jkm.sqlcipher4170.1.dist-info/licenses/THIRD_PARTY_NOTICE.md`; SHA256 `c72b6095985ce224d8f6578fe010af35926f2588458dbfd08a6f5e274844013c` | unveränderter Wheelbuildinput hinter bestehendem Manifestfeld `generated.third_party_notice_sha256` |
+| `packaging/THIRD_PARTY_NOTICES_SQLCIPHER_4_17_MACOS.md` | redaktioneller Produkt-/Distributionshinweis; Komponenten und Lizenzpflichten unverändert | separates App-Bundle-Dokument, kein Wheelhashinput |

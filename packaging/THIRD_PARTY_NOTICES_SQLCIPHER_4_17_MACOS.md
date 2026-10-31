@@ -1,7 +1,7 @@
 # Drittanbieterhinweise – SQLCipher-4.17-macOS-arm64-Buildbasis
 
 Diese Hinweise gelten für das auditierte lokale Wheel und die daraus im
-macOS-Pilotkandidaten 0.5.0 / Build 405 enthaltene Datenbankruntime.
+macOS-Pilotpaket enthaltene Datenbankruntime.
 Sie beschreiben Komponenten und mitgelieferte Lizenztexte; sie sind keine
 Sicherheitszertifizierung oder Veröffentlichungsfreigabe.
 
@@ -24,7 +24,11 @@ Das Wheel enthält zugänglich:
 - `SQLCIPHER_LICENSE.md` aus SQLCipher 4.17.0;
 - `SQLITE_LICENSE.md` aus SQLCipher 4.17.0 mit ausschließlich entferntem
   Zeilenend-Whitespace;
-- diesen Drittanbieterhinweis als `THIRD_PARTY_NOTICE.md`.
+- den unveränderten historischen Wheelhinweis als `THIRD_PARTY_NOTICE.md`
+  (Buildquelle `packaging/licenses/sqlcipher3-0.6.2/THIRD_PARTY_NOTICE.md`).
+
+Dieser aktuelle Distributionshinweis wird separat im App-Bundle mitgeliefert;
+redaktionelle Produktangaben verändern die hashgebundenen Wheelbytes nicht.
 
 Quell- und Lizenzhashes sowie sämtliche Buildflags sind in
 `packaging/sqlcipher_4_17_macos_arm64_sources.json` gebunden. Im App-Bundle

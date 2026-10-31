@@ -8,6 +8,7 @@ import pytest
 
 from scripts.build_sqlcipher_4_17_macos_arm64 import (
     BuildError,
+    NOTICE_PATH,
     SQLCIPHER_4_17_LOCAL_BINDING_VERSION,
     SQLCIPHER_4_17_SOURCE_DATE_EPOCH,
     _replace_exact,
@@ -87,9 +88,8 @@ def test_license_copies_match_bound_upstream_texts() -> None:
     assert _sha256(ROOT / "packaging/licenses/sqlcipher-4.17.0/SQLITE_LICENSE.md") == (
         manifest["generated"]["sqlite_license_sha256"]
     )
-    assert _sha256(
-        ROOT / "packaging/THIRD_PARTY_NOTICES_SQLCIPHER_4_17_MACOS.md"
-    ) == manifest["generated"]["third_party_notice_sha256"]
+    assert NOTICE_PATH == ROOT / "packaging/licenses/sqlcipher3-0.6.2/THIRD_PARTY_NOTICE.md"
+    assert _sha256(NOTICE_PATH) == manifest["generated"]["third_party_notice_sha256"]
 
 
 def test_existing_4_12_test_engine_remains_separate() -> None:
@@ -173,3 +173,22 @@ def test_subprocess_environment_rejects_python_and_pip_injection() -> None:
 def test_source_manifest_is_valid_json() -> None:
     path = ROOT / "packaging/sqlcipher_4_17_macos_arm64_sources.json"
     assert json.loads(path.read_text()) == load_manifest()
+
+
+def test_product_notice_preserves_wheel_licenses_without_changing_build_input() -> None:
+    product_notice = (
+        ROOT / "packaging/THIRD_PARTY_NOTICES_SQLCIPHER_4_17_MACOS.md"
+    ).read_text()
+
+    assert "0.5.0 / Build 405" not in product_notice
+    for required in (
+        "4.17.0",
+        "0.6.2+jkm.sqlcipher4170.1",
+        "LicenseRef-zlib",
+        "SQLCIPHER_LICENSE.md",
+        "SQLITE_LICENSE.md",
+        "THIRD_PARTY_NOTICE.md",
+        "Contents/Resources/sqlcipher3-0.6.2+jkm.sqlcipher4170.1.dist-info/licenses/",
+    ):
+        assert required in product_notice
+    assert product_notice != NOTICE_PATH.read_text()

@@ -20,7 +20,8 @@ import urllib.request
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = REPO_ROOT / "packaging/sqlcipher_4_17_macos_arm64_sources.json"
 REQUIREMENTS_PATH = REPO_ROOT / "requirements-sqlcipher-4.17-build.txt"
-NOTICE_PATH = REPO_ROOT / "packaging/THIRD_PARTY_NOTICES_SQLCIPHER_4_17_MACOS.md"
+# This historical wheel input is hash-bound independently of product notices.
+NOTICE_PATH = REPO_ROOT / "packaging/licenses/sqlcipher3-0.6.2/THIRD_PARTY_NOTICE.md"
 REPORT_NAME = "sqlcipher-4.17-macos-arm64-build-report.json"
 SQLCIPHER_4_17_LOCAL_BINDING_VERSION = "0.6.2+jkm.sqlcipher4170.1"
 SQLCIPHER_4_17_SOURCE_DATE_EPOCH = 1783468800

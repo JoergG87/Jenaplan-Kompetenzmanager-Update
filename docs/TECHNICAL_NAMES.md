@@ -3788,3 +3788,8 @@ Wartungsports: _perform_maintenance, _restart_maintenance, _run_guided_maintenan
 Geführte Workerdiagnose: support_phase enthält ausschließlich initialization oder bekannte _PHASE_TEXT-Schlüssel; support_error ausschließlich freigegebene Klassenbezeichnungen oder other. Keine Exceptiontexte werden übernommen.
 
 _show_product_migration_failure kapselt ausschließlich die sichere frühe Wartungsfehleranzeige; normaler Qt-Start bleibt hinter Recovery.
+
+
+## SQLCipher-Noticebindung – Korrektur Build 406
+
+`NOTICE_PATH` im SQLCipher-Wheelbuilder bezeichnet ausschließlich `packaging/licenses/sqlcipher3-0.6.2/THIRD_PARTY_NOTICE.md`: die unveränderten, manifestgebundenen historischen Wheelbytes. `packaging/THIRD_PARTY_NOTICES_SQLCIPHER_4_17_MACOS.md` bleibt der getrennte aktuelle Distributionshinweis im App-Bundle; redaktionelle Produktangaben verändern den qualifizierten Wheelinput nicht.
