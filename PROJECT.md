@@ -1,5 +1,9 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Updateabschluss 405 – 31.10.2026 – GO
+
+Tatsächliche synthetische 404→405-Keychainkontinuität nach manueller OS-Freigabe, bestehende Anmeldung, ausdrückliche V4→V7-Migration, vollständige Datenerhaltung, V7-Neustart/Schreibvorgänge und vollständiger Worker-/Restart-/Restore bestanden. Build 404 verweigert V7 mit final_v4_sqlcipher_schema_incompatible, regulärer Exit 4; Screenshot gesichert. Testharness-bedingte leere Metadaten-Sidecars ausschließlich im synthetischen Root durch SQLite geschlossen, beide Metadaten-DBs bytegleich; Produktguard unverändert. Keine offenen bestätigten P0/P1. Releaseassets unverändert, keine neue Suite oder Paketbau notwendig. Maßgeblicher Bericht: `release/output/0.5.0-build405-38f6e8c5c2d9/UPDATE_REPORT_20261031.md`. GO für separate PO-Veröffentlichungsfreigabe; öffentliche Feed-/Auslieferungsprüfung verbleibt im Veröffentlichungsauftrag. Kein Push/Tag/Release/Appcastupdate.
+
 ## Releasekandidat 0.5.0 / Build 405 – lokaler Abschluss 30.10.2026
 
 Produktpaket aus exakt `38f6e8c5c2d9` über die bestehende saubere macOS-Pipeline gebaut. Finale Produktsuite: **3544 bestanden, 104 unveränderte Skips, 120 Unterprüfungen, 996.37 s**. Elf Paketgates und separater Restore-Worker-Smoke bestanden. Nativer Produktpfad mit 24 synthetischen Schülern, 331 Kompetenzen, 71 Beobachtungen, fünf Dokumenten/sieben verschlüsselten Containern, Entwürfen/Revisionen und Stundenplan: bewusstes V4→V7, unabhängig verifiziertes Vollbackup, vollständige Datenerhaltung, vorhandenes Passwort, V7-Schreibvorgänge und echter V7-Worker-/Restart-/Restorepfad bestanden.

@@ -1,5 +1,7 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+- 31.10.2026: tatsächliche synthetische 404→405-Keychain-/Updateprüfung einschließlich Migration, Datenintegrität, vollständigem V7-Restore und sicherer 404-Schemaablehnung abgeschlossen. Unveränderte Releaseassets; GO für separate Veröffentlichungsfreigabe. Dokumentierte Testharness-Bereinigung ohne Produktänderung.
+
 - Lokaler Produktkandidat 0.5.0 / Build 405 aus `38f6e8c5c2d9` vollständig gebaut: finale Suite 3544 Tests / 120 Unterprüfungen bestanden, 104 unveränderte Skips; elf Paketgates, nativer Produkt-V4→V7-Pfad und vollständiger V7-Worker-/Restart-/Restore bestanden. Signaturen und Prüfsummen verifiziert. Gesamtempfehlung bleibt NO-GO bis zur manuellen macOS-Keychainfreigabe und vollständigen Build-404-Updateprüfung; keine Veröffentlichung. Abschlussbericht unter `release/output/0.5.0-build405-38f6e8c5c2d9/`.
 
 - Nativer Wartungshalt nach erfolgreichem Commit behoben: frisches Abschlussabbild per execve statt wartendem Elternprozess. Unveränderte Live-owner-/Lockprüfungen, vollständiger Connection-Drain, keine Descriptorübergabe. Begleitdokumentstand auf 30.10.2026 aktualisiert.

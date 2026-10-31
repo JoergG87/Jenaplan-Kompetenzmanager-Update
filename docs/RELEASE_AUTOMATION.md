@@ -1,5 +1,9 @@
 # Pilot-Releaseautomation
 
+## Updateabschluss 405 – 31.10.2026 – GO
+
+Tatsächliche synthetische 404→405-Keychainkontinuität nach manueller OS-Freigabe, bestehende Anmeldung, ausdrückliche V4→V7-Migration, vollständige Datenerhaltung, V7-Neustart/Schreibvorgänge und vollständiger Worker-/Restart-/Restore bestanden. Build 404 verweigert V7 mit final_v4_sqlcipher_schema_incompatible, regulärer Exit 4; Screenshot gesichert. Testharness-bedingte leere Metadaten-Sidecars ausschließlich im synthetischen Root durch SQLite geschlossen, beide Metadaten-DBs bytegleich; Produktguard unverändert. Keine offenen bestätigten P0/P1. Releaseassets unverändert, keine neue Suite oder Paketbau notwendig. Maßgeblicher Bericht: `release/output/0.5.0-build405-38f6e8c5c2d9/UPDATE_REPORT_20261031.md`. GO für separate PO-Veröffentlichungsfreigabe; öffentliche Feed-/Auslieferungsprüfung verbleibt im Veröffentlichungsauftrag. Kein Push/Tag/Release/Appcastupdate.
+
 ## 0.5.0 / Build 405 – lokaler Kandidat, Updateabschluss offen – 30.10.2026
 
 Sauberer Produktquellcommit `38f6e8c5c2d9`; separater Versionscommit `77f370f`. Bestehende Pipeline vollständig gebaut, finale Gesamtsuite **3544 bestanden / 104 bestehende Skips / 120 Unterprüfungen**, elf Originalpaketgates und Restore-Worker-Smoke bestanden. 209 Frozen-Module plus tatsächlicher Main stimmen mit Quelle überein; 6196 Bundleeinträge nach nativem Lauf unverändert und mit DMG verglichen. SQLCipher 4.17.0 / SQLite 3.53.3 / CommonCrypto, Produkt-Bundle-ID und vorhandener Pilotkanal qualifiziert.
