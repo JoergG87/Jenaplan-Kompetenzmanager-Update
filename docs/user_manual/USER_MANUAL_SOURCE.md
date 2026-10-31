@@ -92,6 +92,8 @@ Start werden vorhandene Fachdaten nicht durch Beispiel- oder Pilotdaten
 ersetzt. Der genaue Speicherort muss im Schulalltag nicht manuell verändert
 werden.
 
+<!-- pagebreak -->
+
 ### Update von Build 404 oder 405 auf Build 406
 
 Erstellen und prüfen Sie vor dem Update eine vollständige verschlüsselte

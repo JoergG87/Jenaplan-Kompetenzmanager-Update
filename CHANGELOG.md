@@ -5786,3 +5786,5 @@ Pipelinekandidaten und erneute betroffene Paketgates. Build 405 und bisheriger
 406-Tag/Release nicht vorhanden, Stable-Verzeichnis nicht vorhanden.
 
 Externe Dokumentationsnachführung: Support-Reset-/Assistentenhinweise und Dokumentstand auf 406 aktualisiert; aktuelle synthetische Versionsabbildung ersetzt. Keine Änderung eingebetteter PDFs oder Produktressourcen.
+
+Build-406-Handbuch: expliziter Seitenwechsel vor der Updateanleitung verhindert einen zu engen Umbruch unter der Versionsabbildung. Betrifft ausschließlich die externe Dokumentations-ZIP; DMG unverändert.
