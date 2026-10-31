@@ -1,5 +1,11 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+## Schlüsselbund-/Updateabschluss 405 – 31.10.2026
+
+- Endgültige Dokumentationsrevision am ursprünglichen synthetischen 404-Schlüsselkontext nach persönlicher macOS-Freigabe erfolgreich geöffnet. Ursache belegt: neue Ad-hoc-CDHash-Identität benötigt Freigabe; securityd konnte den Dialog zuvor wegen inDarkWake (-25337) nicht anzeigen. Kein Code-/Signaturumbau nötig.
+- Original-404-Start, gewöhnlicher endgültiger 405-Start auf V4, ausdrückliche V4→V7-Migration, vollständige Datenerhaltung, bestehende Anmeldung und regulärer V7-Neustart mit unveränderten Schlüsseln bestanden. DMG/ZIP unverändert; Paketgate geschlossen. Neue Sparkle-Signaturen und Veröffentlichung bleiben separatem Auftrag vorbehalten. Bericht: release/output/0.5.0-build405-docrevision-20261031/KEYCHAIN_UPDATE_ABSCHLUSS_20261031.md.
+
+
 ## Dokumentationsrevision 405 abgeschlossen - 31.10.2026
 
 - Acht finale PDFs mit 61 Seiten, 25 synthetischen Abbildungen und vollständiger geprüfter Dokumentations-ZIP erstellt. Text-, Bild-, Link- und finale Sichtprüfung abgeschlossen; 48 gezielte Tests bestanden.

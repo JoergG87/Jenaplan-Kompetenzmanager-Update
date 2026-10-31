@@ -1,5 +1,14 @@
 # Pilot-Releaseautomation
 
+## Endgültiger 405: Schlüsselbund-/Updategate geschlossen – 31.10.2026
+
+Die folgende Sperre der Dokumentationsrevision ist historisch: Das endgültige DMG wurde ohne erneuten Neubau am ursprünglichen synthetischen 404-Schlüsselkontext qualifiziert. Ad-hoc-CDHash 404 `81a654aca76be93bf447e6078e1a6b79b348f516`, ursprünglicher 405 `0cbe3881fbae44c0c18ca88f0f82c5ad038fd858`, finale Revision `b02b1c9f3604051fa2d2c39d1f04e021bfb6f244`; Bundle-ID, Executable und Entitlements unverändert. Native Evidenz: vorhandene ACL vertraute den beiden früheren CDHashes; securityd versuchte den Dialog, hielt wegen `inDarkWake` mit -25337 an. Nutzer bestätigte nach Rückkehr persönlich den regulären Dialog. Danach vorhandene Anmeldung, unveränderte Schlüsselfingerprints und vollständige V7-Inhaltsgleichheit erfolgreich.
+
+Zusätzlich ursprüngliche V4-Vollsicherung unabhängig verifiziert und als getrennte synthetische Kopie mit denselben vorhandenen Schlüsseln geprüft: tatsächlicher Original-404-Start, gewöhnlicher endgültiger 405-Start belässt V4, bewusste Wartungsmigration, vollständiger Datenerhalt und regulärer V7-Neustart/Login bestanden. Harness-Vorläufe und ausschließlich synthetische Fixturekorrekturen sind transparent im Abschlussbericht erfasst; keine Produktguardänderung. Bereits qualifizierte Backup-/Restore-Nachweise wegen unverändertem Code/native Komponenten übernommen. DMG und ZIP unverändert; alle 93 geschützten früheren Artefakte unverändert. Tatsächliches finales DMG und getestete App vollständig byte-/link-/modusgleich; Deep/strict-Codesign und DMG-Integrität gültig.
+
+GO für das Paket-/Updategate. **Veröffentlichung weiterhin NO-GO** bis separatem ausdrücklichem Veröffentlichungsauftrag einschließlich neuer Sparkle-Signaturen der endgültigen DMG-/Notes-/Feedbytes und öffentlicher Rückprüfung. Kein Feedupdate und keine alten Sparkle-Signaturen für neue Dateien. Vollständiger Bericht: `release/output/0.5.0-build405-docrevision-20261031/KEYCHAIN_UPDATE_ABSCHLUSS_20261031.md`; Evidenz: dort `keychain-qualification-20261031/`. Beide Manifestfassungen schließen das Paketgate, `release_authorization` bleibt false. Keine Code-, Schema-, Versions-, Schlüssel- oder Assetänderung; kein Push/Tag/Release/Stable-Rollout.
+
+
 ## Dokumentationsrevision 405: abgeschlossen, Paketfreigabe gesperrt - 31.10.2026
 
 Acht PDFs mit 61 Seiten vollständig erzeugt und final visuell geprüft; 25 Abbildungen pixelgenau und alle Textquellen vollständig in den PDFs nachgewiesen. Dokumentations-ZIP mit 50 Einträgen vollständig geöffnet und bytegeprüft. Quellencommit `d90011e`. Neues DMG aus kontrolliert geänderter Dokumentressourcenkopie des unveränderten Ursprungspakets neu versiegelt; ausführbarer Code ohne Signatur identisch. Elf konfigurierte Paketgates sowie isolierter Start/Restart und Restore-Worker-Smoke bestanden. Der finale DMG-Inhalt ist an die geprüfte Arbeitskopie gebunden.

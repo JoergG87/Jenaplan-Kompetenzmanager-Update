@@ -1,5 +1,10 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Endgültiger 405: Schlüsselbundkontinuität bestätigt – 31.10.2026
+
+Der nachfolgend dokumentierte Schlüsselbundblocker der Dokumentationsrevision ist geschlossen. macOS erforderte für den neuen Ad-hoc-CDHash eine persönliche Freigabe, die vorher wegen `inDarkWake` (-25337) nicht angezeigt werden konnte. Nach ausdrücklicher Nutzerbestätigung öffnet das unveränderte endgültige DMG den ursprünglichen synthetischen 404-Kontext mit bestehendem Passwort und unveränderten Schlüsseln. Separater erneuter Original-404→endgültiger-405-V4-Start, bewusste V4→V7-Migration, vollständige Datenerhaltung und regulärer V7-Neustart bestanden. Keine Code-/Signaturstrategieänderung oder neuer DMG-Bau. GO für Paket-/Updatequalifikation; Veröffentlichung NO-GO bis separatem Auftrag einschließlich neuer Sparkle-Signaturen und öffentlicher Prüfung. Bericht: `release/output/0.5.0-build405-docrevision-20261031/KEYCHAIN_UPDATE_ABSCHLUSS_20261031.md`. Fremde Änderungen und alle bestehenden Produktartefakte erhalten.
+
+
 ## Abschluss der Dokumentationsrevision 405 - 31.10.2026
 
 Dokumentation vollständig revidiert: acht PDFs, 61 Seiten, 25 synthetische Abbildungen, geprüfte ZIP und getrennte neue Paket-/Manifestbindung. Dokumentation GO. Neue Paketveröffentlichung NO-GO, da der vorhandene synthetische 404-Schlüsselkontext mit neuer Signatur nicht erfolgreich geöffnet wird; unverändertes Kontrollpaket öffnet. Das ist ein offenes neues Paketgate, kein bestandener Kontinuitätsnachweis. Quellencommit `d90011e`; vollständiger Bericht und Hashes unter `release/output/0.5.0-build405-docrevision-20261031/`. Kein Produktcode, Datenmodell oder Versionsstand geändert; keine Veröffentlichung.
