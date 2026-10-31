@@ -723,13 +723,16 @@ class ReleasePilot:
                 "w",
                 compression=zipfile.ZIP_DEFLATED,
             ) as archive:
+                source_images: set[Path] = set()
                 for source_name in self.config["documentation_sources"]:
                     source = workspace / source_name
                     archive.write(source, arcname=source_name)
+                    if source.suffix == ".md":
+                        for relative_image in re.findall(r"!\[[^]]*\]\(([^)]+)\)", source.read_text(encoding="utf-8")):
+                            source_images.add((source.parent / relative_image).resolve())
                 # Preserve the Markdown sources' relative image references.
-                screenshots = workspace / "docs" / "user_manual" / "screenshots"
-                for screenshot in sorted(screenshots.glob("*.png")):
-                    archive.write(screenshot, arcname=screenshot.relative_to(workspace))
+                for screenshot in sorted(source_images):
+                    archive.write(screenshot, arcname=screenshot.relative_to(workspace.resolve()))
                 for pdf in sorted(dist_root.glob("*.pdf")):
                     archive.write(pdf, arcname=pdf.name)
             release_notes = artifacts_root / "GITHUB_RELEASE_NOTES.md"

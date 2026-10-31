@@ -1,5 +1,9 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Abschluss der Dokumentationsrevision 405 - 31.10.2026
+
+Dokumentation vollständig revidiert: acht PDFs, 61 Seiten, 25 synthetische Abbildungen, geprüfte ZIP und getrennte neue Paket-/Manifestbindung. Dokumentation GO. Neue Paketveröffentlichung NO-GO, da der vorhandene synthetische 404-Schlüsselkontext mit neuer Signatur nicht erfolgreich geöffnet wird; unverändertes Kontrollpaket öffnet. Das ist ein offenes neues Paketgate, kein bestandener Kontinuitätsnachweis. Quellencommit `d90011e`; vollständiger Bericht und Hashes unter `release/output/0.5.0-build405-docrevision-20261031/`. Kein Produktcode, Datenmodell oder Versionsstand geändert; keine Veröffentlichung.
+
 ## Dokumentationsrevision 0.5.0 / Build 405 - 31.10.2026
 
 Dokumentationsauftrag nach dem technischen Abschluss `b19225b0`: keine weitere Produktentwicklung. Maßgeblicher Produktcode bleibt `38f6e8c5c2d9`. Vollständiges Inventar in `docs/PILOT_DOCUMENT_INVENTORY.md`; Revision und Paket-/PDF-Nachweise getrennt unter `release/output/0.5.0-build405-docrevision-20261031/`. Die nachfolgenden Abschlussberichte gelten für den ursprünglichen Kandidaten; eine neue Dokumentations-/Paketidentität erbt keine ungeprüften Byte-, Signatur- oder Updatefreigaben. Veröffentlichung bis ausdrücklicher Bestätigung des finalen Artefaktstands zurückgestellt. Öffentliche Ausgangsbasis weiterhin 0.4.4 / Build 404.

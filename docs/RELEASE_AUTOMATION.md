@@ -1,5 +1,13 @@
 # Pilot-Releaseautomation
 
+## Dokumentationsrevision 405: abgeschlossen, Paketfreigabe gesperrt - 31.10.2026
+
+Acht PDFs mit 61 Seiten vollständig erzeugt und final visuell geprüft; 25 Abbildungen pixelgenau und alle Textquellen vollständig in den PDFs nachgewiesen. Dokumentations-ZIP mit 50 Einträgen vollständig geöffnet und bytegeprüft. Quellencommit `d90011e`. Neues DMG aus kontrolliert geänderter Dokumentressourcenkopie des unveränderten Ursprungspakets neu versiegelt; ausführbarer Code ohne Signatur identisch. Elf konfigurierte Paketgates sowie isolierter Start/Restart und Restore-Worker-Smoke bestanden. Der finale DMG-Inhalt ist an die geprüfte Arbeitskopie gebunden.
+
+**Keine Paket-/Veröffentlichungsfreigabe:** neue Signatur öffnet den bestehenden synthetischen 404-Ursprungskontext nicht (Exit 3, unklarer V7-Recoverykontext); Originalpaket öffnet denselben Bestand. Neue Bestands-/Schlüsselbundkontinuität und anschließend neue Sparkle-Signaturen bleiben verpflichtend. Keine ungeprüfte Übernahme alter Signatur- oder Updatebelege. Keine Codeänderung zur Umgehung, keine Reparatur und kein Schlüsselersatz.
+
+Aktiver Releasezeiger verweist jetzt auf die neue ausdrücklich gesperrte Revision `release/output/0.5.0-build405-docrevision-20261031/release-manifest.local.json`. Der alte qualifizierte Kandidat bleibt byteunverändert. Dokumentation GO; Veröffentlichung NO-GO bis nachgeholtem Paketgate und erneuter ausdrücklicher PO-Bestätigung. Vollständiger Bericht: `DOKUMENTATIONSREVISION_ABSCHLUSS.md` im Revisionsordner. Kein Push, Tag, Release oder Appcastupdate.
+
 ## Dokumentationsrevision 405 - 31.10.2026
 
 Bestands-HEAD `b19225b0a1fe51e1ac122d471a66b881307c0edb`, Produktquelle `38f6e8c5c2d9bb149fdd166a09397d41462d0df6`. GitHub-Releases und Repository-Appcast read-only geprüft: öffentlich weiterhin 404, kein405-Release. Dokumentation ist nicht nur ZIP-Inhalt: Erste-Schritte-PDF und zwei Drittanbieterhinweise sind App-Ressourcen, Installations-PDF zusätzlich DMG-Inhalt. Deshalb keine ZIP-only-Freigabe und kein stilles Überschreiben des gehashten Kandidaten.

@@ -1,5 +1,11 @@
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
+## Dokumentationsrevision 405 abgeschlossen - 31.10.2026
+
+- Acht finale PDFs mit 61 Seiten, 25 synthetischen Abbildungen und vollständiger geprüfter Dokumentations-ZIP erstellt. Text-, Bild-, Link- und finale Sichtprüfung abgeschlossen; 48 gezielte Tests bestanden.
+- Neue Dokumentressourcen separat paketiert und ad-hoc versiegelt; DMG, Hashes und gesperrtes Releasemanifest gebunden. Alter Kandidat und fremde Dokumentänderungen erhalten.
+- Dokumentation GO; Veröffentlichung NO-GO: Wiederöffnung des vorhandenen synthetischen 404-Schlüsselkontexts mit der neuen Signatur hält sicher an, während die unveränderte Kontrollfassung öffnet. Keine Produktkorrektur oder Veröffentlichung vorgenommen. Vollständiger Abschlussbericht: `release/output/0.5.0-build405-docrevision-20261031/DOKUMENTATIONSREVISION_ABSCHLUSS.md`.
+
 ## Dokumentationsrevision 0.5.0 / Build 405 - 31.10.2026
 
 - Bestehende Benutzer-, Installations-, Sicherheits-, Backup-, Support- und Releasequellen gegen Produktcode `38f6e8c5c2d9` geprüft und überarbeitet. V4-Bestandsbetrieb und ausdrückliche V4→V7-Wartung sowie V7-Support-Resetgrenze getrennt.
