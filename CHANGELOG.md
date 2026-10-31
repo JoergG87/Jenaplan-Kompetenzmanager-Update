@@ -5750,3 +5750,8 @@ Fehleranzeige ergänzt ausschließlich feste Phasen-/Fehlerklassen für die Pilo
 ### Regression des Migrationsassistenten
 
 Versionsprüfung an zentrale Versionsquelle gebunden; frühe Wartungsfehleranzeige separat gekapselt, damit normaler Qt-Start unverändert nach Recovery bleibt.
+
+
+### Technischer Prüfabschluss 406
+
+Assistent implementiert und synthetisch/nativ teilweise geprüft; finale Paketabnahme und historischer Notice-/Wheelvertrag offen. NO-GO, keine Veröffentlichung. Details in docs/RELEASE_AUTOMATION.md.
