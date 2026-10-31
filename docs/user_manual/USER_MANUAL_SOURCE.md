@@ -10,7 +10,7 @@ Die Installation des Updates allein verändert das Schema nicht. Build 406 erken
 
 - Produktversion: {{PILOT_VERSION}}
 - Pilotbuild: {{PILOT_BUILD}}
-- Dokumentstand: 31. Oktober 2026
+- Dokumentstand: 1. November 2026
 - Plattform: macOS auf Apple Silicon (arm64), ab macOS 13
 - Status: Mac-Pilotversion
 

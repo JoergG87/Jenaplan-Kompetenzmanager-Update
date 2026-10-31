@@ -1,6 +1,6 @@
 # Backup und Wiederherstellung
 
-Stand: 31. Oktober 2026
+Stand: 1. November 2026
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 ## Was gesichert wird

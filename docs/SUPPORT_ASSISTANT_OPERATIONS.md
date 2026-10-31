@@ -2,12 +2,12 @@
 
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
-Stand: 31. Oktober 2026
+Stand: 1. November 2026
 Status: unveränderte separate Supportanwendung; kein Bestandteil des normalen
-Lehrkraftpakets oder des Build-405-App-Updates. Eine eigene Paketübergabe
+Lehrkraftpakets oder des Build-406-App-Updates. Eine eigene Paketübergabe
 benötigt ihre konkreten Paketnachweise.
 
-## Produktgrenze in Build 405
+## Produktgrenze in Build 406
 
 Der Assistent beschreibt die getrennte signierte Reset-Code-Foundation.
 Ein von ihm erzeugter Code ist nur eine technische Auth-Recovery-Freigabe.
@@ -22,7 +22,7 @@ prüft diesen Bestand pre-auth read-only und erzeugt und verifiziert ein neues
 Safety-`.jkmebackup`, bevor sie Authentifizierungszustand mutiert. Es gibt
 keinen ZIP-v1- oder Klartextfallback.
 
-Für V7 besitzt Build 405 keinen passenden Support-Resetadapter. Der Assistent
+Für V7 besitzt Build 406 keinen passenden Support-Resetadapter. Der Assistent
 macht seinen Code dadurch nicht zu einem V7-Reset und darf nicht zum Umgehen
 dieser Grenze eingesetzt werden. Die V4→V7- und Restorequalifikation belegt
 keine V7-Auth-Recovery über Support Reset.
@@ -98,7 +98,7 @@ die Support-App, diese Anleitung, Versionsangaben und Prüfsummen. Es enthält
 keine Produkt-App, Datenbank, Dokumente, Backups, Runtime-Daten, Requests,
 Tokens, privaten Schlüssel oder Passphrase.
 
-Build 405 ändert weder Assistent, JKM-SR1, Requestdatei, Registry noch
+Build 406 ändert weder Assistent, JKM-SR1, Requestdatei, Registry noch
 Support-Audit. Vor einer gesonderten Supportpaket-Übergabe sind die konkreten
 Paketbytes, Prüfsummen, Signatur, ein Geheimnisscan und eine synthetische
 Anfrage zu prüfen. Die Schlüsselverwaltung ist vom normalen App-Update und von

@@ -5784,3 +5784,5 @@ Synthetische Qt-Dialogabbildungen ergänzt. Eingebettete PDFs benötigen neuen
 Pipelinekandidaten und erneute betroffene Paketgates. Build 405 und bisheriger
 406-Kandidat bleiben unverändert. Remoteprüfung lesend: 405 veröffentlicht,
 406-Tag/Release nicht vorhanden, Stable-Verzeichnis nicht vorhanden.
+
+Externe Dokumentationsnachführung: Support-Reset-/Assistentenhinweise und Dokumentstand auf 406 aktualisiert; aktuelle synthetische Versionsabbildung ersetzt. Keine Änderung eingebetteter PDFs oder Produktressourcen.

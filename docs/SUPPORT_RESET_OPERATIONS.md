@@ -1,11 +1,11 @@
 # Jenaplan Support-Reset - interne Betriebsanleitung
 
-Stand: 31. Oktober 2026
+Stand: 1. November 2026
 Version {{PILOT_VERSION}} / Build {{PILOT_BUILD}}
 
 ## Geltung: V4 ja, V7 nein
 
-Build 405 unterstützt den bestehenden Support-Reset ausschließlich für noch
+Build 406 unterstützt den bestehenden Support-Reset ausschließlich für noch
 nicht umgestellte Final-V4-Installationen. Für V7 gibt es keinen passenden
 Support-Resetadapter. Eine sichtbare allgemeine Wiederherstellungsoberfläche
 ist keine V7-Resetfreigabe. Die V4-spezifische Prüfung darf nicht umgangen und
@@ -82,13 +82,13 @@ Abschlussbelege löschen. Keine einzelne Datenbankdatei zurückkopieren, keine
 leere Ersatzinstallation anlegen und keine alte App auf V7 starten. Ein
 Support-Reset ist kein Reparaturpfad für Datenbank, Schema oder Upgrade.
 
-Bei fehlendem ursprünglichem Gerät oder verlorenem DMK gibt es in Build 405
+Bei fehlendem ursprünglichem Gerät oder verlorenem DMK gibt es in Build 406
 keinen Mastercode und keine portable Entschlüsselungs-Recovery. Ein
 vorhandenes `.jkmebackup` allein hebt diese Grenze nicht auf.
 
 ## Nachweise und getrennte Paketfreigabe
 
-Der Build-405-Produktcode enthält den beschriebenen V4-Vertrag und verweigert
+Der Build-406-Produktcode enthält den beschriebenen V4-Vertrag und verweigert
 die V7-Umgehung. Die technische Produktqualifikation von V4→V7,
 Schlüsselbundkontinuität, Anmeldung, Backup/Restore und 404-Ablehnung ist kein
 Nachweis eines neuen V7-Support-Resets.
