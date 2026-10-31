@@ -5760,3 +5760,8 @@ Assistent implementiert und synthetisch/nativ teilweise geprüft; finale Paketab
 ### Build 406 – konkrete Gatekorrekturen 31.10.2026
 
 Wheelnotice und aktuelle Distributionsnotice getrennt: historisch hashgebundener Wheelinput mit belegter Herkunft bleibt unverändert; alle Lizenzpflichten erhalten. Paketierter Migrationssnapshot inventarisiert ausschließlich aktive Managed Documents, damit verschlüsselte Restore-Stagingkopien nicht fälschlich als zusätzliche Produktdokumente gelten; bestehende Integritätsprüfung unverändert. Veraltete Packaging-Versionsregression auf den bereits gesetzten Stand 0.5.1/406 nachgeführt. Direkte V7-Erstanlage mangels vorhandenem Initialisierungs-/Restartvertrag bewusst nicht erweitert; V4-Onboarding mit geführtem Folgestartübergang bleibt begrenzte UX-Einschränkung. Finale Paket-/Nativequalifikation folgt, keine Veröffentlichung.
+
+
+### Build 406 – finale Qualifikation 01.11.2026
+
+Konkrete Notice-/Wheel- und Restoreinventar-Gates abgeschlossen. Finale Produktsuite 3571/120 bestanden, 104 bestehende Skips. Native 404→406-/405→406-Assistenten, V7-Wiederstart und leere Einrichtung vom PO bedient und bestätigt; Daten, Dokumente, Schlüssel, Vollbackups und echter Restore unabhängig im finalen Paket verifiziert. Direkte V7-Erstanlage bleibt begründete vorhandene UX-Einschränkung gemäß Auftragsausnahme; kein neuer First-Run-Vertrag. Build406 als Releasekandidat qualifiziert, keine Veröffentlichung. Nachweise in docs/RELEASE_AUTOMATION.md und lokalem FINAL406_GATE_REPORT.md.

@@ -990,3 +990,12 @@ Offen: vollständiger finaler nativer 404/405→406-Assistentenpfad, vollständi
 
 
 Restore-Nachtrag 406: Synthetischer Harnessabschluss per bestehendem checkpoint_truncate unter RuntimeInstanceLock bestanden; Main, Companion und drei Metadaten-Dateihashes unverändert. Anschließend Restart und migration-snapshot Exit0. Vergleich main_content gleich, managed_document_hashes jedoch nicht gleich; vollständiger Dokumentvergleich daher offen/abweichend, kein vollständiger Restoreerfolg behauptet. Keine weiter laufenden Testprozesse.
+
+
+## Build 406 – konkrete Gates abgeschlossen / 01.11.2026
+
+Paketquelle `ddaee98594ec4d20bb092898ff282000260f1c9f` sauber gebaut; Notice-/Wheelbindung mit belegter historischer Notice getrennt, aktives Dokumentinventar nach Restorevorbereitung korrigiert. Reguläre Produktsuite: 3571 bestanden, 104 bestehende Skips, 120 Unterprüfungen bestanden. Finales Paket: deep/strict gültige Ad-hoc-Signatur, exakte 4.17/CommonCrypto-Runtime, alle Notices und Artefakthashes geprüft. Laura bediente und bestätigte native 404→406, 405→406, erneuten V7-Start ohne Assistent und vollständige leere Einrichtung/Onboarding. Unabhängige Endpaketprüfungen bestätigen Daten, Dokumente, bestehende Schlüssel/Passwort, vollständige verschlüsselte Quellbackups und echten vollständigen V7-Restore/Neustarthandshake. Die Agent-Bildschirmaufnahme blieb -3811-blockiert; die native UI-Abnahme ist ausdrücklich eine Benutzerabnahme mit unabhängiger technischer Verifikation.
+
+Direkte V7-Erstanlage ist ohne neuen First-Run-/Restartvertrag nicht aus vorhandenem Initialisierer verfügbar; gemäß Auftragsausnahme bleibt die begründete UX-Einschränkung V4-Erstanlage mit geführtem Folgestartübergang. Kein neues Schema und keine Architekturausweitung. Frühere offene UI-Gates sind durch diese spätere Abnahme geschlossen. Vollständiger Bericht einschließlich separat protokolliertem fehlgeschlagenem historischen Binding-Zusatzlauf: `release/output/migration-assistant-406/FINAL406_GATE_REPORT.md`.
+
+**BUILD 406 ALS RELEASEKANDIDAT QUALIFIZIERT**. Dauerhaftes DMG: `release/output/0.5.1-build406-ddaee98594ec/Jenaplan-Kompetenzmanager-0.5.1-macOS-arm64.dmg`, SHA256 `cf09b5550dfcd87ccffc19e4754c9b997101e3b1b749f00ecad76d393e65f387`; alle Hashes in `SHA256SUMS-ALL-406.txt`. Keine Veröffentlichung, Push, Tags oder Feedänderung; Build405 und fremde Änderungen erhalten. STOP.
