@@ -319,6 +319,58 @@ def _require_authenticated_cipher_context(
         )
 
 
+def _offer_product_migration_completion(root, *, packaged_smoke=False):
+    """Offer only existing explicit completion, never rerun a transaction."""
+    if packaged_smoke:
+        return False
+    from src.security.product_v7 import SOURCE_DIRECTORY, SOURCE_BACKUP, COMPLETION
+    from src.security.upgrade_startup import ProductStartupInventory
+    inventory = ProductStartupInventory().inspect(root)
+    upgrades = {a.relative_path for a in inventory.artifacts if a.role == "upgrade_evidence"}
+    if (inventory.status.value in {"unsafe", "unknown", "changed"} or inventory.restore_evidence
+            or SOURCE_BACKUP not in upgrades or COMPLETION in upgrades
+            or not upgrades <= {"schema-upgrade-source", SOURCE_DIRECTORY, SOURCE_BACKUP}):
+        return False
+    from PySide6.QtWidgets import QApplication
+    from src.desktop_app.product_migration_dialog import ask_product_migration
+    app = QApplication.instance() or QApplication(sys.argv)
+    if not ask_product_migration(completing=True):
+        return False
+    _restart_product_migration(root, complete=True)
+    return True
+
+
+def _restart_product_migration(root, *, complete=False):
+    """Replace the drained UI image; never hand connections to maintenance."""
+    from src.desktop_app.product_v7_maintenance import _command
+    arguments = ["--complete-v7-migration" if complete else "--migrate-v4-to-v7",
+                 "--guided-v7-migration", "--runtime-root", str(root)]
+    command = _command(arguments)
+    environment = dict(os.environ)
+    if getattr(sys, "frozen", False):
+        environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    os.execve(command[0], command, environment)
+    raise RuntimeError("product_v7_exec_returned")
+
+
+def _offer_product_migration(root, *, service, runtime_stack, lock, packaged_smoke=False, before_close=None):
+    if packaged_smoke:
+        return False
+    from src.security.product_v7 import product_schema_identity
+    from src.core.schema_registry import FINAL_V4_SCHEMA_REGISTRATION
+    if product_schema_identity(service) != FINAL_V4_SCHEMA_REGISTRATION.identity:
+        return False
+    from src.desktop_app.product_migration_dialog import ask_product_migration
+    if not ask_product_migration():
+        return False
+    if before_close is not None:
+        before_close()
+    runtime_stack.close()
+    lock.release()
+    _restart_product_migration(root)
+    return True
+
+
 def main() -> int:
     """Start the desktop app."""
     arguments = list(sys.argv)
@@ -333,7 +385,8 @@ def main() -> int:
             root = _argument_value(arguments, "--runtime-root")
             if root is None:
                 raise RuntimeError("product_v7_maintenance_root_required")
-            return run_product_v7_maintenance(Path(root), complete=maintenance_flags[0] == "--complete-v7-migration")
+            return run_product_v7_maintenance(Path(root), complete=maintenance_flags[0] == "--complete-v7-migration",
+                guided="--guided-v7-migration" in arguments)
         except Exception as error:
             code = getattr(error, "code", "product_v7_maintenance_failed")
             # Only a fixed diagnostic token, never arbitrary exception text.
@@ -347,6 +400,11 @@ def main() -> int:
                 print("Wartung: " + type(error).__name__, file=sys.stderr)
                 for frame in traceback.extract_tb(error.__traceback__):
                     print("Wartung: " + Path(frame.filename).name + ":" + str(frame.lineno), file=sys.stderr)
+            if "--guided-v7-migration" in arguments:
+                from PySide6.QtWidgets import QApplication
+                from src.desktop_app.product_migration_dialog import show_product_migration_error
+                maintenance_app = QApplication.instance() or QApplication(arguments)
+                show_product_migration_error()
             return 3
     if "--internal-native-test" in arguments:
         from src.core.macos_test_package_profile import test_identity
@@ -521,6 +579,8 @@ def main() -> int:
             packaged_smoke=packaged_smoke,
         )
     except UpgradeStartupBlocked:
+        if _offer_product_migration_completion(data_root, packaged_smoke=packaged_smoke):
+            return 0
         _show_upgrade_startup_blocked(arguments, packaged_smoke=packaged_smoke)
         return 3
     except (RuntimeRootProtectionError, OSError, RuntimeError, ValueError) as error:
@@ -643,6 +703,8 @@ def main() -> int:
         if lock is not None:
             runtime_stack.close()
             lock.release()
+        if _offer_product_migration_completion(data_root, packaged_smoke=packaged_smoke):
+            return 0
         _show_upgrade_startup_blocked(arguments, packaged_smoke=packaged_smoke)
         return 3
     except (RuntimeError, OSError) as error:
@@ -910,6 +972,15 @@ def main() -> int:
                 environ=os.environ,
                 product_paths=security_paths,
             )
+            if not internal_test and not product_runtime.first_run:
+                # Reuse the authenticated, exact V4 runtime's existing-key service.
+                # All reads close before the UI image is replaced; maintenance
+                # independently revalidates and drains under its own lock.
+                from src.security.startup import finalize_security_runtime
+                if _offer_product_migration(data_root, service=encrypted_backup_service,
+                        runtime_stack=runtime_stack, lock=lock, packaged_smoke=packaged_smoke,
+                        before_close=lambda: finalize_security_runtime(security_runtime, paths, lock)):
+                    return 0
             support_reset_backup_factory = FinalV4SupportResetBackupFactory(
                 service=encrypted_backup_service,
                 backup_root=paths.backups,
@@ -1064,6 +1135,9 @@ def main() -> int:
             runtime_stack.close()
             lock.release()
     window.showMaximized()
+    if "--v7-migration-completed" in arguments and v6_service is not None and not internal_test:
+        from src.desktop_app.product_migration_dialog import show_product_migration_success
+        show_product_migration_success(window)
     try:
         result = app.exec()
         if not encrypted_restore_application.handoff_transferred:

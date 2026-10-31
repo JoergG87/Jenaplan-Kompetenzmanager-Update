@@ -1651,3 +1651,8 @@ PO-UX-Auftrag 22.10.2026: Zeit-/Zahleneingaben appweit im vorhandenen Design mod
 ## A-/B-Wochen – 27.10.2026
 
 PO-Auftrag 27.10.2026 autorisiert A-/B-Wochen im bestehenden Stundenplan: fortlaufender Rhythmus ab Referenzmontag, einzelne dauerhafte Korrekturen ohne Phasenverschiebung. Eigenes synthetisches V7; V4/V6 unverändert, Produktmigration und Veröffentlichung gesperrt. Bestehende UX und transaktionaler SQLCipherpfad. Nach erneuter PO-Freigabe der minimalen V7-Erweiterung: Implementierung, gezielte Tests, Produktsuite und Commit; Stand der isolierten Test-App berichten, keine automatische Folgephase.
+
+
+## Integrierter Migrationsassistent – Ziel 406
+
+Produktentscheidung 406: ausdrücklich bestätigter UI-Assistent verwendet ausschließlich die vorhandene V4→V7-Wartung. Kein Schemawechsel ohne Zustimmung, keine neue Engine. Direkte V7-Erstanlage bleibt außerhalb dieses Auftrags; neue Installationen beginnen weiterhin mit V4.

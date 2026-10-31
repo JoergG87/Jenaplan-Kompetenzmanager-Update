@@ -2005,3 +2005,8 @@ Katalogfix 5e377b1: unbeabsichtigte Opacity-Effekte an Aufklappüberschriften en
 - Kandidat: `/private/var/folders/61/nxlq0vm9311gvx30ztnpj63r0000gn/T/jkm-internal-test-c0c2c2b578dc41009ede96ae9bdb3664/artifacts/JKM-Interner-Test-c0c2c2b578dc41009ede96ae9bdb3664.app`. Ausschließlich synthetische V7-Daten, eigener Daten- und Schlüsselraum; Testpasswort `V7-Test-Laura!2026`.
 - Vorhandene native Modi `initialize`, `v7-prepare`, `v7-weeks`, `v7-weeks-reopen`: jeweils Returncode 0, Status ok. Anschließend fertige App über macOS-Oberfläche entsperrt, Schülerprofil Testfall-05 und Neue Beobachtung → Mathematik geöffnet, mehrere Ebenen aufgeklappt und gescrollt: Überschriften und Chips sichtbar, keine Überlagerung. Die korrigierte native Quellansicht wurde zusätzlich vom PO ausdrücklich als sichtbar bestätigt. Laura-Abnahme des fertigen Kandidaten bleibt manuell offen.
 - Messgrenze: Kindwechsel 2,146 → 1,274 s, mit vorher gesetzten Filtern 4,993 → 1,078 s; erstes Profilöffnen rund 1,3 s ohne nachgewiesene Verbesserung. Katalog vollständig aufklappen 183,6 → 81,2 ms; übrige kleine Messunterschiede begründen keine zusätzliche Optimierung. Nachweise einschließlich Buildlog, Profil und nativen Ergebnissen liegen im genannten Testcontainer bzw. `/private/tmp/jkm-competency-evidence/2026-10-29/`.
+
+
+## Migrationsassistent – Vorbereitung 406
+
+Geführter V4→V7-Einstieg, automatisch gebundener Runtimepfad, ausdrückliche Zustimmung, vorhandene Wartungs-/Abschlussprozesse und reale Fortschrittsphasen. Keine neue Engine oder Schemakante. Paketierte 404/405→406-Keychain-/Sparkleabnahme bleibt ein eigenständiges Kandidatengate.

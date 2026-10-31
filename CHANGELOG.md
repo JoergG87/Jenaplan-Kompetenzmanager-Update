@@ -5728,3 +5728,10 @@ Filterreset blockiert seine drei Kontrollsignale und rendert beim Kindwechsel ke
 ## Abschluss isolierter Testkandidat – 29.10.2026
 
 Einziger abschließender V7-Testkandidat aus `6d195c4` erfolgreich gebaut und auditiert; native Start-/V7-/Wiederöffnungsprüfungen bestanden. Fertiges macOS-Fenster mit Schülerprofil und aufgeklapptem Mathematik-Katalog sichtbar geprüft. Details und Grenzen in PROJECT.md; Laura-Abnahme manuell offen.
+
+
+## Unveröffentlicht – Migrationsassistent
+
+- Bewusst bestätigter V4→V7-Assistent ohne Terminal oder Pfadangabe.
+- Reale Wartungsphasen, getrennte Abschlussprüfung, sichere Fehleranzeige und Neustart.
+- Bereits migrierte V7-Bestände werden nicht erneut migriert; V4-Erstanlage bleibt erhalten.

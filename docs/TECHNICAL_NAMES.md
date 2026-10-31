@@ -3777,3 +3777,10 @@ V7-Paketauftrag 27.10.2026: v7-prepare, v7-weeks und v7-weeks-reopen sind drei g
 Performanceauftrag: TimetableDesktopAdapter bündelt seine Projektion in einem kurzlebigen Read-Snapshot; bestehende Repository-Listen akzeptieren eine aufrufereigene connection. scripts/timetable_week_timing.measure_week_actions misst ausschließlich synthetische Qt-Aktionen im bestehenden Quell-/Paketprüfpfad.
 
 Profilperformance 29.10.2026: `reset_competency_cockpit_filters(render=False)` setzt vorhandene Filter signalblockiert ohne Zwischenprojektion zurück. `set_competency_cockpit(refresh_report_subjects=False)` überlässt die Berichtsfächer dem unmittelbar folgenden bestehenden `set_report_overview`. Beide optionalen Präsentationsparameter behalten für eigenständige Aufrufe den bisherigen Standard True. Keine neue Datenquelle oder Persistenz.
+
+
+## Integrierter Migrationsassistent – Ziel 406
+
+product_migration_dialog.ProductMigrationDialog, ask_product_migration, show_product_migration_success/error sind reine UI-Ports. main._offer_product_migration und _restart_product_migration koordinieren den bestätigten Einstieg. --guided-v7-migration aktiviert ausschließlich die UI des bestehenden Wartungsprozesses; --v7-migration-completed meldet nach regulärem verifiziertem V7-Start Erfolg.
+
+Wartungsports: _perform_maintenance, _restart_maintenance, _run_guided_maintenance und _PHASE_TEXT. _offer_product_migration_completion bietet nur den vorhandenen Abschluss mit expliziter Zustimmung an.

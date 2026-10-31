@@ -4042,3 +4042,8 @@ V7-Paketprüfung: ausschließlich frischer versiegelter internal-test-Root mit n
 
 
 A/B-Performance: Ansichtswechsel und Wochennavigation führen ausschließlich einen konsistenten Read-Snapshot aus. Einzelkorrektur behält BEGIN IMMEDIATE, Prüfung und COMMIT; Erfolg erst nach Writebestätigung und aktueller Stundenplanprojektion. Ein verborgenes Dashboard wird bei Aktivierung neu gelesen. Keine Schema-/Cipher-/Migrationsänderung.
+
+
+## Integrierter Migrationsassistent – Ziel 406
+
+Nach bestehender Anmeldung und exaktem V4-Reopen: bestehenden Backupservice zur Schemaerkennung verwenden und Zustimmung verlangen. Stack schließen und Instanzlock freigeben, dann Prozessabbild durch bestehende Wartung ersetzen. Wartung erstellt/geprüft verschlüsseltes Vollbackup, drain, transaktionale Migration und separate Abschlussprüfung. Geführte UI zeigt reale Phasen ohne Prozentwerte. Fehler erhalten alle Belege; keine automatische Wiederholung. V7 wird nicht erneut migriert.

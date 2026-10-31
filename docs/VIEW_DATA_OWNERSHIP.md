@@ -1675,3 +1675,8 @@ Stundenplan-UX: timetable_week_rules_toggle und timetable_week_rules besitzen au
 
 
 A/B-Performance: pro Ansichtswechsel ein frischer gemeinsamer Datenbank-Read-Snapshot für Stunden, Fach-/Zieloptionen und Wochenregeln. Optionen werden innerhalb dieser Projektion einmal aufgelöst; kein langlebiger Cache oder neue Datenquelle. Verdecktes Dashboard wird erst bei Aktivierung frisch geladen, sichtbares nach bestätigtem Write sofort.
+
+
+## Integrierter Migrationsassistent – Ziel 406
+
+ProductMigrationDialog projiziert ausschließlich Bestätigungsinformationen; Fortschrittsfenster projiziert echte Wartungsereignisse. Fachliche Verantwortung bleibt ProductV7Migration; keine SQL-/Schlüssellogik in Widgets.

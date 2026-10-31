@@ -1186,3 +1186,8 @@ Zeit-/Zahlenfeld-UX 22.10.2026: bestehende Zeit-/Datums-/Zahlenfelder behalten Z
 Stundenplan: Referenzdatum/Referenz A oder B → timetable_week_cycle; Navigationsdatum und Vorschau A/B → nur flüchtiger Ansichtsstand. Status KW/ISO-Jahr, A/B und automatisch/manuell → TimetableWeekAssignment. Ausdrücklich Woche auf A/B setzen → timetable_week_overrides; Automatik wiederherstellen → DELETE genau einer Woche. Editor Gültigkeit Jede Woche/Nur A-Woche/Nur B-Woche → timetable_entries.week_pattern, V4/V6 blenden Fähigkeit aus. Dashboard Heute/aktuell/nächste Stunde → zentrale datumsgebundene Projektion. Keine automatische Beobachtung oder Bewertung.
 
 Stundenplan-UX: timetable_week_rules_toggle und timetable_week_rules besitzen ausschließlich flüchtigen Aufklappzustand. Bestehende Referenz-/Korrekturfelder und ihre Adaptercommands bleiben unverändert zugeordnet; Vorschauhinweis erscheint nur bei Abweichung von der gültigen Woche.
+
+
+## Integrierter Migrationsassistent – Ziel 406
+
+Assistent: Zustimmung (flüchtige Checkbox), Start/Später, echte Wartungsphase, Erfolg, sichere Fehlermeldung mit sanitisiertem Supporttoken. Datenroot kommt allein aus der Produkt-Runtime und wird nicht angezeigt oder eingegeben.

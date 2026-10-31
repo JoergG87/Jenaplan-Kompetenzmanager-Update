@@ -1380,3 +1380,8 @@ PO-Präzisierung: ausschließlich die beiden Wochenpfeile erhalten neutrale hell
 ## Kompetenzkatalog – native Sichtkorrektur 29.10.2026
 
 `NewObservationDialog._hierarchy_button` konfiguriert `ObservationHierarchyToggle` ausdrücklich mit `with_motion=False`. Der bestehende Verzicht auf GraphicsEffect-/Opacity-Animationen im Beobachtungs-Kompetenzbereich gilt auch für dessen einzelne Bereichs-/Themenbuttons. Andernfalls bleibt nach Fokus/Hover ein Opacity-Effekt am scrollenden Button zurück; der Screenshot vom 29.10.2026 zeigt verschwundene Bereichs-/Themenüberschriften bei weiter vorhandener Geometrie und Qt-Accessibility. Direkte QWidget-/QSS-Darstellung erhält Hoverfarbe, Fokusrahmen, Pointer und sofortiges Disclosure ohne zusätzliche Repaintsteuerung. Korrigierte Cocoa-Oberfläche nach Auf-/Zuklappen und Scrollen nativ sowie vom PO sichtbar nachgeprüft.
+
+
+## Integrierter Migrationsassistent – Ziel 406
+
+Migrationsassistent: ruhige bestehende Qt-Dialogsprache, explizite Zustimmung, Später als sichere Standardaktion, unbestimmter Fortschrittsbalken und reale Phasentexte; keine erfundenen Prozentwerte, technischen Pfade oder Rohfehler als Hauptmeldung.

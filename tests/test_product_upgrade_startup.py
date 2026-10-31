@@ -365,6 +365,8 @@ def product_main_ports(root, monkeypatch, store):
         opened.append(result)
         return result
     monkeypatch.setattr(cipher, "open_cipher_product_runtime", open_product)
+    import src.desktop_app.product_migration_dialog as migration_ui
+    monkeypatch.setattr(migration_ui, "ask_product_migration", lambda **kwargs: False)
     real_backup = backup.build_final_v4_encrypted_backup_service
     monkeypatch.setattr(backup, "build_final_v4_encrypted_backup_service", lambda **kwargs:
         real_backup(**kwargs, key_store=store, sqlcipher_provider=qualified_sqlcipher_test_provider()))

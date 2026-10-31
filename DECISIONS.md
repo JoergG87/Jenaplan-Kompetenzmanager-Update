@@ -4761,3 +4761,8 @@ Das Inventar erkennt ausschließlich die exakten vorhandenen Journalrollen. A1 v
 A-/B-Produktentscheidung 27.10.2026: kleinste additive verschlüsselte Wochenregeln als eigene synthetische V7-Identität. Wochenabstand zum Referenzmontag statt KW-Parität. Einzelkorrekturen verändern keine Rhythmusphase. Bestehende Domain-/Repository-/Desktopkomposition und transaktionale SQLCiphermigration weiterverwenden. V4 direkt erreichbar; V6 bleibt exakte historische und testbare Identität. Keine Produktmigration/Releasefreigabe.
 
 UX-Korrektur im selben Auftrag: nur Wochennavigation, Vorschau und Status dauerhaft anzeigen. Referenz und Einzelkorrektur in einem ausdrücklich aufklappbaren Bereich Wochenregeln; vorhandene Felder/Commands bleiben unverändert.
+
+
+## Integrierter V4→V7-Assistent
+
+Die UI nutzt nach bestehender Authentifizierung den bereits geöffneten exakten V4-Backupservice für die Schemaerkennung. Vor exec werden Runtime-Stack und Instanzlock geschlossen; das neue Wartungsabbild prüft Bestand und Schlüssel erneut. Die Wartung läuft außerhalb des UI-Threads und ersetzt anschließend ihr eigenes Prozessabbild durch den bestehenden Abschluss und normalen Neustart. Fehler bewirken keine Wiederholung. Vorhandenes Quellbackup ohne Receipt erlaubt nur einen bewusst angeforderten vollständigen Abschlussversuch. Direkte V7-Erstanlage wird mangels vorhandenen Initialisierungsvertrags nicht ergänzt.
