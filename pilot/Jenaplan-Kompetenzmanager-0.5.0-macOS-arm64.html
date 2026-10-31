@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Version 0.5.0 Build 405</title></head><body><pre># Jenaplan-Kompetenzmanager – V7-Pilotupdate
+
+Version 0.5.0 / Build 405
+
+## Neu in diesem Update
+
+- A-/B-Wochen mit Referenzwoche, Wochenvorschau und bewussten, wieder entfernbaren Einzelwochenkorrekturen. Der Wechsel läuft auch während der Ferien nach Kalenderwochen weiter; eine Korrektur verschiebt den Grundrhythmus nicht.
+- Globale Unterrichtszeiten unter `Einstellungen &gt; Unterrichtszeiten` als Vorschläge für neue Stunden. Individuelle Zeiten sind möglich; bestehende Stunden werden bei einer späteren Vorlagenänderung nicht rückwirkend verändert.
+- Organisatorische Stammgruppenstunden auch ohne Kompetenzfach; bestehende Einträge können bearbeitet, deaktiviert oder entfernt werden.
+- Kombinierte Unterrichtsfächer, zum Beispiel Deutsch und Mathematik, in einer Stunde. Beobachtungen verlangen eine eindeutige Fachwahl und bewerten nicht automatisch beide Fächer.
+- Fachpflanzen in den Fach-Chips des Schülerprofils zeigen den durchschnittlichen Entwicklungsstand aktuell bewerteter Kompetenzen. Bestätigte Stände haben Vorrang; fehlt ein bestätigter Stand, kann ein aktueller Vorschlag einfließen. Ohne Bewertung bleibt die Anzeige neutral. Dies ist kein Anteil bereits bearbeiteter Kompetenzen.
+- Überarbeitete Kalenderbedienung und Zeit-/Datums-/Zahlenfelder mit klarer Auswahl und Markierung sowie besser sichtbare Kompetenzbereiche und Fachfilter.
+- Schnellere A-/B-Wochenumschaltung durch gebündeltes Lesen einer konsistenten Wochenprojektion; unnötige Aktualisierungen ausgeblendeter Ansichten entfallen. Verbesserte Profilöffnung und stabilerer kontrollierter Wartungsneustart.
+- Die Beobachtungssituation „Sitzkreis“ ergänzt die bestehende Auswahl.
+
+## Fachliche Struktur
+
+Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz bleiben unabhängig von der Unterrichtsfachwahl immer verfügbar. Die individuelle Fachauswahl priorisiert die Dokumentation; sie löscht keine historischen Bewertungen. Beobachtungen, Kompetenz-Cockpit, Berichte und LEG verwenden weiterhin den offiziellen Entwicklungsbuchkatalog mit 331 Kompetenzen.
+
+## Bewusste Umstellung von Build 404
+
+Vor dem Update in Build 404 unter `Einstellungen &gt; Datensicherung` ein
+vollständiges verschlüsseltes `.jkmebackup` erstellen und mit
+`Backup prüfen …` prüfen. Die V4-Sicherung geschützt erhalten. Nach dem
+App-Update Version/Build, bestehende Anmeldung und vorhandenen Bestand
+kontrollieren und die App vor der Wartung vollständig beenden.
+
+Das Ersetzen des App-Bundles führt keine automatische Datenmigration aus. Eine vorhandene Final-V4-Installation bleibt beim gewöhnlichen Start V4. V7 wird ausschließlich über den ausdrücklich gestarteten Wartungsweg aktiviert, nachdem die App vollständig beendet wurde:
+
+```sh
+JKM_APP=&quot;/Applications/Jenaplan-Kompetenzmanager.app&quot;
+&quot;$JKM_APP/Contents/MacOS/Jenaplan-Kompetenzmanager&quot; \
+  --migrate-v4-to-v7 \
+  --runtime-root &quot;&lt;bestehender kanonischer Datenroot&gt;&quot;
+```
+
+Dieser Wartungsweg prüft vorhandene Installation, Schlüssel und exaktes Quellschema, erstellt ein verschlüsseltes Vollbackup, verifiziert es unabhängig und führt die bestehende transaktionale V4→V7-Migration aus. Danach prüft die frisch gestartete Abschlussprüfung den vollständigen Zielbestand und den vorhandenen Dokumentbestand erneut. Erst nach bestätigtem Abschluss startet die App normal neu. Die Anmeldung verwendet das bestehende Passwort. Es wird kein neuer Fachbestand angelegt; die vorhandenen Daten werden übernommen. Die Datenschlüssel werden weder neu angelegt noch rotiert.
+
+Die Wartung sollte mit Unterstützung der Pilotbetreuung ausgeführt werden. Platzhalter im Befehl müssen durch den tatsächlichen bestehenden Datenroot ersetzt werden. Keine Test-/Seed-/Resetbefehle für einen Produktbestand verwenden. Während
+der Wartung keine zweite App starten und keine Dateien austauschen. Nach
+dem Neustart vorhandene Kinder, Beobachtungen, Kompetenzstände, Dokumente,
+Stundenplan und Berichts-/LEG-Stände prüfen. Ein neues V7-Backup erstellen
+und prüfen; die V4-Sicherung weiterhin aufbewahren.
+
+## Backup, Wiederherstellung und Fehlerfall
+
+- Produktdatenbank und Dokumente bleiben lokal verschlüsselt: SQLCipher 4.17.0, SQLite 3.53.3, CommonCrypto. Standard-SQLite ist kein Fallback.
+- V7 verwendet sein eigenes geprüftes verschlüsseltes `.jkmebackup` im vorhandenen Installations- und Schlüsselkontext. Restore erfolgt mit Safety-Backup, separatem Worker und kontrolliertem Neustart.
+- Bei einem Wartungsfehler hält die App kontrolliert an. Vorhandenen Bestand, Fehlermeldung und Quellbackup erhalten und die Pilotbetreuung hinzuziehen. Kein Löschen von Wartungsbelegen, keine Schlüsselneuanlage und kein Austausch einzelner Datenbankdateien.
+- Nach einer bereits erfolgreich gespeicherten Transaktion ohne vollständigen Wartungsabschluss ist die gesonderte erneute Abschlussprüfung `--complete-v7-migration` möglich; sie ist kein automatisches Fortsetzen und prüft den vollständigen Zielbestand erneut.
+- Eine Rückkehr zu Build 404 erfordert die vollständige geprüfte V4-Sicherung im ursprünglichen Schlüsselkontext. Build 404 darf V7 nicht öffnen. Alle Änderungen nach dem V4-Sicherungszeitpunkt gingen bei dieser Rückkehr verloren; kein automatischer Downgrade.
+
+Nach der V7-Umstellung ist der betreute Support Reset nicht verfügbar,
+weder vor noch nach der Anmeldung. Vorhandene Recovery-Codes bleiben der
+erste Weg bei verlorenem Passwort. Der vorhandene V4-Support-Reset gilt
+nur vor der V7-Umstellung für eine vollständig intakte und prüfbare
+ursprüngliche Installation mit zugreifbarem Schlüssel und erfolgreichem
+Safety-Backup. Ein verlorener Datenschlüssel ist damit nicht recoverbar.
+Keine Passwörter, Schlüssel, Recovery-Codes, personenbezogenen Daten oder
+Backupinhalte ungeschützt an den Support senden.
+
+## Bekannte Einschränkungen
+
+- V4- und V7-Backups haben getrennte exakte Schemaanforderungen. Ein
+  V4-Backup wird nicht direkt in einen aktiven V7-Bestand zurückgespielt;
+  die V7-Wiederherstellung ist kein Downgrade-Werkzeug.
+- Backups bleiben installations- und schlüsselgebunden. Allgemeine
+  Geräteportabilität, Cloud-Synchronisation und Recovery eines verlorenen
+  lokalen Datenschlüssels sind nicht implementiert.
+- Finale Bericht-/LEG-PDFs öffnen im sicheren In-App-Viewer read-only mit
+  Scrollen und Zoom; Export, Drucken und Teilen aus diesem Viewer werden
+  nicht zugesagt. Die bewusst ausgegebene separate Kompetenzübersicht als
+  PDF muss außerhalb der App geschützt gespeichert werden.
+- Es gibt keinen V7-Support-Reset und keine automatische Reparatur beliebig
+  beschädigter oder unvollständiger Bestände.
+
+## Pilotkanal und Installation
+
+Dieses Update bleibt im bestehenden macOS-arm64-Pilotkanal ab macOS 13. Stable ist deaktiviert. Der bestehende Pilotweg verwendet eine Ad-hoc-Codesignatur und eine getrennte Sparkle-Vertrauensprüfung für die Updateauslieferung. Der endgültige öffentliche Auslieferungsstand muss nach gesonderter Veröffentlichungsfreigabe geprüft werden. Eine Developer-ID-Signatur, Notarisierung oder Gatekeeper-Freigabe wird damit nicht behauptet. Die manuelle Erstinstallation kann weiterhin die dokumentierte macOS-Freigabe erfordern.
+
+Eine Neuinstallation beginnt weiterhin mit einem leeren Final-V4-Bestand, Schuljahr 2026/27 und dem offiziellen Katalog mit 331 Kompetenzen. Auch hier erfolgt die V7-Aktivierung bewusst über den Wartungsweg. Es werden keine Beispielkinder oder Testdaten angelegt.
+</pre></body></html>
