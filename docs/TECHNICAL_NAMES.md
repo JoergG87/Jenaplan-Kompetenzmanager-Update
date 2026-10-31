@@ -3786,3 +3786,5 @@ product_migration_dialog.ProductMigrationDialog, ask_product_migration, show_pro
 Wartungsports: _perform_maintenance, _restart_maintenance, _run_guided_maintenance und _PHASE_TEXT. _offer_product_migration_completion bietet nur den vorhandenen Abschluss mit expliziter Zustimmung an.
 
 Geführte Workerdiagnose: support_phase enthält ausschließlich initialization oder bekannte _PHASE_TEXT-Schlüssel; support_error ausschließlich freigegebene Klassenbezeichnungen oder other. Keine Exceptiontexte werden übernommen.
+
+_show_product_migration_failure kapselt ausschließlich die sichere frühe Wartungsfehleranzeige; normaler Qt-Start bleibt hinter Recovery.

@@ -319,6 +319,13 @@ def _require_authenticated_cipher_context(
         )
 
 
+def _show_product_migration_failure(arguments):
+    from PySide6.QtWidgets import QApplication
+    from src.desktop_app.product_migration_dialog import show_product_migration_error
+    app = QApplication.instance() or QApplication(arguments)
+    show_product_migration_error()
+
+
 def _offer_product_migration_completion(root, *, packaged_smoke=False):
     """Offer only existing explicit completion, never rerun a transaction."""
     if packaged_smoke:
@@ -401,10 +408,7 @@ def main() -> int:
                 for frame in traceback.extract_tb(error.__traceback__):
                     print("Wartung: " + Path(frame.filename).name + ":" + str(frame.lineno), file=sys.stderr)
             if "--guided-v7-migration" in arguments:
-                from PySide6.QtWidgets import QApplication
-                from src.desktop_app.product_migration_dialog import show_product_migration_error
-                maintenance_app = QApplication.instance() or QApplication(arguments)
-                show_product_migration_error()
+                _show_product_migration_failure(arguments)
             return 3
     if "--internal-native-test" in arguments:
         from src.core.macos_test_package_profile import test_identity

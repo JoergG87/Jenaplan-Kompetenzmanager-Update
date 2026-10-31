@@ -5745,3 +5745,8 @@ Versionsquelle für die lokale Kandidatenqualifikation gemäß bestehender fortl
 ### Supportdiagnose des Assistenten
 
 Fehleranzeige ergänzt ausschließlich feste Phasen-/Fehlerklassen für die Pilotbetreuung; keine Exceptiontexte, Pfade oder Schlüsselwerte.
+
+
+### Regression des Migrationsassistenten
+
+Versionsprüfung an zentrale Versionsquelle gebunden; frühe Wartungsfehleranzeige separat gekapselt, damit normaler Qt-Start unverändert nach Recovery bleibt.
