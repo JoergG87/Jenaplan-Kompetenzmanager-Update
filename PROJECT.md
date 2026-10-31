@@ -2062,3 +2062,29 @@ Alle sechs fremden Dokumentänderungen erhalten, Index getrennt gehalten.
 Keine Veröffentlichung, kein Push/Tag/Release/Appcastupdate/Stable-Rollout.
 Bericht und Hashes im finalen Set. Gesonderte ausdrückliche PO-Freigabe und
 öffentliche Auslieferungsprüfung bleiben spätere Veröffentlichungsschritte.
+
+
+## Build 406 – vollständige Veröffentlichungsvorbereitung / GO
+
+Nach ausdrücklicher Benutzerbestätigung der macOS-Schlüsselbundfreigabe wurde
+das offene Gate am unveränderten finalen Pipelinepaket tatsächlich geprüft.
+Beide synthetischen Bestandskontexte (ursprünglicher Build 404 und 405):
+vorhandene Anmeldung erfolgreich, regulärer V7-Neustart ohne First Run,
+vollständiger Maininhalt und aktive Dokumenthashes unverändert, bestehende
+DMK-/Database-Key-Fingerprints und Datenkontext identisch. Paketquelle
+`4f478dec79355461827244e0218102c11f6767f6` aus dem tatsächlichen Prozess belegt.
+Kein Schlüsselersatz, keine Rotation, kein ACL-Bypass, keine Produktinstallation.
+Beleg: `release/output/406-publication-preparation/final-keychain-continuity.json`.
+
+Die zuvor dokumentierte NO-GO-Einschätzung ist damit für dieses Gate überholt;
+die ursprünglichen Timeoutbelege bleiben als Verlauf erhalten. Keine weitere
+allgemeine Testkampagne. Finale Assets und Sparkle-Signaturen bleiben bytegleich.
+Der Abschlussbericht, die Manifeste und die vollständige Prüfsummenliste im
+finalen Set werden auf den tatsächlichen GO-Stand nachgeführt.
+
+Keine offenen bestätigten P0/P1 und keine offenen lokalen Vorbereitungsgates.
+Gesonderte ausdrückliche PO-Veröffentlichungsfreigabe, unmittelbare Remote-
+Kollisionsprüfung und öffentliche Auslieferungsprüfung sind weiterhin spätere
+Veröffentlichungsschritte. Kein Push, Tag, Release, Appcastupdate oder Stable.
+
+BUILD 406 VOLLSTÄNDIG ZUR VERÖFFENTLICHUNG VORBEREITET.
