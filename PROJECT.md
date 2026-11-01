@@ -1,5 +1,19 @@
 # Projektdokumentation: Jenaplan-Kompetenzmanager
 
+## Aktueller Veröffentlichungsstand – 01.11.2026
+
+Jenaplan-Kompetenzmanager 0.5.1 / Build 406 ist im bestehenden
+macOS-Pilotkanal veröffentlicht und öffentlich verifiziert. Das GitHub-
+Pre-Release `v0.5.1-build406` zeigt gemäß Releasevertrag auf die finale
+Paketquelle `4f478dec79355461827244e0218102c11f6767f6`; der Pilot-Appcast bietet
+Build 406 vor den weiterhin verfügbaren Builds 405 und 404 an. Stable bleibt
+unverändert deaktiviert. Maßgeblicher lokaler Abschlussstand ist
+`release/output/0.5.1-build406-final-20261101/`.
+
+Die nachstehenden datierten NO-GO-, Kandidaten- und Vorbereitungsabschnitte
+bleiben als historische Zwischenstände erhalten und sind keine aktuelle
+Veröffentlichungsbewertung.
+
 ## Endgültiger 405: Schlüsselbundkontinuität bestätigt – 31.10.2026
 
 Der nachfolgend dokumentierte Schlüsselbundblocker der Dokumentationsrevision ist geschlossen. macOS erforderte für den neuen Ad-hoc-CDHash eine persönliche Freigabe, die vorher wegen `inDarkWake` (-25337) nicht angezeigt werden konnte. Nach ausdrücklicher Nutzerbestätigung öffnet das unveränderte endgültige DMG den ursprünglichen synthetischen 404-Kontext mit bestehendem Passwort und unveränderten Schlüsseln. Separater erneuter Original-404→endgültiger-405-V4-Start, bewusste V4→V7-Migration, vollständige Datenerhaltung und regulärer V7-Neustart bestanden. Keine Code-/Signaturstrategieänderung oder neuer DMG-Bau. GO für Paket-/Updatequalifikation; Veröffentlichung NO-GO bis separatem Auftrag einschließlich neuer Sparkle-Signaturen und öffentlicher Prüfung. Bericht: `release/output/0.5.0-build405-docrevision-20261031/KEYCHAIN_UPDATE_ABSCHLUSS_20261031.md`. Fremde Änderungen und alle bestehenden Produktartefakte erhalten.

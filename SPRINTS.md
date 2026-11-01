@@ -1,5 +1,21 @@
 # Sprintplanung
 
+## Mac-Pilot 0.5.1 / Build 406 veröffentlicht – 01.11.2026
+
+Veröffentlicht im bestehenden Pilotkanal als GitHub-Pre-Release
+`v0.5.1-build406`; das Tag zeigt gemäß Releasevertrag auf die finale
+Paketquelle `4f478dec79355461827244e0218102c11f6767f6`. Alle vier öffentlichen
+Assets wurden nach dem Download gegen Größe und SHA-256 geprüft. DMG,
+Release Notes und Pilot-Appcast bestanden die öffentliche Ed25519-Prüfung.
+Build 406 ist der neueste Piloteintrag; Build 405 und 404 bleiben verfügbar,
+Stable bleibt unverändert deaktiviert.
+
+Finale lokale Nachweise:
+`release/output/0.5.1-build406-final-20261101/`. Öffentlicher Release:
+https://github.com/JoergG87/Jenaplan-Kompetenzmanager-Update/releases/tag/v0.5.1-build406
+Pilotfeed:
+https://joergg87.github.io/Jenaplan-Kompetenzmanager-Update/pilot/appcast.xml
+
 ## Mac-Pilot 0.4.4 / Build 404 veröffentlicht – 13.10.2026
 
 Veröffentlicht aus 79d59591344397fdc462f40e1c0335c75066463e im bestehenden Pilotkanal. GitHub-Pre-Release v0.4.4-build404 und signierter Pilot-Appcast öffentlich verifiziert; Feed-Commit 942087e0325b4b417738ba70b55a2148e011091b. Kein Stable-Wechsel, keine Developer-ID-/Notarisierungsbehauptung. Die installierte produktive Mac-App wurde weder gestartet noch aktualisiert; vorhandene Produktdaten und Produktschlüssel blieben unberührt.

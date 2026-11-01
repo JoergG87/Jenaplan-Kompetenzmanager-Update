@@ -1,3 +1,10 @@
+## 0.5.1 / Build 406 – im Pilotkanal veröffentlicht – 01.11.2026
+
+- GitHub-Pre-Release `v0.5.1-build406` veröffentlicht; annotiertes Tagziel ist gemäß Releasevertrag die finale Paketquelle `4f478dec79355461827244e0218102c11f6767f6`.
+- Vier freigegebene Assets öffentlich zurückgeladen und mit exakter Größe und SHA-256 verifiziert; DMG, Release Notes und Pilot-Appcast mit dem bestehenden öffentlichen Ed25519-Schlüssel geprüft.
+- Pilot-Appcast-Commit `eab3a438925553ff5d4caa0eca0f35619f534e58`; Build 406 ist neuester Piloteintrag. Build 405 und 404 bleiben verfügbar, Stable bleibt unverändert deaktiviert.
+- Veröffentlichung und öffentliche Endprüfung vollständig abgeschlossen. Frühere NO-GO-, Kandidaten- und Vorbereitungsabschnitte bleiben als datierte historische Nachweise erhalten.
+
 ## Releasekandidat 0.5.0 / Build 405 – 30.10.2026
 
 ## 0.5.0 / Build 405 – lokale Veröffentlichungsvorbereitung abgeschlossen – 31.10.2026

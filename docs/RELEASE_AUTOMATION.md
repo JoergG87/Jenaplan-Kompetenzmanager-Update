@@ -1,5 +1,22 @@
 # Pilot-Releaseautomation
 
+## Build 406 im Pilotkanal veröffentlicht und öffentlich verifiziert – 01.11.2026
+
+Jenaplan-Kompetenzmanager 0.5.1 / Build 406 ist als GitHub-Pre-Release
+`v0.5.1-build406` veröffentlicht. Das annotierte Tag zeigt gemäß bestehendem
+Releasevertrag auf `4f478dec79355461827244e0218102c11f6767f6`. Die Automation
+veröffentlichte ausschließlich DMG, Dokumentations-ZIP, SHA256SUMS und
+Releaseinventar aus `release/output/0.5.1-build406-final-20261101/` und prüfte
+alle vier öffentlichen Downloads erneut gegen Größe und SHA-256.
+
+Der Pilot-Appcast wurde mit Commit
+`eab3a438925553ff5d4caa0eca0f35619f534e58` aktualisiert. Die öffentliche
+Endverifikation bestätigte DMG-, Release-Notes- und Feed-Ed25519-Signaturen,
+Build 406 als neuesten Piloteintrag sowie die fortbestehende Verfügbarkeit von
+Build 405 und 404. Stable blieb unverändert deaktiviert; kein allgemeines
+Latest-Release wurde gesetzt. Frühere NO-GO- und Vorbereitungsabschnitte in
+diesem Dokument bleiben historische Zustandsnachweise.
+
 ## Build 405 vollständig zur Veröffentlichung vorbereitet – 31.10.2026
 
 **GO für die lokale Veröffentlichungsvorbereitung.** Paketquelle `38f6e8c5c2d9bb149fdd166a09397d41462d0df6`, Dokumentationsquelle `d90011e20bb3373fb0a6b37bea29099c99f5f0fc`, abgeschlossene Paket-/Updatequalifikation `597eb287e91fe137dbf6a814804da6fcc78a3de4`. Vorgesehener Tag `v0.5.0-build405` zeigt gemäß bestehendem Releasevertrag später auf die Paketquelle, nicht auf diesen Dokumentationsabschluss. Kein Tag erstellt.

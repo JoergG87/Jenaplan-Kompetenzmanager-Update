@@ -23,7 +23,7 @@ Selbst- und Sozialkompetenz sowie Arbeits-/Lernkompetenz bleiben unabhängig von
 
 ## Update von Build 404 und 405
 
-Vor dem Update ein vollständiges verschlüsseltes `.jkmebackup` erstellen und prüfen. Build 406 wird nach gesonderter Veröffentlichungsfreigabe über den bestehenden Pilotkanal bereitgestellt.
+Vor dem Update ein vollständiges verschlüsseltes `.jkmebackup` erstellen und prüfen. Build 406 wird über den bestehenden Pilotkanal bereitgestellt.
 
 Nach dem Update über den bestehenden Pilotkanal erkennt Build 406 einen vorhandenen Final-V4-Bestand automatisch. Melden Sie sich mit Ihrem bisherigen Passwort an. Der Dialog `Datenbestand aktualisieren` erklärt Sicherung, Umstellung und Rückkehrgrenze. Lesen Sie die Hinweise, setzen Sie `Ich möchte die Aktualisierung jetzt starten.` und wählen Sie `Aktualisierung starten`. Mit `Später` verschieben Sie die Umstellung; es wird nichts migriert.
 
@@ -65,6 +65,6 @@ Backupinhalte ungeschützt an den Support senden.
 
 ## Pilotkanal und Installation
 
-Dieses Update bleibt im bestehenden macOS-arm64-Pilotkanal ab macOS 13. Stable ist deaktiviert. Der bestehende Pilotweg verwendet eine Ad-hoc-Codesignatur und eine getrennte Sparkle-Vertrauensprüfung für die Updateauslieferung. Der endgültige öffentliche Auslieferungsstand muss nach gesonderter Veröffentlichungsfreigabe geprüft werden. Eine Developer-ID-Signatur, Notarisierung oder Gatekeeper-Freigabe wird damit nicht behauptet. Die manuelle Erstinstallation kann weiterhin die dokumentierte macOS-Freigabe erfordern.
+Dieses Update bleibt im bestehenden macOS-arm64-Pilotkanal ab macOS 13. Stable ist deaktiviert. Der bestehende Pilotweg verwendet eine Ad-hoc-Codesignatur und eine getrennte Sparkle-Vertrauensprüfung für die Updateauslieferung. Der öffentliche Auslieferungsstand wurde nach der Veröffentlichung verifiziert. Eine Developer-ID-Signatur, Notarisierung oder Gatekeeper-Freigabe wird damit nicht behauptet. Die manuelle Erstinstallation kann weiterhin die dokumentierte macOS-Freigabe erfordern.
 
 Eine Neuinstallation beginnt weiterhin mit einem leeren Final-V4-Bestand, Schuljahr 2026/27 und dem offiziellen Katalog mit 331 Kompetenzen. Nach abgeschlossener Einrichtung wird der Migrationsassistent beim folgenden Programmstart angeboten; keine direkte V7-Erstanlage. Es werden keine Beispielkinder oder Testdaten angelegt.

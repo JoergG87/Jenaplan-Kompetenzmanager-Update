@@ -3,7 +3,7 @@
 ## Einordnung
 
 Die Roadmap ordnet Produktphasen auf Basis des veröffentlichten Pilotstands
-0.4.0 / Build 400 ein. Sie ist keine Sprintfreigabe. Konkrete Aufgaben, Status
+0.5.1 / Build 406 ein. Sie ist keine Sprintfreigabe. Konkrete Aufgaben, Status
 und Abhängigkeiten stehen in `BACKLOG.md`; operative, bereits freigegebene
 Arbeit steht in `SPRINTS.md`.
 
@@ -35,7 +35,13 @@ macOS-Keychain/Touch ID, gespeicherter Geräteanmeldung, Support-Reset-Workflow,
 Diese Funktionen werden nicht mehr als Zukunftsarbeit geführt. Reale
 Hardware-, Alltags- und Ergonomieprüfung bleibt Teil der nächsten Phase.
 
-## Phase 1 - veröffentlichte Pilotbasis 0.4.0 / Build 400 und Stabilisierung
+## Phase 1 - Pilotbasis ab 0.4.0 / Build 400 und Stabilisierung
+
+Aktueller Pilotstand ist 0.5.1 / Build 406. Das Pre-Release
+`v0.5.1-build406` und der Pilot-Appcast sind öffentlich verifiziert; Build 405
+und Build 404 bleiben verfügbar, Stable bleibt deaktiviert. Die nachfolgende
+Beschreibung von Build 400 und frühen Folgekandidaten bleibt historischer
+Ausgangspunkt dieser Phase.
 
 Zuerst wird der implementierte Stand unter realen Pilotbedingungen validiert.
 Priorität P0 haben ausschließlich Datenverlust, fehlerhafte Speicherung,
@@ -69,7 +75,7 @@ Windows-Freigabe, keinen Stable-Release und keine schulische Betriebsfreigabe.
 GitHub-Pilotveröffentlichung, Pilot-Appcast, Stable, PO-Abnahme und
 Notarisierung sind getrennte Gates.
 
-### Unreleased nach Build 400
+### Historischer Zwischenstand nach Build 400
 
 Der erste Produktfix nach Build 400,
 `926582f7db3a44642b05301fbbb676a91a1f500c`, korrigiert die individuelle
